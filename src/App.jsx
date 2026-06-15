@@ -22,7 +22,7 @@ function todayStr() {
 
 export default function App() {
   const [state, setState] = useState(() => loadState());
-  const [view, setView] = useState('list'); // list | detail | calendar | form
+  const [view, setView] = useState('calendar'); // list | detail | calendar | form
   const [selectedBelt, setSelectedBelt] = useState(null);
   const [formCtx, setFormCtx] = useState(null); // { belt, date }
   const [filters, setFilters] = useState({ group: '전체', status: null, query: '' });
@@ -270,16 +270,16 @@ export default function App() {
 
       <div className="tabbar">
         <button
+          className={view === 'calendar' || view === 'form' ? 'active' : ''}
+          onClick={() => setView('calendar')}
+        >
+          <span className="ic">🦺</span>점검모드
+        </button>
+        <button
           className={view === 'list' || view === 'detail' ? 'active' : ''}
           onClick={() => setView('list')}
         >
           <span className="ic">📊</span>관리모드
-        </button>
-        <button
-          className={view === 'calendar' || view === 'form' ? 'active' : ''}
-          onClick={() => setView('calendar')}
-        >
-          <span className="ic">🦺</span>현장모드
         </button>
       </div>
     </div>

@@ -36,7 +36,7 @@ export default function FieldCalendar({
       <header>
         <span className="logo">🦺</span>
         <h1>현장 점검</h1>
-        <span className="mode-badge mode-field">현장모드</span>
+        <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">
         <div className="cal-head">
