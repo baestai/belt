@@ -25,10 +25,16 @@ describe('점검 항목 정의', () => {
     ]);
   });
 
-  it('Motor는 진동/온도/이음 상태 점검(subs)', () => {
+  it('Motor는 진동/발열/이음 상태 점검(subs)', () => {
     const motor = INSPECTION_ITEMS.find((d) => d.key === 'motor');
     expect(motor.type).toBe('subs');
-    expect(motor.subs).toEqual(['진동', '온도', '이음']);
+    expect(motor.subs).toEqual(['진동', '발열', '이음']);
+  });
+
+  it('감속기는 진동/발열/이음 상태 점검(subs)', () => {
+    const reducer = INSPECTION_ITEMS.find((d) => d.key === 'reducer');
+    expect(reducer.type).toBe('subs');
+    expect(reducer.subs).toEqual(['진동', '발열', '이음']);
   });
 });
 
@@ -63,21 +69,14 @@ describe('기록 검증', () => {
     expect(validateRecord(rec).some((e) => e.includes('점검자'))).toBe(true);
   });
 
-  it('감속기 온도에 문자 입력 시 에러', () => {
-    const rec = emptyRecord('S-101', 'SILO', '2026-06-15', '김현장');
-    rec.items.reducer.values.temp = 'abc';
-    expect(validateRecord(rec).some((e) => e.includes('숫자'))).toBe(true);
-  });
-
   it('Pulley 온도에 문자 입력 시 에러', () => {
     const rec = emptyRecord('S-101', 'SILO', '2026-06-15', '김현장');
     rec.items.pulley.temps['Head'] = 'xx';
-    expect(validateRecord(rec).some((e) => e.includes('온도'))).toBe(true);
+    expect(validateRecord(rec).some((e) => e.includes('숫자'))).toBe(true);
   });
 
-  it('숫자 문자열은 통과', () => {
+  it('Pulley 온도 숫자 문자열은 통과', () => {
     const rec = emptyRecord('S-101', 'SILO', '2026-06-15', '김현장');
-    rec.items.reducer.values.temp = '58';
     rec.items.pulley.temps['Head'] = '42.5';
     expect(validateRecord(rec)).toEqual([]);
   });

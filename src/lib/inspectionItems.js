@@ -31,14 +31,14 @@ export const INSPECTION_ITEMS = [
     no: 5,
     title: 'Motor',
     type: 'subs',
-    subs: ['진동', '온도', '이음'],
+    subs: ['진동', '발열', '이음'],
   },
   {
     key: 'reducer',
     no: 6,
     title: '감속기',
-    type: 'num',
-    fields: [{ key: 'temp', label: '온도', unit: '℃' }],
+    type: 'subs',
+    subs: ['진동', '발열', '이음'],
   },
   {
     key: 'electric',
