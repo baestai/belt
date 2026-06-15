@@ -7,7 +7,13 @@ export function checkPassword(input, current = DEFAULT_ADMIN_PW) {
 }
 
 export function defaultInspectors() {
-  return ['김현장', '이정비', '박점검'];
+  return [
+    '강요섭', '고영철', '공윤식', '곽환', '김세준', '김영진', '김완주', '김용호',
+    '김주홍', '김지후', '김철근', '문수완', '백정동', '백종호', '서창환', '유승환',
+    '윤경배', '윤광민', '이경운', '이동철', '이범화', '이종술', '이휘민', '임채관',
+    '정균태', '정영균', '정희창', '조민수', '조재권', '최준민', '최충환', '한준수',
+    '홍진형',
+  ];
 }
 
 export function addInspector(list, name) {

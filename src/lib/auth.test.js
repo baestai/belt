@@ -24,14 +24,20 @@ describe('관리자 비밀번호', () => {
 });
 
 describe('점검자 관리', () => {
-  it('기본 점검자 3명', () => {
-    expect(defaultInspectors()).toEqual(['김현장', '이정비', '박점검']);
+  it('기본 점검자 33명, 가나다순 정렬', () => {
+    const list = defaultInspectors();
+    expect(list.length).toBe(33);
+    expect(list[0]).toBe('강요섭');
+    expect(list[list.length - 1]).toBe('홍진형');
+    const sorted = [...list].sort((a, b) => a.localeCompare(b, 'ko'));
+    expect(list).toEqual(sorted);
   });
 
   it('추가는 불변', () => {
     const list = defaultInspectors();
+    const before = list.length;
     const next = addInspector(list, '정안전');
-    expect(list.length).toBe(3);
+    expect(list.length).toBe(before);
     expect(next).toContain('정안전');
   });
 

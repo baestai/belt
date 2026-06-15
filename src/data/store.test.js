@@ -17,11 +17,11 @@ describe('상태 저장/로드', () => {
     store = fakeStorage();
   });
 
-  it('기본 상태에는 111개 벨트와 점검자 3명', () => {
+  it('기본 상태에는 111개 벨트와 점검자 33명', () => {
     const s = defaultState();
     const total = Object.values(s.groups).reduce((a, g) => a + g.length, 0);
     expect(total).toBe(111);
-    expect(s.inspectors.length).toBe(3);
+    expect(s.inspectors.length).toBe(33);
     expect(s.adminPw).toBe('tkatjsxks**');
   });
 

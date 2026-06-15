@@ -89,7 +89,7 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     fireEvent.click(screen.getByText('👷 점검자 관리'));
-    expect(screen.getByText('김현장')).toBeInTheDocument();
+    expect(screen.getByText('강요섭')).toBeInTheDocument();
   });
 
   it('보고서 모달이 열린다', () => {
