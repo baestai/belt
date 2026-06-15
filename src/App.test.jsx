@@ -57,7 +57,7 @@ describe('App 통합 렌더', () => {
     openAdmin();
     fireEvent.click(screen.getByText('➕ 벨트 추가'));
     fireEvent.change(screen.getByPlaceholderText('예: S-330'), { target: { value: 'S-777' } });
-    fireEvent.change(screen.getByPlaceholderText('비밀번호 입력'), { target: { value: '0000' } });
+    fireEvent.change(screen.getByPlaceholderText('비밀번호 입력'), { target: { value: 'tkatjsxks**' } });
     fireEvent.click(screen.getByText('추가'));
     expect(screen.getByText('S-777')).toBeInTheDocument();
   });

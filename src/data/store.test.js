@@ -22,7 +22,7 @@ describe('상태 저장/로드', () => {
     const total = Object.values(s.groups).reduce((a, g) => a + g.length, 0);
     expect(total).toBe(111);
     expect(s.inspectors.length).toBe(3);
-    expect(s.adminPw).toBe('0000');
+    expect(s.adminPw).toBe('tkatjsxks**');
   });
 
   it('비어있으면 기본 상태 로드', () => {

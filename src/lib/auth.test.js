@@ -9,7 +9,7 @@ import {
 
 describe('관리자 비밀번호', () => {
   it('기본 비밀번호 일치', () => {
-    expect(checkPassword('0000')).toBe(true);
+    expect(checkPassword('tkatjsxks**')).toBe(true);
     expect(checkPassword(DEFAULT_ADMIN_PW)).toBe(true);
   });
 

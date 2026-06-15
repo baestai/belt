@@ -1,6 +1,6 @@
 // 관리자 비밀번호 + 점검자 관리 순수 로직
 
-export const DEFAULT_ADMIN_PW = '0000';
+export const DEFAULT_ADMIN_PW = 'tkatjsxks**';
 
 export function checkPassword(input, current = DEFAULT_ADMIN_PW) {
   return String(input) === String(current);
