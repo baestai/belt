@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadState, saveState } from './data/store.js';
 import { isCloudConfigured } from './data/supabaseClient.js';
+import { fetchCloud, seedCloud, syncToCloud, subscribeCloud } from './data/cloudStore.js';
 import { addBelt as addBeltFn, removeBelt as removeBeltFn } from './lib/belts.js';
 import {
   checkPassword,
@@ -33,8 +34,57 @@ export default function App() {
   const [selDate, setSelDate] = useState(today);
   const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report'
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const lastSynced = useRef(null); // 마지막으로 클라우드와 일치한 state (diff 기준)
+  const cloudReady = useRef(false);
+
+  // 최초 1회: 클라우드 상태로 화해(reconcile). 비어있으면 현재 상태로 시드.
+  useEffect(() => {
+    if (!isCloudConfigured) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await fetchCloud();
+        if (cancelled) return;
+        if (remote) {
+          lastSynced.current = remote;
+          setState(remote);
+        } else {
+          await seedCloud(stateRef.current);
+          lastSynced.current = stateRef.current;
+        }
+        cloudReady.current = true;
+      } catch (e) {
+        console.warn('[cloud] 초기 동기화 실패, 로컬로 동작합니다:', e?.message || e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // 다른 기기의 변경을 실시간 수신해 반영
+  useEffect(() => {
+    if (!isCloudConfigured) return;
+    return subscribeCloud(async () => {
+      try {
+        const remote = await fetchCloud();
+        if (!remote) return;
+        lastSynced.current = remote;
+        setState(remote);
+      } catch (e) {
+        console.warn('[cloud] 실시간 갱신 실패:', e?.message || e);
+      }
+    });
+  }, []);
+
+  // 상태 변경 시: 로컬 저장(항상) + 클라우드에 변경분 반영
   useEffect(() => {
     saveState(state);
+    if (!isCloudConfigured || !cloudReady.current) return;
+    if (lastSynced.current === state) return; // 원격에서 적용된 변경이면 되쏘지 않음
+    const prev = lastSynced.current;
+    lastSynced.current = state;
+    syncToCloud(prev, state).catch((e) => console.warn('[cloud] 동기화 실패:', e?.message || e));
   }, [state]);
 
   const { groups, inspectors, records, schedules } = state;
