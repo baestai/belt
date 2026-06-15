@@ -8,12 +8,13 @@ import {
   addInspector as addInspectorFn,
   removeInspector as removeInspectorFn,
 } from './lib/auth.js';
+import { DEFAULT_PULLEYS, addPulley as addPulleyFn, removePulley as removePulleyFn } from './lib/inspectionItems.js';
 import { statusOf as statusOfFn, latestRecord, nextDateFrom } from './lib/selectors.js';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
-import { AddBeltModal, InspectorModal, ReportModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, PulleyModal, ReportModal } from './components/Modals.jsx';
 
 function todayStr() {
   const d = new Date();
@@ -88,6 +89,7 @@ export default function App() {
   }, [state]);
 
   const { groups, inspectors, records, schedules } = state;
+  const pulleys = state.pulleys && state.pulleys.length ? state.pulleys : DEFAULT_PULLEYS;
 
   const statusOf = useMemo(() => (name) => statusOfFn(records, name), [records]);
   const lastInfoOf = useMemo(
@@ -150,6 +152,16 @@ export default function App() {
     setState((s) => ({ ...s, inspectors: removeInspectorFn(s.inspectors, name) }));
   };
 
+  const handleAddPulley = (name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, pulleys: addPulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
+  };
+
+  const handleRemovePulley = (name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, pulleys: removePulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
+  };
+
   const handleInspect = (belt, date) => {
     setFormCtx({ belt, date });
     setView('form');
@@ -201,6 +213,7 @@ export default function App() {
           onSelectBelt={handleSelectBelt}
           onOpenAdd={() => setModal('add')}
           onOpenInspectors={() => setModal('inspectors')}
+          onOpenPulleys={() => setModal('pulleys')}
           onOpenReport={() => setModal('report')}
           cloud={isCloudConfigured}
         />
@@ -240,6 +253,7 @@ export default function App() {
           belt={formCtx.belt}
           date={formCtx.date}
           inspectors={inspectors}
+          pulleys={pulleys}
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
@@ -261,6 +275,14 @@ export default function App() {
           inspectors={inspectors}
           onAdd={handleAddInspector}
           onRemove={handleRemoveInspector}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'pulleys' && (
+        <PulleyModal
+          pulleys={pulleys}
+          onAdd={handleAddPulley}
+          onRemove={handleRemovePulley}
           onClose={() => setModal(null)}
         />
       )}

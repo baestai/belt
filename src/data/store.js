@@ -4,6 +4,7 @@
 
 import { defaultGroups } from '../lib/belts.js';
 import { defaultInspectors, DEFAULT_ADMIN_PW } from '../lib/auth.js';
+import { DEFAULT_PULLEYS } from '../lib/inspectionItems.js';
 
 export const STORAGE_KEY = 'belt-inspection-state-v1';
 
@@ -11,6 +12,7 @@ export function defaultState() {
   return {
     groups: defaultGroups(),
     inspectors: defaultInspectors(),
+    pulleys: [...DEFAULT_PULLEYS], // Pulley 구분 목록 (관리모드에서 편집)
     records: [], // 점검 기록 배열
     schedules: {}, // { beltName: { nextDate, cycle } }
     adminPw: DEFAULT_ADMIN_PW,

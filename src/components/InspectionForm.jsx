@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import { INSPECTION_ITEMS, emptyRecord, validateRecord } from '../lib/inspectionItems.js';
+import {
+  INSPECTION_ITEMS,
+  DEFAULT_PULLEYS,
+  emptyRecord,
+  normalizeRecord,
+  validateRecord,
+} from '../lib/inspectionItems.js';
 
-export default function InspectionForm({ belt, date, inspectors, initialRecord, onCancel, onSave }) {
-  const [record, setRecord] = useState(
-    () => initialRecord || emptyRecord(belt.name, belt.group, date, inspectors[0] || '')
+export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAULT_PULLEYS, initialRecord, onCancel, onSave }) {
+  const [record, setRecord] = useState(() =>
+    initialRecord
+      ? normalizeRecord(initialRecord, pulleys)
+      : emptyRecord(belt.name, belt.group, date, inspectors[0] || '', pulleys)
   );
   const [touched, setTouched] = useState(() => new Set());
   const [error, setError] = useState('');
@@ -124,7 +132,7 @@ export default function InspectionForm({ belt, date, inspectors, initialRecord, 
                 <table className="pulley-tbl">
                   <thead><tr><th>구분</th><th>베어링</th><th>온도(℃)</th></tr></thead>
                   <tbody>
-                    {def.subs.map((s) => (
+                    {pulleys.map((s) => (
                       <tr key={s}>
                         <td className="nm">{s}</td>
                         <td>

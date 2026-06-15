@@ -1,9 +1,14 @@
-// 점검 항목 정의 (현장모드 폼 + 검증)
+// 점검 항목 정의 (점검모드 폼 + 검증)
 // type:
 //   'yn'    : 양호/불량 단일
 //   'subs'  : 하위 항목들 각각 양호/불량 (rows)
-//   'pulley': 풀리(베어링 양호/불량 + 온도) 행들
+//   'pulley': Pulley(베어링 양호/불량 + 온도) 행들 — 구분 목록은 state.pulleys로 관리(동적)
 //   'num'   : 양호/불량 + 수치 입력 필드들
+
+// Pulley 기본 구분 (관리모드에서 추가/삭제 가능)
+export const DEFAULT_PULLEYS = [
+  'Head', 'Tail', 'Drive', 'Snub', 'Tension', 'Head Bend', 'Tail Bend', 'Take Up',
+];
 
 export const INSPECTION_ITEMS = [
   { key: 'spillage', no: 1, title: '낙광 상태', type: 'yn' },
@@ -18,19 +23,15 @@ export const INSPECTION_ITEMS = [
   {
     key: 'pulley',
     no: 4,
-    title: '풀리 — 베어링 상태 / 온도',
+    title: 'Pulley — 베어링 상태 / 온도',
     type: 'pulley',
-    subs: ['헤드', '테일', '구동', '밴드', '스냅', '텐션'],
   },
   {
     key: 'motor',
     no: 5,
-    title: '모터',
-    type: 'num',
-    fields: [
-      { key: 'temp', label: '모터온도', unit: '℃' },
-      { key: 'vib', label: '진동값', unit: 'mm/s' },
-    ],
+    title: 'Motor',
+    type: 'subs',
+    subs: ['진동', '온도', '이음'],
   },
   {
     key: 'reducer',
@@ -56,8 +57,8 @@ export const INSPECTION_ITEMS = [
   { key: 'safety', no: 9, title: '안전장치 / 기타', type: 'yn' },
 ];
 
-// 빈 점검 기록 생성 (기본 상태 ok)
-export function emptyRecord(beltName, group, date, inspector) {
+// 빈 점검 기록 생성 (기본 상태 ok). pulleys: Pulley 구분 목록(동적)
+export function emptyRecord(beltName, group, date, inspector, pulleys = DEFAULT_PULLEYS) {
   const items = {};
   for (const def of INSPECTION_ITEMS) {
     const it = { status: 'ok', memo: '' };
@@ -68,7 +69,7 @@ export function emptyRecord(beltName, group, date, inspector) {
     if (def.type === 'pulley') {
       it.subs = {};
       it.temps = {};
-      for (const s of def.subs) {
+      for (const s of pulleys) {
         it.subs[s] = 'ok';
         it.temps[s] = '';
       }
@@ -80,6 +81,49 @@ export function emptyRecord(beltName, group, date, inspector) {
     items[def.key] = it;
   }
   return { belt: beltName, group, date, inspector, items };
+}
+
+// 기존 기록을 현재 항목 정의/Pulley 목록에 맞춰 누락 키를 채운 새 기록 반환.
+// (항목 구조가 바뀌었거나 Pulley가 추가된 경우 폼이 깨지지 않도록 정규화)
+export function normalizeRecord(record, pulleys = DEFAULT_PULLEYS) {
+  const items = { ...(record.items || {}) };
+  for (const def of INSPECTION_ITEMS) {
+    const it = { status: 'ok', memo: '', ...(items[def.key] || {}) };
+    if (def.type === 'subs') {
+      const subs = { ...(it.subs || {}) };
+      for (const s of def.subs) if (!(s in subs)) subs[s] = 'ok';
+      it.subs = subs;
+    }
+    if (def.type === 'pulley') {
+      const subs = { ...(it.subs || {}) };
+      const temps = { ...(it.temps || {}) };
+      for (const s of pulleys) {
+        if (!(s in subs)) subs[s] = 'ok';
+        if (!(s in temps)) temps[s] = '';
+      }
+      it.subs = subs;
+      it.temps = temps;
+    }
+    if (def.type === 'num') {
+      const values = { ...(it.values || {}) };
+      for (const f of def.fields) if (!(f.key in values)) values[f.key] = '';
+      it.values = values;
+    }
+    items[def.key] = it;
+  }
+  return { ...record, items };
+}
+
+// Pulley 구분 추가/삭제 (불변)
+export function addPulley(list, name) {
+  const n = String(name || '').trim();
+  if (!n) throw new Error('Pulley 구분명을 입력하세요.');
+  if (list.includes(n)) throw new Error('이미 등록된 Pulley 구분입니다.');
+  return [...list, n];
+}
+
+export function removePulley(list, name) {
+  return list.filter((x) => x !== name);
 }
 
 // 점검 기록 검증: 누락/형식 오류 목록 반환 (빈 배열이면 유효)
@@ -104,10 +148,10 @@ export function validateRecord(record) {
       }
     }
     if (def.type === 'pulley') {
-      for (const s of def.subs) {
-        const t = it.temps && it.temps[s];
+      for (const s of Object.keys(it.temps || {})) {
+        const t = it.temps[s];
         if (t !== '' && t != null && Number.isNaN(Number(t))) {
-          errors.push(`풀리 ${s} 온도: 숫자만 입력 가능`);
+          errors.push(`Pulley ${s} 온도: 숫자만 입력 가능`);
         }
       }
     }

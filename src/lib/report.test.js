@@ -38,7 +38,7 @@ describe('엑셀(표/CSV) 변환', () => {
   const records = [
     mkRecord('S-101', '2026-06-10', (r) => {
       r.items.belt.status = 'bad';
-      r.items.motor.values.temp = '58';
+      r.items.reducer.values.temp = '58';
       r.items.belt.memo = '벨트 사행';
     }),
   ];
