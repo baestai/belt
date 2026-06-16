@@ -21,6 +21,7 @@ export default function AdminList({
   onOpenAdd,
   onOpenInspectors,
   onOpenPulleys,
+  onOpenQuickMemos,
   onOpenReport,
   onOpenBackup,
   onOpenLeaderboard,
@@ -93,6 +94,9 @@ export default function AdminList({
             </button>
             <button className="add-btn secondary" onClick={onOpenLeaderboard}>
               🏆 랭킹
+            </button>
+            <button className="add-btn secondary" onClick={onOpenQuickMemos}>
+              💬 빠른 메모
             </button>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

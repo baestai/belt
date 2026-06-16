@@ -15,7 +15,7 @@ import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
-import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 
 function todayStr() {
@@ -106,6 +106,7 @@ export default function App() {
   }, [state]);
 
   const { groups, inspectors, records, schedules } = state;
+  const quickMemos = state.quickMemos || [];
   const pulleys = state.pulleys && state.pulleys.length ? state.pulleys : DEFAULT_PULLEYS;
 
   const statusOf = useMemo(() => (name) => statusOfFn(records, name), [records]);
@@ -179,6 +180,20 @@ export default function App() {
     setState((s) => ({ ...s, pulleys: removePulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
   };
 
+  // 빠른 메모 칩 관리 (관리모드)
+  const handleAddQuickMemo = (name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const n = String(name || '').trim();
+    if (!n) throw new Error('메모 문구를 입력하세요.');
+    if ((state.quickMemos || []).includes(n)) throw new Error('이미 등록된 문구입니다.');
+    setState((s) => ({ ...s, quickMemos: [...(s.quickMemos || []), n] }));
+  };
+
+  const handleRemoveQuickMemo = (name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, quickMemos: (s.quickMemos || []).filter((x) => x !== name) }));
+  };
+
   // 점검모드: 벨트별 설치 구성(Pulley/전기장치) 추가·삭제를 즉시 영속 (점검 완료 저장과 무관)
   const handleAddBeltItem = (beltName, key, name, pw) => {
     if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
@@ -246,6 +261,7 @@ export default function App() {
       groups: restored.groups,
       inspectors: restored.inspectors,
       pulleys: restored.pulleys ?? s.pulleys,
+      quickMemos: restored.quickMemos ?? s.quickMemos,
       beltConfigs: restored.beltConfigs,
       adminPw: restored.adminPw ?? s.adminPw,
       schedules: restored.schedules,
@@ -317,6 +333,7 @@ export default function App() {
           onOpenAdd={() => setModal('add')}
           onOpenInspectors={() => setModal('inspectors')}
           onOpenPulleys={() => setModal('pulleys')}
+          onOpenQuickMemos={() => setModal('quickMemos')}
           onOpenReport={() => setModal('report')}
           onOpenBackup={() => setModal('backup')}
           onOpenLeaderboard={() => setModal('leaderboard')}
@@ -366,6 +383,7 @@ export default function App() {
             pulley: effectiveItemList(state, formCtx.belt.name, 'pulley'),
             electric: effectiveItemList(state, formCtx.belt.name, 'electric'),
           }}
+          quickMemos={quickMemos}
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
@@ -414,6 +432,14 @@ export default function App() {
       )}
       {modal === 'leaderboard' && (
         <LeaderboardModal records={records} onClose={() => setModal(null)} />
+      )}
+      {modal === 'quickMemos' && (
+        <QuickMemoModal
+          memos={quickMemos}
+          onAdd={handleAddQuickMemo}
+          onRemove={handleRemoveQuickMemo}
+          onClose={() => setModal(null)}
+        />
       )}
 
       {printTarget && <PrintableRecord record={printTarget} />}

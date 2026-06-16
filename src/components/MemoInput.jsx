@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
-// 현장에서 빠르게 입력하기 위한 프리셋 메모
-const QUICK = ['이상 없음', '경과 관찰', '재점검 필요', '부품 교체 필요', '청소 필요'];
-
 function SpeechCtor() {
   if (typeof window === 'undefined') return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
 // 메모 입력기: 빠른 메모 칩 + 음성 인식(한국어) + 직접 입력
-export default function MemoInput({ value, onChange, placeholder }) {
+// quickMemos: 관리모드에서 설정한 빠른 메모 목록 (없으면 칩 미표시)
+export default function MemoInput({ value, onChange, placeholder, quickMemos = [] }) {
   const [listening, setListening] = useState(false);
   const recRef = useRef(null);
   const supported = !!SpeechCtor();
@@ -50,21 +48,23 @@ export default function MemoInput({ value, onChange, placeholder }) {
 
   return (
     <div className="memo-wrap">
-      <div className="quick-memos">
-        {QUICK.map((q) => (
-          <button type="button" key={q} className="qm" onClick={() => append(q)}>{q}</button>
-        ))}
-        {supported && (
-          <button
-            type="button"
-            className={'qm voice' + (listening ? ' on' : '')}
-            onClick={toggleVoice}
-            aria-label="음성으로 메모 입력"
-          >
-            {listening ? '🔴 듣는 중…' : '🎤 음성'}
-          </button>
-        )}
-      </div>
+      {(quickMemos.length > 0 || supported) && (
+        <div className="quick-memos">
+          {quickMemos.map((q) => (
+            <button type="button" key={q} className="qm" onClick={() => append(q)}>{q}</button>
+          ))}
+          {supported && (
+            <button
+              type="button"
+              className={'qm voice' + (listening ? ' on' : '')}
+              onClick={toggleVoice}
+              aria-label="음성으로 메모 입력"
+            >
+              {listening ? '🔴 듣는 중…' : '🎤 음성'}
+            </button>
+          )}
+        </div>
+      )}
       <textarea
         className="memo"
         placeholder={placeholder}

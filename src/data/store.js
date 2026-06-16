@@ -13,6 +13,7 @@ export function defaultState() {
     groups: defaultGroups(),
     inspectors: defaultInspectors(),
     pulleys: [...DEFAULT_PULLEYS], // Pulley 구분 기본 목록 (관리모드에서 편집)
+    quickMemos: [], // 점검 메모 빠른 입력 칩 (관리모드에서 추가/삭제)
     beltConfigs: {}, // { beltName: { pulley: [...], electric: [...] } } 벨트별 설치 구성
     records: [], // 점검 기록 배열
     schedules: {}, // { beltName: { nextDate, cycle } }

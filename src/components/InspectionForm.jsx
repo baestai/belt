@@ -53,7 +53,7 @@ function prevSummary(def, prevItem) {
   return null;
 }
 
-export default function InspectionForm({ belt, date, inspectors, beltItems = {}, initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, beltItems.pulley)
@@ -333,6 +333,7 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
               <MemoInput
                 value={it.memo}
                 placeholder="특이사항 메모..."
+                quickMemos={quickMemos}
                 onChange={(v) => setMemo(def.key, v)}
               />
             </div>
