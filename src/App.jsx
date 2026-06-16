@@ -207,6 +207,30 @@ export default function App() {
     });
   };
 
+  // 한 벨트의 Pulley/전기장치 설치 구성을 같은 구분(그룹)의 다른 벨트들에 일괄 복사
+  const handleCopyConfigToGroup = (sourceName, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const g = groupOf(sourceName);
+    if (!g) throw new Error('대상 구분을 찾을 수 없습니다.');
+    const cfg = {
+      pulley: [...effectiveItemList(state, sourceName, 'pulley')],
+      electric: [...effectiveItemList(state, sourceName, 'electric')],
+    };
+    const targets = (state.groups[g] || []).filter((n) => n !== sourceName);
+    setState((s) => {
+      const beltConfigs = { ...s.beltConfigs };
+      for (const name of targets) {
+        beltConfigs[name] = {
+          ...(beltConfigs[name] || {}),
+          pulley: [...cfg.pulley],
+          electric: [...cfg.electric],
+        };
+      }
+      return { ...s, beltConfigs };
+    });
+    return { group: g, count: targets.length };
+  };
+
   const handleInspect = (belt, date) => {
     setFormCtx({ belt, date });
     setView('form');
@@ -274,6 +298,8 @@ export default function App() {
           onInspect={handleInspect}
           onDeleteBelt={handleDeleteBelt}
           onSaveSchedule={handleSaveSchedule}
+          onCopyConfig={handleCopyConfigToGroup}
+          groupCount={(groups[selectedBelt.group] || []).length}
         />
       )}
 

@@ -17,7 +17,7 @@ const CYCLES = [
   { v: 'none', t: '반복 없음' },
 ];
 
-export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule }) {
+export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, groupCount = 0 }) {
   const history = recordsForBelt(records, belt.name);
   const latest = latestRecord(records, belt.name);
   const st = latest ? aggregateStatus(latest) : 'none';
@@ -26,6 +26,25 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
 
   const [date, setDate] = useState(schedule?.nextDate || today);
   const [cycle, setCycle] = useState(schedule?.cycle || 'monthly');
+
+  const copyConfig = () => {
+    const others = Math.max(0, groupCount - 1);
+    if (others === 0) {
+      window.alert('같은 구분에 복사할 다른 벨트가 없습니다.');
+      return;
+    }
+    if (!window.confirm(
+      `"${belt.name}"의 Pulley·전기장치 설치 구성을\n같은 구분(${belt.group})의 다른 ${others}대에 복사합니다.\n각 벨트의 기존 구성은 덮어쓰여집니다. 진행할까요?`
+    )) return;
+    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (pw === null) return;
+    try {
+      const res = onCopyConfig(belt.name, pw);
+      window.alert(`${res.group} 구분의 ${res.count}대에 구성을 복사했습니다.`);
+    } catch (e) {
+      window.alert(e.message);
+    }
+  };
 
   return (
     <>
@@ -70,6 +89,16 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
           </div>
           <button className="ghost-btn" onClick={() => onSaveSchedule(belt.name, { nextDate: date, cycle })}>
             편성 저장
+          </button>
+        </div>
+
+        <div className="card">
+          <h3>🛞 설치 구성 복사</h3>
+          <div className="note" style={{ marginBottom: 8 }}>
+            이 벨트의 Pulley·전기장치 구성을 같은 구분({belt.group})의 다른 벨트들에 일괄 복사합니다.
+          </div>
+          <button className="ghost-btn" onClick={copyConfig}>
+            같은 구분의 다른 벨트에 구성 복사
           </button>
         </div>
 
