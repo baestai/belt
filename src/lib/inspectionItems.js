@@ -45,6 +45,7 @@ export const INSPECTION_ITEMS = [
     no: 7,
     title: '전기장치',
     type: 'subs',
+    editable: true, // 벨트마다 설치 유무가 달라 점검모드에서 추가/삭제 가능
     subs: ['Chute S/W', 'Speed S/W', 'Skew S/W', 'Pull Cord S/W', 'Tear Detector'],
   },
   {
