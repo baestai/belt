@@ -132,56 +132,6 @@ export function InspectorModal({ inspectors, onAdd, onRemove, onClose }) {
   );
 }
 
-export function PulleyModal({ pulleys, onAdd, onRemove, onClose }) {
-  const [name, setName] = useState('');
-  const [pw, setPw] = useState('');
-  const [error, setError] = useState('');
-
-  const add = () => {
-    try {
-      onAdd(name, pw);
-      setName('');
-      setPw('');
-      setError('');
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-  const remove = (n) => {
-    try {
-      onRemove(n, pw);
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-
-  return (
-    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
-        <h3>🛞 Pulley 구분 관리</h3>
-        <div>
-          {pulleys.length === 0 && <div className="note">등록된 Pulley 구분이 없습니다.</div>}
-          {pulleys.map((n) => (
-            <div className="insp-row" key={n}>
-              <span className="nm">{n}</span>
-              <button className="x" onClick={() => remove(n)} aria-label={`${n} 삭제`}>🗑</button>
-            </div>
-          ))}
-        </div>
-        <label>새 Pulley 구분명</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: Bend Pulley" />
-        <label>🔒 관리자 비밀번호</label>
-        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="추가/삭제 시 필요" />
-        {error && <div className="err">{error}</div>}
-        <div className="modal-actions">
-          <button className="ma-cancel" onClick={onClose}>닫기</button>
-          <button className="ma-ok" onClick={add}>추가</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function BackupModal({ state, onExport, onImport, onClose }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');

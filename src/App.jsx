@@ -8,14 +8,14 @@ import {
   addInspector as addInspectorFn,
   removeInspector as removeInspectorFn,
 } from './lib/auth.js';
-import { DEFAULT_PULLEYS, INSPECTION_ITEMS, addPulley as addPulleyFn, removePulley as removePulleyFn } from './lib/inspectionItems.js';
+import { DEFAULT_PULLEYS, INSPECTION_ITEMS } from './lib/inspectionItems.js';
 import { statusOf as statusOfFn, latestRecord, previousRecord, nextDateFrom } from './lib/selectors.js';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
-import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
@@ -109,7 +109,6 @@ export default function App() {
 
   const { groups, inspectors, records, schedules } = state;
   const quickMemos = state.quickMemos || [];
-  const pulleys = state.pulleys && state.pulleys.length ? state.pulleys : DEFAULT_PULLEYS;
 
   const statusOf = useMemo(() => (name) => statusOfFn(records, name), [records]);
   const lastInfoOf = useMemo(
@@ -170,16 +169,6 @@ export default function App() {
   const handleRemoveInspector = (name, pw) => {
     if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     setState((s) => ({ ...s, inspectors: removeInspectorFn(s.inspectors, name) }));
-  };
-
-  const handleAddPulley = (name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => ({ ...s, pulleys: addPulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
-  };
-
-  const handleRemovePulley = (name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => ({ ...s, pulleys: removePulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
   };
 
   // 빠른 메모 칩 관리 (관리모드)
@@ -346,7 +335,6 @@ export default function App() {
           onSelectBelt={handleSelectBelt}
           onOpenAdd={() => setModal('add')}
           onOpenInspectors={() => setModal('inspectors')}
-          onOpenPulleys={() => setModal('pulleys')}
           onOpenQuickMemos={() => setModal('quickMemos')}
           onOpenReport={() => setModal('report')}
           onOpenBackup={() => setModal('backup')}
@@ -425,14 +413,6 @@ export default function App() {
           inspectors={inspectors}
           onAdd={handleAddInspector}
           onRemove={handleRemoveInspector}
-          onClose={() => setModal(null)}
-        />
-      )}
-      {modal === 'pulleys' && (
-        <PulleyModal
-          pulleys={pulleys}
-          onAdd={handleAddPulley}
-          onRemove={handleRemovePulley}
           onClose={() => setModal(null)}
         />
       )}

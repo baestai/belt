@@ -20,7 +20,6 @@ export default function AdminList({
   onSelectBelt,
   onOpenAdd,
   onOpenInspectors,
-  onOpenPulleys,
   onOpenQuickMemos,
   onOpenReport,
   onOpenBackup,
@@ -88,9 +87,6 @@ export default function AdminList({
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="add-btn secondary" onClick={onOpenInspectors}>
               👷 점검자 관리
-            </button>
-            <button className="add-btn secondary" onClick={onOpenPulleys}>
-              🛞 Pulley 관리
             </button>
             <button className="add-btn secondary" onClick={onOpenLeaderboard}>
               🏆 랭킹
