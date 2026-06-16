@@ -44,6 +44,28 @@ export default function FieldCalendar({
           <span className="ym">{year}년 {month}월</span>
           <button onClick={onNext} aria-label="다음 달">›</button>
         </div>
+
+        <div className="sel-date-title">
+          📋 {selectedDate} 점검 예정
+          <span className="badge">{selBelts.length}대</span>
+        </div>
+        <div className="belt-grid">
+          {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
+          {selBelts.map((b) => {
+            const s = statusOf(b);
+            return (
+              <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
+                <span className={'dot ' + s} />
+                <div className="info">
+                  <div className="name">{b}</div>
+                  <div className="sub">{groupOf(b)} · {s === 'none' ? '미점검' : '점검됨'}</div>
+                </div>
+                <span className="due none">입력하기</span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="cal">
           {WD.map((w, i) => (
             <div key={w} className={'wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '')}>{w}</div>
@@ -79,28 +101,7 @@ export default function FieldCalendar({
           <span><i className="pp wait" />예정/미점검</span>
           <span><i className="pp bad" />이상발생</span>
         </div>
-
-        <div className="sel-date-title">
-          📋 {selectedDate} 점검 예정
-          <span className="badge">{selBelts.length}대</span>
-        </div>
-        <div className="belt-grid">
-          {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
-          {selBelts.map((b) => {
-            const s = statusOf(b);
-            return (
-              <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
-                <span className={'dot ' + s} />
-                <div className="info">
-                  <div className="name">{b}</div>
-                  <div className="sub">{groupOf(b)} · {s === 'none' ? '미점검' : '점검됨'}</div>
-                </div>
-                <span className="due none">입력하기</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="note">날짜를 누르면 해당일 점검 대상이 표시됩니다 · 기본값: 오늘</div>
+        <div className="note">날짜를 누르면 해당일 점검 대상이 위쪽에 표시됩니다 · 기본값: 오늘</div>
       </div>
     </>
   );
