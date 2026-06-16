@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { GROUP_ORDER } from '../lib/belts.js';
 import { monthlyReport, recordsToTable, downloadCSV } from '../lib/report.js';
 
@@ -137,6 +137,81 @@ export function PulleyModal({ pulleys, onAdd, onRemove, onClose }) {
         <div className="modal-actions">
           <button className="ma-cancel" onClick={onClose}>닫기</button>
           <button className="ma-ok" onClick={add}>추가</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BackupModal({ state, onExport, onImport, onClose }) {
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const fileRef = useRef(null);
+
+  const beltCount = Object.values(state.groups || {}).reduce((a, b) => a + b.length, 0);
+
+  const pickFile = () => {
+    setError('');
+    if (!pw) {
+      setError('가져오기에는 관리자 비밀번호가 필요합니다.');
+      return;
+    }
+    fileRef.current?.click();
+  };
+
+  const onFile = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일 재선택 허용
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        onImport(String(reader.result), pw);
+        setInfo('복원이 완료되었습니다.');
+        setError('');
+      } catch (err) {
+        setError(err.message);
+        setInfo('');
+      }
+    };
+    reader.onerror = () => setError('파일을 읽는 중 오류가 발생했습니다.');
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>💾 데이터 백업 / 복원</h3>
+        <div className="card" style={{ marginTop: 4 }}>
+          <div className="kv"><span className="k">벨트 수</span><span>{beltCount}대</span></div>
+          <div className="kv"><span className="k">점검 기록</span><span>{(state.records || []).length}건</span></div>
+          <div className="kv"><span className="k">점검자</span><span>{(state.inspectors || []).length}명</span></div>
+        </div>
+
+        <div className="note" style={{ marginTop: 10 }}>
+          📤 내보내기: 현재 모든 데이터를 JSON 파일로 저장합니다.
+        </div>
+        <button className="ghost-btn" onClick={onExport}>JSON 파일로 내보내기</button>
+
+        <div className="note" style={{ marginTop: 14 }}>
+          📥 가져오기: 백업 파일로 현재 데이터를 <b>전부 덮어씁니다</b>. 관리자 비밀번호가 필요합니다.
+        </div>
+        <label>🔒 관리자 비밀번호</label>
+        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="가져오기 시 필요" />
+        <button className="ghost-btn" onClick={pickFile}>JSON 파일 선택 후 복원</button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: 'none' }}
+          onChange={onFile}
+        />
+
+        {error && <div className="err">{error}</div>}
+        {info && <div className="note" style={{ color: 'var(--ok)' }}>{info}</div>}
+        <div className="modal-actions">
+          <button className="ma-cancel" onClick={onClose}>닫기</button>
         </div>
       </div>
     </div>

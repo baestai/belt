@@ -9,12 +9,14 @@ import {
   removeInspector as removeInspectorFn,
 } from './lib/auth.js';
 import { DEFAULT_PULLEYS, INSPECTION_ITEMS, addPulley as addPulleyFn, removePulley as removePulleyFn } from './lib/inspectionItems.js';
-import { statusOf as statusOfFn, latestRecord, nextDateFrom } from './lib/selectors.js';
+import { statusOf as statusOfFn, latestRecord, previousRecord, nextDateFrom } from './lib/selectors.js';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
-import { AddBeltModal, InspectorModal, PulleyModal, ReportModal } from './components/Modals.jsx';
+import PrintableRecord from './components/PrintableRecord.jsx';
+import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal } from './components/Modals.jsx';
+import { exportBackup, parseBackup } from './lib/backup.js';
 
 function todayStr() {
   const d = new Date();
@@ -47,7 +49,8 @@ export default function App() {
     return { year: d.getFullYear(), month: d.getMonth() + 1 };
   });
   const [selDate, setSelDate] = useState(today);
-  const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report'
+  const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report' | 'backup'
+  const [printTarget, setPrintTarget] = useState(null); // 인쇄(PDF)할 점검 기록
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -231,6 +234,27 @@ export default function App() {
     return { group: g, count: targets.length };
   };
 
+  // 데이터 백업: 전체 상태를 JSON으로 내보내기
+  const handleExportBackup = () => exportBackup(stateRef.current);
+
+  // 데이터 복원: 백업 JSON으로 전체 상태 덮어쓰기 (비밀번호 확인)
+  const handleImportBackup = (text, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const restored = parseBackup(text);
+    setState((s) => ({
+      ...s,
+      groups: restored.groups,
+      inspectors: restored.inspectors,
+      pulleys: restored.pulleys ?? s.pulleys,
+      beltConfigs: restored.beltConfigs,
+      adminPw: restored.adminPw ?? s.adminPw,
+      schedules: restored.schedules,
+      records: restored.records,
+    }));
+    window.alert(`복원 완료: 벨트 ${Object.values(restored.groups).reduce((a, b) => a + b.length, 0)}대 · 기록 ${restored.records.length}건`);
+    setModal(null);
+  };
+
   const handleInspect = (belt, date) => {
     setFormCtx({ belt, date });
     setView('form');
@@ -255,6 +279,16 @@ export default function App() {
     });
     setView('calendar');
   };
+
+  // 점검표 인쇄/PDF: 대상 기록을 렌더한 뒤 브라우저 인쇄 대화상자 호출
+  useEffect(() => {
+    if (!printTarget) return;
+    const t = setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 100);
+    return () => clearTimeout(t);
+  }, [printTarget]);
 
   const navMonth = (delta) => {
     setCal((c) => {
@@ -284,6 +318,7 @@ export default function App() {
           onOpenInspectors={() => setModal('inspectors')}
           onOpenPulleys={() => setModal('pulleys')}
           onOpenReport={() => setModal('report')}
+          onOpenBackup={() => setModal('backup')}
           cloud={isCloudConfigured}
         />
       )}
@@ -299,6 +334,7 @@ export default function App() {
           onDeleteBelt={handleDeleteBelt}
           onSaveSchedule={handleSaveSchedule}
           onCopyConfig={handleCopyConfigToGroup}
+          onPrint={setPrintTarget}
           groupCount={(groups[selectedBelt.group] || []).length}
         />
       )}
@@ -331,6 +367,7 @@ export default function App() {
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
+          prevRecord={previousRecord(records, formCtx.belt.name, formCtx.date)}
           onAddItem={handleAddBeltItem}
           onRemoveItem={handleRemoveBeltItem}
           onCancel={() => setView('calendar')}
@@ -365,6 +402,16 @@ export default function App() {
       {modal === 'report' && (
         <ReportModal records={records} onClose={() => setModal(null)} />
       )}
+      {modal === 'backup' && (
+        <BackupModal
+          state={state}
+          onExport={handleExportBackup}
+          onImport={handleImportBackup}
+          onClose={() => setModal(null)}
+        />
+      )}
+
+      {printTarget && <PrintableRecord record={printTarget} />}
 
       <div className="tabbar">
         <button

@@ -160,3 +160,26 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .insp-row .nm{flex:1;font-size:14px;font-weight:600}
 .insp-row .x{background:none;border:none;color:var(--bad);font-size:16px;cursor:pointer;padding:0 4px}
 .err{color:var(--bad);font-size:13px;margin-top:8px;white-space:pre-line}
+
+.tl-print{margin-top:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer}
+
+/* 전월 대비 비교 (점검 폼) */
+.prev-cmp{font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-bottom:8px}
+
+/* 점검표 인쇄 (PDF) */
+.print-area{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .app{max-width:none;padding:0}
+  body > #root > .app > *:not(.print-area){display:none !important}
+  .print-area{display:block !important;padding:0;margin:0}
+  .tabbar{display:none !important}
+}
+.pr-sheet{color:#000;font-size:12px;padding:24px}
+.pr-sheet h1{font-size:20px;margin-bottom:4px}
+.pr-meta{margin-bottom:14px;font-size:13px;color:#333}
+.pr-meta span{margin-right:16px}
+.pr-table{width:100%;border-collapse:collapse;margin-top:8px}
+.pr-table th,.pr-table td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}
+.pr-table th{background:#eee;font-weight:700}
+.pr-bad{color:#c00;font-weight:700}

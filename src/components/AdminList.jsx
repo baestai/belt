@@ -22,6 +22,7 @@ export default function AdminList({
   onOpenInspectors,
   onOpenPulleys,
   onOpenReport,
+  onOpenBackup,
   cloud,
 }) {
   const all = flattenBelts(groups);
@@ -93,6 +94,9 @@ export default function AdminList({
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="add-btn secondary" onClick={onOpenReport}>
               📄 보고서
+            </button>
+            <button className="add-btn secondary" onClick={onOpenBackup}>
+              💾 백업
             </button>
             <button className="add-btn" onClick={onOpenAdd}>
               ➕ 벨트 추가

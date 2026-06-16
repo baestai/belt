@@ -22,7 +22,37 @@ function buildEmpty(belt, date, inspector, beltItems) {
   return { ...base, items };
 }
 
-export default function InspectionForm({ belt, date, inspectors, beltItems = {}, initialRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
+const KO_STATUS = { ok: '양호', bad: '불량', warn: '주의' };
+
+// 지난 점검의 해당 항목 요약 문자열 (전월 대비 비교용). 비교할 게 없으면 null
+function prevSummary(def, prevItem) {
+  if (!prevItem) return null;
+  if (def.type === 'yn' || def.type === 'num') {
+    let s = KO_STATUS[prevItem.status] || '-';
+    if (def.type === 'num' && def.fields && prevItem.values) {
+      const parts = def.fields
+        .map((f) => (prevItem.values[f.key] ? `${f.label} ${prevItem.values[f.key]}${f.unit}` : null))
+        .filter(Boolean);
+      if (parts.length) s += ` (${parts.join(', ')})`;
+    }
+    return s;
+  }
+  if (def.type === 'subs' || def.type === 'pulley') {
+    const subs = prevItem.subs || {};
+    const bad = Object.keys(subs).filter((k) => subs[k] !== 'ok');
+    if (def.type === 'pulley' && prevItem.temps) {
+      const temps = Object.keys(prevItem.temps)
+        .filter((k) => prevItem.temps[k] !== '' && prevItem.temps[k] != null)
+        .map((k) => `${k} ${prevItem.temps[k]}℃`);
+      const base = bad.length ? `불량: ${bad.join(', ')}` : '전체 양호';
+      return temps.length ? `${base} · ${temps.join(', ')}` : base;
+    }
+    return bad.length ? `불량: ${bad.join(', ')}` : '전체 양호';
+  }
+  return null;
+}
+
+export default function InspectionForm({ belt, date, inspectors, beltItems = {}, initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, beltItems.pulley)
@@ -148,9 +178,13 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
 
         {INSPECTION_ITEMS.map((def) => {
           const it = record.items[def.key];
+          const prevText = prevRecord ? prevSummary(def, prevRecord.items?.[def.key]) : null;
           return (
             <div className="insp-item" key={def.key}>
               <div className="title">{def.no}. {def.title}</div>
+              {prevText && (
+                <div className="prev-cmp">🕒 지난점검({prevRecord.date}): {prevText}</div>
+              )}
 
               {def.type === 'yn' && (
                 <div className="ynbtns">

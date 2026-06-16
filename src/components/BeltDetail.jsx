@@ -17,7 +17,7 @@ const CYCLES = [
   { v: 'none', t: '반복 없음' },
 ];
 
-export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, groupCount = 0 }) {
+export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, onPrint, groupCount = 0 }) {
   const history = recordsForBelt(records, belt.name);
   const latest = latestRecord(records, belt.name);
   const st = latest ? aggregateStatus(latest) : 'none';
@@ -127,12 +127,18 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
                 <div className={'tl-item ' + s} key={i}>
                   <div className="tl-date">{r.date} · {r.inspector}</div>
                   <div className="tl-text">{s === 'ok' ? '전체 정상' : `이상/주의 ${cnt}건`}</div>
+                  {onPrint && (
+                    <button className="tl-print" onClick={() => onPrint(r)} aria-label={`${r.date} 점검표 인쇄`}>🖨 점검표</button>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
+        {latest && onPrint && (
+          <button className="ghost-btn" onClick={() => onPrint(latest)}>🖨 최근 점검표 인쇄 / PDF 저장</button>
+        )}
         <button className="primary-btn" onClick={() => onInspect(belt, today)}>📋 이 벨트 점검하기</button>
         <button className="del-btn" onClick={() => onDeleteBelt(belt.name)}>🗑 이 벨트 삭제 (철거)</button>
       </div>

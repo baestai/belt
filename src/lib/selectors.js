@@ -13,6 +13,15 @@ export function latestRecord(records, beltName) {
   return recordsForBelt(records, beltName)[0] || null;
 }
 
+// 특정 날짜 이전(미만)의 가장 최근 기록 — 전월 대비 비교용
+export function previousRecord(records, beltName, beforeDate) {
+  return (
+    recordsForBelt(records, beltName).find(
+      (r) => String(r.date).localeCompare(String(beforeDate)) < 0
+    ) || null
+  );
+}
+
 // 벨트 종합상태: 최근 기록 기준. 기록 없으면 'none'(미점검)
 export function statusOf(records, beltName) {
   const rec = latestRecord(records, beltName);

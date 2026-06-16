@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   recordsForBelt,
   latestRecord,
+  previousRecord,
   statusOf,
   openIssues,
   daysBetween,
@@ -25,6 +26,12 @@ describe('기록 셀렉터', () => {
   it('최신 기록 반환', () => {
     expect(latestRecord(records, 'S-101').date).toBe('2026-06-10');
     expect(latestRecord(records, '없음')).toBe(null);
+  });
+
+  it('이전 기록: 지정일 미만의 최신', () => {
+    expect(previousRecord(records, 'S-101', '2026-06-10').date).toBe('2026-04-10');
+    expect(previousRecord(records, 'S-101', '2026-04-10')).toBe(null);
+    expect(previousRecord(records, 'S-101', '2026-07-01').date).toBe('2026-06-10');
   });
 
   it('상태: 기록 없으면 none', () => {
