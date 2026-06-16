@@ -6,33 +6,27 @@ import {
   normalizeRecord,
   validateRecord,
 } from '../lib/inspectionItems.js';
-import { checkPassword } from '../lib/auth.js';
 
-// 새 점검 기록에 직전 점검의 '편집 가능한' 구분 구성을 이어받는다(상태/온도는 초기화).
-function seedFromPrev(base, prev) {
-  if (!prev?.items) return base;
+// 벨트별 설치 구성(beltItems)에 맞춰 빈 기록을 만든다.
+// 편집 가능한 subs 항목(전기장치 등)의 구분 목록을 beltItems로 덮어쓴다.
+function buildEmpty(belt, date, inspector, beltItems) {
+  const base = emptyRecord(belt.name, belt.group, date, inspector, beltItems.pulley || DEFAULT_PULLEYS);
   const items = { ...base.items };
   for (const def of INSPECTION_ITEMS) {
-    const p = prev.items[def.key];
-    if (!p?.subs) continue;
-    if (def.type === 'pulley') {
-      const subs = {}, temps = {};
-      for (const s of Object.keys(p.subs)) { subs[s] = 'ok'; temps[s] = ''; }
-      items[def.key] = { ...items[def.key], subs, temps };
-    } else if (def.type === 'subs' && def.editable) {
+    if (def.type === 'subs' && def.editable && beltItems[def.key]) {
       const subs = {};
-      for (const s of Object.keys(p.subs)) subs[s] = 'ok';
+      for (const s of beltItems[def.key]) subs[s] = 'ok';
       items[def.key] = { ...items[def.key], subs };
     }
   }
   return { ...base, items };
 }
 
-export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAULT_PULLEYS, adminPw, initialRecord, prevRecord, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, inspectors, beltItems = {}, initialRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
-      ? normalizeRecord(initialRecord, pulleys)
-      : seedFromPrev(emptyRecord(belt.name, belt.group, date, inspectors[0] || '', pulleys), prevRecord)
+      ? normalizeRecord(initialRecord, beltItems.pulley)
+      : buildEmpty(belt, date, inspectors[0] || '', beltItems)
   );
   const [touched, setTouched] = useState(() => new Set());
   const [error, setError] = useState('');
@@ -63,18 +57,8 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
   const setValue = (key, field, val) =>
     setItem(key, (it) => (it.values = { ...it.values, [field]: val }));
 
-  // 구분 추가/삭제는 관리자 비밀번호 확인 후 즉시 반영한다.
-  const requireAdmin = () => {
-    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
-    if (pw === null) return false;
-    if (!checkPassword(pw, adminPw)) {
-      window.alert('관리자 비밀번호가 올바르지 않습니다.');
-      return false;
-    }
-    return true;
-  };
-
   // 벨트마다 설치 상태가 달라 점검 폼에서 행을 추가/삭제한다.
+  // 비밀번호 확인 후 앱 상태(벨트별 구성)에 '즉시 영속'하고, 현재 폼에도 반영한다.
   // (Pulley: subs+temps / 전기장치: subs)
   const addRow = (key) => {
     const n = String(newRow[key] || '').trim();
@@ -83,7 +67,14 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
       window.alert('이미 등록된 구분입니다.');
       return;
     }
-    if (!requireAdmin()) return;
+    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (pw === null) return;
+    try {
+      onAddItem(belt.name, key, n, pw); // 즉시 영속
+    } catch (e) {
+      window.alert(e.message);
+      return;
+    }
     setNewRow((m) => ({ ...m, [key]: '' }));
     setItem(key, (it) => {
       it.subs = { ...it.subs, [n]: 'ok' };
@@ -92,7 +83,14 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
   };
   const removeRow = (key, name) => {
     if (!window.confirm(`"${name}" 구분을 삭제할까요?`)) return;
-    if (!requireAdmin()) return;
+    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (pw === null) return;
+    try {
+      onRemoveItem(belt.name, key, name, pw); // 즉시 영속
+    } catch (e) {
+      window.alert(e.message);
+      return;
+    }
     setItem(key, (it) => {
       const subs = { ...it.subs };
       delete subs[name];

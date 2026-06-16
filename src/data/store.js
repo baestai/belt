@@ -12,7 +12,8 @@ export function defaultState() {
   return {
     groups: defaultGroups(),
     inspectors: defaultInspectors(),
-    pulleys: [...DEFAULT_PULLEYS], // Pulley 구분 목록 (관리모드에서 편집)
+    pulleys: [...DEFAULT_PULLEYS], // Pulley 구분 기본 목록 (관리모드에서 편집)
+    beltConfigs: {}, // { beltName: { pulley: [...], electric: [...] } } 벨트별 설치 구성
     records: [], // 점검 기록 배열
     schedules: {}, // { beltName: { nextDate, cycle } }
     adminPw: DEFAULT_ADMIN_PW,

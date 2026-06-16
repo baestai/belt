@@ -46,6 +46,7 @@ export async function fetchCloud() {
     groups: cfg.groups,
     inspectors: cfg.inspectors,
     pulleys: cfg.pulleys,
+    beltConfigs: cfg.beltConfigs || {},
     adminPw: cfg.adminPw,
     schedules,
     records,
@@ -135,7 +136,7 @@ function toRecordRow(r) {
 
 function configChanged(prev, next) {
   const pick = (s) =>
-    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, adminPw: s?.adminPw });
+    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw });
   return pick(prev) !== pick(next);
 }
 
@@ -144,6 +145,7 @@ async function upsertConfig(state) {
     groups: state.groups,
     inspectors: state.inspectors,
     pulleys: state.pulleys,
+    beltConfigs: state.beltConfigs,
     adminPw: state.adminPw,
   };
   const { error } = await supabase.from('settings').upsert({ key: CONFIG_KEY, value });

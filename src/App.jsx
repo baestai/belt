@@ -8,7 +8,7 @@ import {
   addInspector as addInspectorFn,
   removeInspector as removeInspectorFn,
 } from './lib/auth.js';
-import { DEFAULT_PULLEYS, addPulley as addPulleyFn, removePulley as removePulleyFn } from './lib/inspectionItems.js';
+import { DEFAULT_PULLEYS, INSPECTION_ITEMS, addPulley as addPulleyFn, removePulley as removePulleyFn } from './lib/inspectionItems.js';
 import { statusOf as statusOfFn, latestRecord, nextDateFrom } from './lib/selectors.js';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
@@ -19,6 +19,20 @@ import { AddBeltModal, InspectorModal, PulleyModal, ReportModal } from './compon
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 편집 가능한 항목의 기본(default) 구분 목록
+function defaultItemList(state, key) {
+  if (key === 'pulley') return state.pulleys?.length ? state.pulleys : DEFAULT_PULLEYS;
+  const def = INSPECTION_ITEMS.find((d) => d.key === key);
+  return def?.subs || [];
+}
+
+// 특정 벨트의 실제 설치 구성(없으면 기본값)
+function effectiveItemList(state, beltName, key) {
+  const cfg = state.beltConfigs?.[beltName];
+  if (cfg && cfg[key]) return cfg[key];
+  return defaultItemList(state, key);
 }
 
 export default function App() {
@@ -162,6 +176,37 @@ export default function App() {
     setState((s) => ({ ...s, pulleys: removePulleyFn(s.pulleys || DEFAULT_PULLEYS, name) }));
   };
 
+  // 점검모드: 벨트별 설치 구성(Pulley/전기장치) 추가·삭제를 즉시 영속 (점검 완료 저장과 무관)
+  const handleAddBeltItem = (beltName, key, name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const n = String(name || '').trim();
+    if (!n) throw new Error('구분명을 입력하세요.');
+    if (effectiveItemList(state, beltName, key).includes(n)) throw new Error('이미 등록된 구분입니다.');
+    setState((s) => {
+      const cfg = s.beltConfigs?.[beltName] || {};
+      const cur = cfg[key] || effectiveItemList(s, beltName, key);
+      return {
+        ...s,
+        beltConfigs: { ...s.beltConfigs, [beltName]: { ...cfg, [key]: [...cur, n] } },
+      };
+    });
+  };
+
+  const handleRemoveBeltItem = (beltName, key, name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => {
+      const cfg = s.beltConfigs?.[beltName] || {};
+      const cur = cfg[key] || effectiveItemList(s, beltName, key);
+      return {
+        ...s,
+        beltConfigs: {
+          ...s.beltConfigs,
+          [beltName]: { ...cfg, [key]: cur.filter((x) => x !== name) },
+        },
+      };
+    });
+  };
+
   const handleInspect = (belt, date) => {
     setFormCtx({ belt, date });
     setView('form');
@@ -253,12 +298,15 @@ export default function App() {
           belt={formCtx.belt}
           date={formCtx.date}
           inspectors={inspectors}
-          adminPw={state.adminPw}
-          pulleys={pulleys}
-          prevRecord={latestRecord(records, formCtx.belt.name)}
+          beltItems={{
+            pulley: effectiveItemList(state, formCtx.belt.name, 'pulley'),
+            electric: effectiveItemList(state, formCtx.belt.name, 'electric'),
+          }}
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
+          onAddItem={handleAddBeltItem}
+          onRemoveItem={handleRemoveBeltItem}
           onCancel={() => setView('calendar')}
           onSave={handleSaveRecord}
         />
