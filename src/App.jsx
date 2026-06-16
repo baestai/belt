@@ -53,6 +53,7 @@ export default function App() {
   const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report' | 'backup'
   const [printTarget, setPrintTarget] = useState(null); // 인쇄(PDF)할 점검 기록
   const [fixedInspector, setFixedInspector] = useState(() => getDeviceInspector()); // 기기 고정 점검자
+  const [adminAuthed, setAdminAuthed] = useState(false); // 관리모드 인증 여부(세션 단위)
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -309,6 +310,22 @@ export default function App() {
     return () => clearTimeout(t);
   }, [printTarget]);
 
+  // 관리모드 진입: 최초 1회 비밀번호 확인(이후 세션 동안 유지)
+  const goAdmin = () => {
+    if (adminAuthed) {
+      setView('list');
+      return;
+    }
+    const pw = window.prompt('관리모드 진입 — 관리자 비밀번호를 입력하세요:');
+    if (pw === null) return;
+    if (!checkPassword(pw, state.adminPw)) {
+      window.alert('관리자 비밀번호가 올바르지 않습니다.');
+      return;
+    }
+    setAdminAuthed(true);
+    setView('list');
+  };
+
   const navMonth = (delta) => {
     setCal((c) => {
       let m = c.month + delta;
@@ -459,7 +476,7 @@ export default function App() {
         </button>
         <button
           className={view === 'list' || view === 'detail' ? 'active' : ''}
-          onClick={() => setView('list')}
+          onClick={goAdmin}
         >
           <span className="ic">📊</span>관리모드
         </button>

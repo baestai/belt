@@ -38,7 +38,7 @@ export default function FieldCalendar({
     <>
       <header>
         <span className="logo">🦺</span>
-        <h1>현장 점검</h1>
+        <h1>3선탄 벨트컨베이어 주기점검</h1>
         {onOpenLeaderboard && (
           <button className="hdr-btn" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">🏆</button>
         )}

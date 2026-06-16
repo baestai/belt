@@ -4,7 +4,9 @@ import App from './App.jsx';
 import { clearState } from './data/store.js';
 
 // 기본 화면이 점검모드(캘린더)이므로, 관리목록을 보려면 관리모드 탭을 눌러 진입한다.
+// 관리모드는 비밀번호 게이트가 있어 prompt를 올바른 비밀번호로 응답한다.
 function openAdmin() {
+  window.prompt = () => 'tkatjsxks**';
   fireEvent.click(screen.getByText('관리모드'));
 }
 
@@ -15,7 +17,7 @@ describe('App 통합 렌더', () => {
 
   it('점검모드가 기본 화면으로 열린다', () => {
     render(<App />);
-    expect(screen.getByText('현장 점검')).toBeInTheDocument();
+    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
@@ -30,7 +32,7 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     fireEvent.click(screen.getByText('점검모드'));
-    expect(screen.getByText('현장 점검')).toBeInTheDocument();
+    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
@@ -82,7 +84,7 @@ describe('App 통합 렌더', () => {
     fireEvent.click(within(firstItem).getByText('불량'));
     fireEvent.click(screen.getByText('✅ 점검 완료 저장'));
     // 저장 후 캘린더로 이동
-    expect(screen.getByText('현장 점검')).toBeInTheDocument();
+    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
   });
 
   it('점검자 관리 모달이 열린다', () => {
