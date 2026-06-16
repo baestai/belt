@@ -253,6 +253,7 @@ export default function App() {
           belt={formCtx.belt}
           date={formCtx.date}
           inspectors={inspectors}
+          adminPw={state.adminPw}
           pulleys={(() => {
             // 같은 벨트의 직전 점검 기록에 설정된 Pulley 구성을 이어받는다.
             const last = latestRecord(records, formCtx.belt.name);

@@ -6,8 +6,9 @@ import {
   normalizeRecord,
   validateRecord,
 } from '../lib/inspectionItems.js';
+import { checkPassword } from '../lib/auth.js';
 
-export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAULT_PULLEYS, initialRecord, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAULT_PULLEYS, adminPw, initialRecord, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, pulleys)
@@ -42,17 +43,35 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
   const setValue = (key, field, val) =>
     setItem(key, (it) => (it.values = { ...it.values, [field]: val }));
 
+  // Pulley 추가/삭제는 관리자 비밀번호 확인 후 즉시 반영한다.
+  const requireAdmin = () => {
+    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (pw === null) return false;
+    if (!checkPassword(pw, adminPw)) {
+      window.alert('관리자 비밀번호가 올바르지 않습니다.');
+      return false;
+    }
+    return true;
+  };
+
   // 벨트마다 Pulley 설치 상태가 달라 점검 폼에서 행을 추가/삭제한다.
   const addPulleyRow = (name) => {
     const n = String(name || '').trim();
     if (!n) return;
+    if (record.items.pulley.subs && n in record.items.pulley.subs) {
+      window.alert('이미 등록된 Pulley 구분입니다.');
+      return;
+    }
+    if (!requireAdmin()) return;
+    setNewPulley('');
     setItem('pulley', (it) => {
-      if (it.subs && n in it.subs) return; // 중복 무시
       it.subs = { ...it.subs, [n]: 'ok' };
       it.temps = { ...it.temps, [n]: '' };
     });
   };
   const removePulleyRow = (name) => {
+    if (!window.confirm(`"${name}" Pulley 구분을 삭제할까요?`)) return;
+    if (!requireAdmin()) return;
     setItem('pulley', (it) => {
       const subs = { ...it.subs };
       const temps = { ...it.temps };
@@ -198,12 +217,12 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
                       onChange={(e) => setNewPulley(e.target.value)}
                       placeholder="Pulley 구분 추가 (예: Bend)"
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') { addPulleyRow(newPulley); setNewPulley(''); }
+                        if (e.key === 'Enter') addPulleyRow(newPulley);
                       }}
                     />
                     <button
                       className="change"
-                      onClick={() => { addPulleyRow(newPulley); setNewPulley(''); }}
+                      onClick={() => addPulleyRow(newPulley)}
                     >➕ 추가</button>
                   </div>
                 </>
