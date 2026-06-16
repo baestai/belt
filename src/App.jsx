@@ -253,7 +253,14 @@ export default function App() {
           belt={formCtx.belt}
           date={formCtx.date}
           inspectors={inspectors}
-          pulleys={pulleys}
+          pulleys={(() => {
+            // 같은 벨트의 직전 점검 기록에 설정된 Pulley 구성을 이어받는다.
+            const last = latestRecord(records, formCtx.belt.name);
+            const keys = last?.items?.pulley?.subs
+              ? Object.keys(last.items.pulley.subs)
+              : [];
+            return keys.length ? keys : pulleys;
+          })()}
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}

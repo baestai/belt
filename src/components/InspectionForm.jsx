@@ -15,6 +15,7 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
   );
   const [touched, setTouched] = useState(() => new Set());
   const [error, setError] = useState('');
+  const [newPulley, setNewPulley] = useState('');
 
   const markTouched = (key) =>
     setTouched((prev) => {
@@ -40,6 +41,27 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
     setItem(key, (it) => (it.temps = { ...it.temps, [sub]: val }));
   const setValue = (key, field, val) =>
     setItem(key, (it) => (it.values = { ...it.values, [field]: val }));
+
+  // 벨트마다 Pulley 설치 상태가 달라 점검 폼에서 행을 추가/삭제한다.
+  const addPulleyRow = (name) => {
+    const n = String(name || '').trim();
+    if (!n) return;
+    setItem('pulley', (it) => {
+      if (it.subs && n in it.subs) return; // 중복 무시
+      it.subs = { ...it.subs, [n]: 'ok' };
+      it.temps = { ...it.temps, [n]: '' };
+    });
+  };
+  const removePulleyRow = (name) => {
+    setItem('pulley', (it) => {
+      const subs = { ...it.subs };
+      const temps = { ...it.temps };
+      delete subs[name];
+      delete temps[name];
+      it.subs = subs;
+      it.temps = temps;
+    });
+  };
 
   const progress = Math.round((touched.size / INSPECTION_ITEMS.length) * 100);
 
@@ -129,36 +151,62 @@ export default function InspectionForm({ belt, date, inspectors, pulleys = DEFAU
               )}
 
               {def.type === 'pulley' && (
-                <table className="pulley-tbl">
-                  <thead><tr><th>구분</th><th>베어링</th><th>온도(℃)</th></tr></thead>
-                  <tbody>
-                    {pulleys.map((s) => (
-                      <tr key={s}>
-                        <td className="nm">{s}</td>
-                        <td>
-                          <span className="mini-yn">
+                <>
+                  <table className="pulley-tbl">
+                    <thead><tr><th>구분</th><th>베어링</th><th>온도(℃)</th><th></th></tr></thead>
+                    <tbody>
+                      {Object.keys(it.subs).map((s) => (
+                        <tr key={s}>
+                          <td className="nm">{s}</td>
+                          <td>
+                            <span className="mini-yn">
+                              <button
+                                className={it.subs[s] === 'ok' ? 'on-ok' : ''}
+                                onClick={() => setSub(def.key, s, 'ok')}
+                              >양호</button>
+                              <button
+                                className={it.subs[s] === 'bad' ? 'on-bad' : ''}
+                                onClick={() => setSub(def.key, s, 'bad')}
+                              >불량</button>
+                            </span>
+                          </td>
+                          <td>
+                            <input
+                              className="temp-in"
+                              inputMode="decimal"
+                              value={it.temps[s]}
+                              onChange={(e) => setTemp(def.key, s, e.target.value)}
+                            />
+                          </td>
+                          <td>
                             <button
-                              className={it.subs[s] === 'ok' ? 'on-ok' : ''}
-                              onClick={() => setSub(def.key, s, 'ok')}
-                            >양호</button>
-                            <button
-                              className={it.subs[s] === 'bad' ? 'on-bad' : ''}
-                              onClick={() => setSub(def.key, s, 'bad')}
-                            >불량</button>
-                          </span>
-                        </td>
-                        <td>
-                          <input
-                            className="temp-in"
-                            inputMode="decimal"
-                            value={it.temps[s]}
-                            onChange={(e) => setTemp(def.key, s, e.target.value)}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              className="x"
+                              aria-label={`${s} 삭제`}
+                              onClick={() => removePulleyRow(s)}
+                            >🗑</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {Object.keys(it.subs).length === 0 && (
+                        <tr><td colSpan={4} className="note">설치된 Pulley가 없습니다. 아래에서 추가하세요.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <div className="num-row" style={{ marginTop: 8 }}>
+                    <input
+                      value={newPulley}
+                      onChange={(e) => setNewPulley(e.target.value)}
+                      placeholder="Pulley 구분 추가 (예: Bend)"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { addPulleyRow(newPulley); setNewPulley(''); }
+                      }}
+                    />
+                    <button
+                      className="change"
+                      onClick={() => { addPulleyRow(newPulley); setNewPulley(''); }}
+                    >➕ 추가</button>
+                  </div>
+                </>
               )}
 
               {def.type === 'num' && (
