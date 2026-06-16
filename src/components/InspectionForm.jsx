@@ -53,11 +53,11 @@ function prevSummary(def, prevItem) {
   return null;
 }
 
-export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], defaultInspector, initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, beltItems.pulley)
-      : buildEmpty(belt, date, inspectors[0] || '', beltItems)
+      : buildEmpty(belt, date, defaultInspector || inspectors[0] || '', beltItems)
   );
   const [touched, setTouched] = useState(() => new Set());
   const [error, setError] = useState('');

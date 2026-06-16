@@ -19,6 +19,8 @@ export default function FieldCalendar({
   onPickBelt,
   groupOf,
   onOpenLeaderboard,
+  fixedInspector,
+  onOpenDeviceInspector,
 }) {
   const first = new Date(year, month - 1, 1);
   const startWd = first.getDay();
@@ -43,6 +45,12 @@ export default function FieldCalendar({
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">
+        {onOpenDeviceInspector && (
+          <button className="device-insp" onClick={onOpenDeviceInspector}>
+            <span>👤 점검자: {fixedInspector ? <b>{fixedInspector}</b> : <span className="none">미고정 (이 기기)</span>}</span>
+            <span className="set">{fixedInspector ? '변경' : '고정하기'}</span>
+          </button>
+        )}
         <div className="cal-head">
           <button onClick={onPrev} aria-label="이전 달">‹</button>
           <span className="ym">{year}년 {month}월</span>

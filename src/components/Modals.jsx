@@ -257,6 +257,36 @@ export function BackupModal({ state, onExport, onImport, onClose }) {
   );
 }
 
+export function DeviceInspectorModal({ inspectors, current, onSave, onClear, onClose }) {
+  const [sel, setSel] = useState(current || inspectors[0] || '');
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>📱 이 기기 점검자 고정</h3>
+        <div className="note" style={{ padding: '0 0 8px', textAlign: 'left' }}>
+          이 기기에서 점검할 때 기본 점검자로 자동 선택됩니다. 직접 바꾸기 전까지 유지돼요.
+          <br />이 설정은 <b>이 기기에만</b> 저장되며 다른 기기·PC와 공유되지 않습니다.
+          여러 사람이 함께 쓰는 PC라면 고정하지 마세요.
+        </div>
+        {current && (
+          <div className="kv"><span className="k">현재 고정</span><span>👤 {current}</span></div>
+        )}
+        <label>점검자 선택</label>
+        <select value={sel} onChange={(e) => setSel(e.target.value)}>
+          {inspectors.length === 0 && <option value="">(등록된 점검자 없음)</option>}
+          {inspectors.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <div className="modal-actions">
+          <button className="ma-cancel" onClick={onClose}>닫기</button>
+          {current && <button className="ma-cancel" onClick={onClear}>고정 해제</button>}
+          <button className="ma-ok" onClick={() => onSave(sel)} disabled={!sel}>이 기기에 고정</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function QuickMemoModal({ memos, onAdd, onRemove, onClose }) {
   const [name, setName] = useState('');
   const [pw, setPw] = useState('');

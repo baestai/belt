@@ -15,8 +15,9 @@ import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
-import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
+import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
 function todayStr() {
   const d = new Date();
@@ -51,6 +52,7 @@ export default function App() {
   const [selDate, setSelDate] = useState(today);
   const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report' | 'backup'
   const [printTarget, setPrintTarget] = useState(null); // 인쇄(PDF)할 점검 기록
+  const [fixedInspector, setFixedInspector] = useState(() => getDeviceInspector()); // 기기 고정 점검자
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -249,6 +251,18 @@ export default function App() {
     return { group: g, count: targets.length };
   };
 
+  // 기기 고정 점검자: localStorage에만 저장(클라우드 동기화 X)
+  const handleFixInspector = (name) => {
+    setDeviceInspector(name);
+    setFixedInspector(getDeviceInspector());
+    setModal(null);
+  };
+  const handleClearFixInspector = () => {
+    setDeviceInspector('');
+    setFixedInspector('');
+    setModal(null);
+  };
+
   // 데이터 백업: 전체 상태를 JSON으로 내보내기
   const handleExportBackup = () => exportBackup(stateRef.current);
 
@@ -371,6 +385,8 @@ export default function App() {
           onPickBelt={handlePickBelt}
           groupOf={groupOf}
           onOpenLeaderboard={() => setModal('leaderboard')}
+          fixedInspector={fixedInspector}
+          onOpenDeviceInspector={() => setModal('deviceInspector')}
         />
       )}
 
@@ -384,6 +400,7 @@ export default function App() {
             electric: effectiveItemList(state, formCtx.belt.name, 'electric'),
           }}
           quickMemos={quickMemos}
+          defaultInspector={fixedInspector && inspectors.includes(fixedInspector) ? fixedInspector : (inspectors[0] || '')}
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
@@ -438,6 +455,15 @@ export default function App() {
           memos={quickMemos}
           onAdd={handleAddQuickMemo}
           onRemove={handleRemoveQuickMemo}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'deviceInspector' && (
+        <DeviceInspectorModal
+          inspectors={inspectors}
+          current={fixedInspector}
+          onSave={handleFixInspector}
+          onClear={handleClearFixInspector}
           onClose={() => setModal(null)}
         />
       )}
