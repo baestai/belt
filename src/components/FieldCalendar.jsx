@@ -42,6 +42,7 @@ export default function FieldCalendar({
         {onOpenLeaderboard && (
           <button className="hdr-btn" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">🏆</button>
         )}
+        <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">📖</a>
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">

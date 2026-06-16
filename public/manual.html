@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사용설명서 · 3선탄 벨트컨베이어 주기점검</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+      --text:#e2e8f0; --muted:#94a3b8; --accent:#3b82f6;
+      --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --none:#64748b;
+      --okbg:#16331f; --warnbg:#3a2e10; --badbg:#3a1717;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:#0a0f1d;color:var(--text);line-height:1.7}
+    .wrap{max-width:880px;margin:0 auto;padding:0 18px 80px}
+
+    /* Hero */
+    .hero{background:linear-gradient(160deg,#1e293b 0%,#0f172a 100%);border-bottom:1px solid var(--line);padding:54px 18px 46px;text-align:center}
+    .hero .logo{font-size:46px}
+    .hero h1{font-size:26px;font-weight:800;margin:12px 0 6px}
+    .hero p{color:var(--muted);font-size:15px;max-width:560px;margin:0 auto}
+    .hero .cta{display:inline-flex;gap:10px;margin-top:24px;flex-wrap:wrap;justify-content:center}
+    .btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:700;font-size:14px}
+    .btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+
+    /* TOC */
+    .toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:32px 0 8px}
+    .toc a{font-size:13px;color:var(--muted);text-decoration:none;padding:7px 14px;background:var(--panel);border:1px solid var(--line);border-radius:20px}
+    .toc a:hover{border-color:var(--accent);color:var(--text)}
+
+    /* Sections */
+    section{margin-top:40px}
+    h2{font-size:20px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+    .lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+    .badge{font-size:12px;padding:4px 11px;border-radius:20px;font-weight:700}
+    .badge.field{background:#7c2d12;color:#fed7aa}
+    .badge.admin{background:#1e3a8a;color:#bfdbfe}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:680px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+    .card h3{font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+    .card p{font-size:13.5px;color:var(--muted)}
+    .card .step{font-size:12px;color:var(--accent);font-weight:700;margin-top:10px}
+
+    .steps{counter-reset:s;list-style:none;margin-top:6px}
+    .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px solid var(--line)}
+    .steps li:last-child{border-bottom:none}
+    .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:11px;width:30px;height:30px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+    .steps li b{color:var(--text)}
+    .steps li span{color:var(--muted);font-size:13.5px}
+
+    .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+    .legend div{display:flex;align-items:center;gap:8px;font-size:13.5px}
+    .pp{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .pp.ok{background:var(--ok)} .pp.wait{background:var(--none)} .pp.bad{background:var(--bad)}
+
+    .note{background:var(--warnbg);border:1px solid var(--warn);color:#fde68a;border-radius:12px;padding:14px 16px;font-size:13.5px;margin-top:16px}
+    .note b{color:#fff}
+
+    footer{text-align:center;color:var(--muted);font-size:12px;margin-top:54px;padding-top:24px;border-top:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="logo">🦺</div>
+    <h1>3선탄 벨트컨베이어 주기점검</h1>
+    <p>현장에서 누구나 쉽게 쓰는 월간 점검 관리 도구입니다. 캘린더로 점검 일정을 확인하고, 휴대폰으로 바로 점검 결과를 입력하세요.</p>
+    <div class="cta">
+      <a class="btn" href="/">앱 열기 →</a>
+      <a class="btn ghost" href="#start">사용법 보기</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <nav class="toc">
+      <a href="#modes">두 가지 모드</a>
+      <a href="#field">점검모드</a>
+      <a href="#inspect">점검 입력</a>
+      <a href="#admin">관리모드</a>
+      <a href="#points">점검 포인트</a>
+      <a href="#data">백업 · 동기화</a>
+      <a href="#faq">자주 묻는 질문</a>
+    </nav>
+
+    <section id="start">
+      <h2>🚀 빠르게 시작하기</h2>
+      <p class="lead">설치가 필요 없습니다. 휴대폰·PC 브라우저에서 주소만 열면 바로 사용할 수 있습니다.</p>
+      <ol class="steps">
+        <li><b>앱을 엽니다.</b> <span>처음 화면은 점검모드(캘린더)입니다.</span></li>
+        <li><b>날짜를 선택합니다.</b> <span>그 날 점검할 벨트 목록이 위쪽에 표시됩니다.</span></li>
+        <li><b>벨트를 눌러 점검을 입력합니다.</b> <span>항목별로 정상/불량을 체크하고 저장하면 끝입니다.</span></li>
+      </ol>
+    </section>
+
+    <section id="modes">
+      <h2>🔀 두 가지 모드</h2>
+      <p class="lead">현장 작업용과 관리자용으로 화면이 나뉩니다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="badge field">점검모드</span></h3>
+          <p>비밀번호 없이 누구나 사용. 캘린더에서 점검 대상을 확인하고 결과를 입력하는 현장 화면입니다.</p>
+        </div>
+        <div class="card">
+          <h3><span class="badge admin">관리모드</span></h3>
+          <p>관리자 비밀번호 입력 후 진입. 벨트·점검자·일정 편성·보고서·백업 등 설정을 관리합니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="field">
+      <h2>📅 점검모드 (현장)</h2>
+      <p class="lead">현장에서 가장 많이 쓰는 화면입니다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>🗓 점검 캘린더</h3>
+          <p>달력의 점으로 그날 점검 상태를 한눈에 봅니다. 날짜를 누르면 해당일 점검 대상이 위에 나타납니다.</p>
+        </div>
+        <div class="card">
+          <h3>👤 점검자 고정 (이 기기)</h3>
+          <p>휴대폰에 본인 이름을 저장하면 다시 바꾸기 전까지 점검자가 자동 입력됩니다. 여러 명이 함께 쓰는 PC에서는 고정하지 않는 것을 권장합니다.</p>
+        </div>
+        <div class="card">
+          <h3>💬 빠른 메모 · 🎤 음성 입력</h3>
+          <p>자주 쓰는 메모는 칩을 눌러 바로 입력. 마이크 버튼으로 음성을 받아 적을 수도 있습니다.</p>
+        </div>
+        <div class="card">
+          <h3>🕒 전월 대비 비교</h3>
+          <p>지난 점검 결과를 함께 보여줘 변화가 있었는지 바로 비교할 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="legend">
+        <div><span class="pp ok"></span> 완료 / 정상</div>
+        <div><span class="pp wait"></span> 예정 / 미점검</div>
+        <div><span class="pp bad"></span> 이상 발생</div>
+      </div>
+    </section>
+
+    <section id="inspect">
+      <h2>📋 점검 입력하기</h2>
+      <p class="lead">벨트를 선택하면 항목별 점검 폼이 열립니다.</p>
+      <ol class="steps">
+        <li><b>점검자와 날짜를 확인합니다.</b> <span>기기에 고정된 점검자가 있으면 자동으로 채워집니다.</span></li>
+        <li><b>항목별로 상태를 체크합니다.</b> <span>정상/불량을 누르고, 필요하면 메모·음성으로 특이사항을 남깁니다.</span></li>
+        <li><b>Pulley · 전기장치를 추가/삭제할 수 있습니다.</b> <span>벨트마다 점검 항목 구성을 현장에서 직접 조정합니다.</span></li>
+        <li><b>점검 완료 저장을 누릅니다.</b> <span>저장 후 캘린더로 돌아오며 상태 점이 갱신됩니다.</span></li>
+      </ol>
+      <div class="note">💡 <b>점검표 PDF 저장:</b> 벨트 상세 화면에서 “점검표 인쇄 / PDF 저장”을 누르면 인쇄 대화상자가 열립니다. 대상을 <b>PDF로 저장</b>으로 선택하면 파일로 보관할 수 있습니다.</div>
+    </section>
+
+    <section id="admin">
+      <h2>🔐 관리모드</h2>
+      <p class="lead">관리자 비밀번호를 입력하면 진입합니다. 설정과 데이터를 관리하는 공간입니다.</p>
+      <div class="grid">
+        <div class="card"><h3>🧱 벨트 관리</h3><p>벨트 추가·수정·삭제 및 구역(그룹) 분류 관리.</p></div>
+        <div class="card"><h3>👷 점검자 관리</h3><p>점검자 명단을 추가·삭제합니다.</p></div>
+        <div class="card"><h3>💬 빠른 메모 관리</h3><p>현장에서 쓰는 빠른 메모 칩을 직접 추가·삭제합니다.</p></div>
+        <div class="card"><h3>🗓 점검일 편성</h3><p>벨트별 월간 점검 일정을 캘린더에 배정합니다.</p></div>
+        <div class="card"><h3>📄 보고서 (엑셀)</h3><p>월간 점검 결과를 표로 정리해 내보냅니다.</p></div>
+        <div class="card"><h3>🏆 점검 포인트 랭킹</h3><p>점검자별 누적 포인트 TOP 10을 확인합니다.</p></div>
+        <div class="card"><h3>💾 데이터 백업 / 복원</h3><p>전체 데이터를 JSON 파일로 내보내고 다시 불러옵니다.</p></div>
+        <div class="card"><h3>📑 구성 복사</h3><p>한 벨트의 점검 항목 구성을 다른 벨트로 복사합니다.</p></div>
+      </div>
+    </section>
+
+    <section id="points">
+      <h2>🏆 점검 포인트 & 랭킹</h2>
+      <p class="lead">점검 활동을 게임처럼 누적 관리해 적극적인 점검을 응원합니다.</p>
+      <div class="grid">
+        <div class="card"><h3>① 기본 점수</h3><p>점검 1건을 완료할 때마다 기본 포인트가 쌓입니다.</p></div>
+        <div class="card"><h3>② 이상 발견 보너스</h3><p>이상(불량)을 발견해 기록하면 추가 포인트를 받습니다. 꼼꼼한 점검을 보상합니다.</p></div>
+      </div>
+      <p class="lead" style="margin-top:14px">전체 누적과 이번 달 기준을 탭으로 나눠 보며, 🥇🥈🥉 메달과 함께 TOP 10을 표시합니다.</p>
+    </section>
+
+    <section id="data">
+      <h2>💾 데이터 저장 · 동기화</h2>
+      <p class="lead">데이터는 자동으로 저장됩니다. 기기 간 공유는 클라우드 연결 시 가능합니다.</p>
+      <div class="grid">
+        <div class="card"><h3>📦 자동 저장</h3><p>입력한 내용은 브라우저에 자동 보관되어 새로고침해도 유지됩니다.</p></div>
+        <div class="card"><h3>☁️ 클라우드 동기화</h3><p>클라우드가 연결되면 여러 기기에서 같은 데이터를 함께 사용할 수 있습니다.</p></div>
+        <div class="card"><h3>💾 수동 백업</h3><p>관리모드에서 JSON 파일로 내보내 안전하게 보관하고, 필요할 때 복원합니다.</p></div>
+        <div class="card"><h3>📱 기기별 설정</h3><p>‘점검자 고정’은 기기마다 따로 저장되어 다른 기기에 영향을 주지 않습니다.</p></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>❓ 자주 묻는 질문</h2>
+      <div class="grid">
+        <div class="card"><h3>비밀번호를 잊었어요</h3><p>관리모드 진입과 일부 변경에는 관리자 비밀번호가 필요합니다. 관리자에게 문의하세요.</p></div>
+        <div class="card"><h3>음성 입력이 안 돼요</h3><p>브라우저가 음성 인식을 지원해야 합니다. 최신 Chrome 사용을 권장하며, 마이크 권한을 허용하세요.</p></div>
+        <div class="card"><h3>다른 기기에서 데이터가 안 보여요</h3><p>클라우드가 연결되지 않은 경우 데이터는 해당 기기에만 저장됩니다. 백업/복원으로 옮길 수 있습니다.</p></div>
+        <div class="card"><h3>실수로 저장했어요</h3><p>벨트 상세의 점검 이력에서 해당 기록을 다시 열어 수정할 수 있습니다.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      3선탄 벨트컨베이어 주기점검 · 사용설명서<br>
+      <a class="btn" style="margin-top:14px" href="/">앱으로 돌아가기 →</a>
+    </footer>
+  </div>
+</body>
+</html>
