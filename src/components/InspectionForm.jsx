@@ -6,6 +6,7 @@ import {
   normalizeRecord,
   validateRecord,
 } from '../lib/inspectionItems.js';
+import MemoInput from './MemoInput.jsx';
 
 // 벨트별 설치 구성(beltItems)에 맞춰 빈 기록을 만든다.
 // 편집 가능한 subs 항목(전기장치 등)의 구분 목록을 beltItems로 덮어쓴다.
@@ -329,12 +330,10 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
                 </>
               )}
 
-              <textarea
-                className="memo"
-                style={{ marginTop: 10 }}
-                placeholder="특이사항 메모..."
+              <MemoInput
                 value={it.memo}
-                onChange={(e) => setMemo(def.key, e.target.value)}
+                placeholder="특이사항 메모..."
+                onChange={(v) => setMemo(def.key, v)}
               />
             </div>
           );

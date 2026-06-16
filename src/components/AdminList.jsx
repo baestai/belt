@@ -23,6 +23,7 @@ export default function AdminList({
   onOpenPulleys,
   onOpenReport,
   onOpenBackup,
+  onOpenLeaderboard,
   cloud,
 }) {
   const all = flattenBelts(groups);
@@ -89,6 +90,9 @@ export default function AdminList({
             </button>
             <button className="add-btn secondary" onClick={onOpenPulleys}>
               🛞 Pulley 관리
+            </button>
+            <button className="add-btn secondary" onClick={onOpenLeaderboard}>
+              🏆 랭킹
             </button>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

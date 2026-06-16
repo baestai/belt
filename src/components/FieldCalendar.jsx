@@ -18,6 +18,7 @@ export default function FieldCalendar({
   onNext,
   onPickBelt,
   groupOf,
+  onOpenLeaderboard,
 }) {
   const first = new Date(year, month - 1, 1);
   const startWd = first.getDay();
@@ -36,6 +37,9 @@ export default function FieldCalendar({
       <header>
         <span className="logo">🦺</span>
         <h1>현장 점검</h1>
+        {onOpenLeaderboard && (
+          <button className="hdr-btn" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">🏆</button>
+        )}
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">

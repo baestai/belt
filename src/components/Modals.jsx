@@ -1,6 +1,45 @@
 import { useRef, useState } from 'react';
 import { GROUP_ORDER } from '../lib/belts.js';
 import { monthlyReport, recordsToTable, downloadCSV } from '../lib/report.js';
+import { leaderboard, POINTS } from '../lib/points.js';
+
+const MEDAL = ['🥇', '🥈', '🥉'];
+
+export function LeaderboardModal({ records, onClose }) {
+  const now = new Date();
+  const thisYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [scope, setScope] = useState('all'); // 'all' | 'month'
+  const top = leaderboard(records, { ym: scope === 'month' ? thisYm : undefined, limit: 10 });
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>🏆 점검 포인트 TOP 10</h3>
+        <div className="lb-tabs">
+          <button className={scope === 'all' ? 'on' : ''} onClick={() => setScope('all')}>전체 누적</button>
+          <button className={scope === 'month' ? 'on' : ''} onClick={() => setScope('month')}>이번 달 ({thisYm.slice(5)}월)</button>
+        </div>
+        <div className="note" style={{ padding: '4px 0 10px' }}>
+          점검 1건 +{POINTS.base}점 · 이상 발견 1건당 +{POINTS.perIssue}점
+        </div>
+        {top.length === 0 && <div className="note">아직 점검 기록이 없습니다.</div>}
+        <div className="lb-list">
+          {top.map((e, i) => (
+            <div className={'lb-row' + (i < 3 ? ' top' : '')} key={e.inspector}>
+              <span className="lb-rank">{MEDAL[i] || i + 1}</span>
+              <span className="lb-name">{e.inspector}</span>
+              <span className="lb-sub">{e.count}건 · 이상 {e.issues}</span>
+              <span className="lb-pts">{e.points}점</span>
+            </div>
+          ))}
+        </div>
+        <div className="modal-actions">
+          <button className="ma-cancel" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AddBeltModal({ groups, defaultGroup, onAdd, onClose }) {
   const groupNames = Object.keys(groups).sort(

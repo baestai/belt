@@ -15,7 +15,7 @@ import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
-import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, PulleyModal, ReportModal, BackupModal, LeaderboardModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 
 function todayStr() {
@@ -319,6 +319,7 @@ export default function App() {
           onOpenPulleys={() => setModal('pulleys')}
           onOpenReport={() => setModal('report')}
           onOpenBackup={() => setModal('backup')}
+          onOpenLeaderboard={() => setModal('leaderboard')}
           cloud={isCloudConfigured}
         />
       )}
@@ -352,6 +353,7 @@ export default function App() {
           onNext={() => navMonth(1)}
           onPickBelt={handlePickBelt}
           groupOf={groupOf}
+          onOpenLeaderboard={() => setModal('leaderboard')}
         />
       )}
 
@@ -409,6 +411,9 @@ export default function App() {
           onImport={handleImportBackup}
           onClose={() => setModal(null)}
         />
+      )}
+      {modal === 'leaderboard' && (
+        <LeaderboardModal records={records} onClose={() => setModal(null)} />
       )}
 
       {printTarget && <PrintableRecord record={printTarget} />}
