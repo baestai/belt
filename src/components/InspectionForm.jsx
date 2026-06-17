@@ -4,6 +4,7 @@ import {
   DEFAULT_PULLEYS,
   emptyRecord,
   normalizeRecord,
+  normalizeTemp,
   validateRecord,
 } from '../lib/inspectionItems.js';
 import MemoInput from './MemoInput.jsx';
@@ -43,8 +44,14 @@ function prevSummary(def, prevItem) {
     const bad = Object.keys(subs).filter((k) => subs[k] !== 'ok');
     if (def.type === 'pulley' && prevItem.temps) {
       const temps = Object.keys(prevItem.temps)
-        .filter((k) => prevItem.temps[k] !== '' && prevItem.temps[k] != null)
-        .map((k) => `${k} ${prevItem.temps[k]}℃`);
+        .map((k) => {
+          const t = normalizeTemp(prevItem.temps[k]);
+          const parts = [];
+          if (t.L !== '' && t.L != null) parts.push(`L ${t.L}`);
+          if (t.R !== '' && t.R != null) parts.push(`R ${t.R}`);
+          return parts.length ? `${k} ${parts.join('/')}℃` : null;
+        })
+        .filter(Boolean);
       const base = bad.length ? `불량: ${bad.join(', ')}` : '전체 양호';
       return temps.length ? `${base} · ${temps.join(', ')}` : base;
     }
@@ -83,8 +90,11 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
   const setMemo = (key, memo) => setItem(key, (it) => (it.memo = memo));
   const setSub = (key, sub, status) =>
     setItem(key, (it) => (it.subs = { ...it.subs, [sub]: status }));
-  const setTemp = (key, sub, val) =>
-    setItem(key, (it) => (it.temps = { ...it.temps, [sub]: val }));
+  const setTemp = (key, sub, side, val) =>
+    setItem(key, (it) => {
+      const cur = it.temps[sub] && typeof it.temps[sub] === 'object' ? it.temps[sub] : { L: '', R: '' };
+      it.temps = { ...it.temps, [sub]: { ...cur, [side]: val } };
+    });
   const setValue = (key, field, val) =>
     setItem(key, (it) => (it.values = { ...it.values, [field]: val }));
 
@@ -109,7 +119,7 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
     setNewRow((m) => ({ ...m, [key]: '' }));
     setItem(key, (it) => {
       it.subs = { ...it.subs, [n]: 'ok' };
-      if (it.temps) it.temps = { ...it.temps, [n]: '' };
+      if (it.temps) it.temps = { ...it.temps, [n]: { L: '', R: '' } };
     });
   };
   const removeRow = (key, name) => {
@@ -253,9 +263,11 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
               {def.type === 'pulley' && (
                 <>
                   <table className="pulley-tbl">
-                    <thead><tr><th>구분</th><th>베어링</th><th>온도(℃)</th><th></th></tr></thead>
+                    <thead><tr><th>구분</th><th>베어링</th><th>온도 L(℃)</th><th>온도 R(℃)</th><th></th></tr></thead>
                     <tbody>
-                      {Object.keys(it.subs).map((s) => (
+                      {Object.keys(it.subs).map((s) => {
+                        const t = it.temps[s] && typeof it.temps[s] === 'object' ? it.temps[s] : { L: '', R: '' };
+                        return (
                         <tr key={s}>
                           <td className="nm">{s}</td>
                           <td>
@@ -274,8 +286,18 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
                             <input
                               className="temp-in"
                               inputMode="decimal"
-                              value={it.temps[s]}
-                              onChange={(e) => setTemp(def.key, s, e.target.value)}
+                              aria-label={`${s} 온도 L`}
+                              value={t.L}
+                              onChange={(e) => setTemp(def.key, s, 'L', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="temp-in"
+                              inputMode="decimal"
+                              aria-label={`${s} 온도 R`}
+                              value={t.R}
+                              onChange={(e) => setTemp(def.key, s, 'R', e.target.value)}
                             />
                           </td>
                           <td>
@@ -286,9 +308,10 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
                             >🗑</button>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                       {Object.keys(it.subs).length === 0 && (
-                        <tr><td colSpan={4} className="note">설치된 Pulley가 없습니다. 아래에서 추가하세요.</td></tr>
+                        <tr><td colSpan={5} className="note">설치된 Pulley가 없습니다. 아래에서 추가하세요.</td></tr>
                       )}
                     </tbody>
                   </table>

@@ -1,4 +1,4 @@
-import { INSPECTION_ITEMS } from '../lib/inspectionItems.js';
+import { INSPECTION_ITEMS, normalizeTemp } from '../lib/inspectionItems.js';
 import { aggregateStatus, statusLabel } from '../lib/belts.js';
 
 const KO = { ok: '양호', bad: '불량', warn: '주의' };
@@ -13,7 +13,14 @@ function itemText(def, it) {
     return keys
       .map((k) => {
         const st = subs[k] === 'ok' ? '양호' : '불량';
-        const temp = def.type === 'pulley' && it.temps && it.temps[k] ? ` ${it.temps[k]}℃` : '';
+        let temp = '';
+        if (def.type === 'pulley' && it.temps && it.temps[k]) {
+          const t = normalizeTemp(it.temps[k]);
+          const parts = [];
+          if (t.L !== '' && t.L != null) parts.push(`L ${t.L}`);
+          if (t.R !== '' && t.R != null) parts.push(`R ${t.R}`);
+          if (parts.length) temp = ` ${parts.join('/')}℃`;
+        }
         return `${k}: ${st}${temp}`;
       })
       .join(', ');

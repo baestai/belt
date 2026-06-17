@@ -3,6 +3,8 @@ import {
   INSPECTION_ITEMS,
   DEFAULT_PULLEYS,
   emptyRecord,
+  normalizeRecord,
+  normalizeTemp,
   validateRecord,
 } from './inspectionItems.js';
 import { aggregateStatus } from './belts.js';
@@ -55,6 +57,33 @@ describe('빈 기록 생성', () => {
   it('Pulley 항목은 subs와 temps를 가진다(기본 8개)', () => {
     expect(Object.keys(rec.items.pulley.subs).length).toBe(8);
     expect(Object.keys(rec.items.pulley.temps).length).toBe(8);
+  });
+
+  it('Pulley 온도는 좌/우(L,R) 양측 구조로 생성된다', () => {
+    expect(rec.items.pulley.temps['Head']).toEqual({ L: '', R: '' });
+  });
+});
+
+describe('normalizeTemp', () => {
+  it('객체 입력은 L,R을 보존한다', () => {
+    expect(normalizeTemp({ L: '40', R: '42' })).toEqual({ L: '40', R: '42' });
+  });
+
+  it('구버전 단일 문자열은 L에 보존된다', () => {
+    expect(normalizeTemp('45')).toEqual({ L: '45', R: '' });
+  });
+
+  it('null/빈값은 빈 L,R', () => {
+    expect(normalizeTemp(null)).toEqual({ L: '', R: '' });
+  });
+});
+
+describe('normalizeRecord — Pulley 온도 마이그레이션', () => {
+  it('구버전 문자열 온도를 {L,R}로 변환한다', () => {
+    const rec = emptyRecord('S-101', 'SILO', '2026-06-15', '김현장');
+    rec.items.pulley.temps['Head'] = '55'; // 구버전 형식
+    const out = normalizeRecord(rec, DEFAULT_PULLEYS);
+    expect(out.items.pulley.temps['Head']).toEqual({ L: '55', R: '' });
   });
 });
 

@@ -72,7 +72,7 @@ export function emptyRecord(beltName, group, date, inspector, pulleys = DEFAULT_
       it.temps = {};
       for (const s of pulleys) {
         it.subs[s] = 'ok';
-        it.temps[s] = '';
+        it.temps[s] = { L: '', R: '' }; // 양측(좌/우) 온도
       }
     }
     if (def.type === 'num') {
@@ -82,6 +82,14 @@ export function emptyRecord(beltName, group, date, inspector, pulleys = DEFAULT_
     items[def.key] = it;
   }
   return { belt: beltName, group, date, inspector, items };
+}
+
+// Pulley 온도 값을 { L, R } 형태로 정규화. (구버전: 단일 문자열/숫자 → L에 보존)
+export function normalizeTemp(t) {
+  if (t && typeof t === 'object') {
+    return { L: t.L ?? '', R: t.R ?? '' };
+  }
+  return { L: t == null ? '' : String(t), R: '' };
 }
 
 // 기존 기록을 현재 항목 정의/Pulley 목록에 맞춰 누락 키를 채운 새 기록 반환.
@@ -97,10 +105,12 @@ export function normalizeRecord(record, pulleys = DEFAULT_PULLEYS) {
     }
     if (def.type === 'pulley') {
       const subs = { ...(it.subs || {}) };
-      const temps = { ...(it.temps || {}) };
+      const temps = {};
+      const oldTemps = it.temps || {};
+      for (const k of Object.keys(oldTemps)) temps[k] = normalizeTemp(oldTemps[k]);
       for (const s of pulleys) {
         if (!(s in subs)) subs[s] = 'ok';
-        if (!(s in temps)) temps[s] = '';
+        if (!(s in temps)) temps[s] = { L: '', R: '' };
       }
       it.subs = subs;
       it.temps = temps;
@@ -150,9 +160,12 @@ export function validateRecord(record) {
     }
     if (def.type === 'pulley') {
       for (const s of Object.keys(it.temps || {})) {
-        const t = it.temps[s];
-        if (t !== '' && t != null && Number.isNaN(Number(t))) {
-          errors.push(`Pulley ${s} 온도: 숫자만 입력 가능`);
+        const t = normalizeTemp(it.temps[s]);
+        for (const side of ['L', 'R']) {
+          const v = t[side];
+          if (v !== '' && v != null && Number.isNaN(Number(v))) {
+            errors.push(`Pulley ${s} 온도(${side}): 숫자만 입력 가능`);
+          }
         }
       }
     }
