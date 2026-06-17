@@ -43,29 +43,39 @@ export default function FieldCalendar({
 
   const dateStr = (d) => `${year}-${pad(month)}-${pad(d)}`;
 
-  // 전체 벨트 기준 개요 통계 + 구역 칩
+  // 전체 벨트 기준 개요 통계
   const all = groups ? flattenBelts(groups) : [];
   const counts = statusCounts(all, statusOf);
-  const groupNames = groups
-    ? Object.keys(groups).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b))
-    : [];
-  const chipDefs = [{ name: '전체', count: all.length }].concat(
-    groupNames.map((g) => ({ name: g, count: groups[g].length }))
-  );
 
-  // 검색/구역/상태 필터 (선택일 점검 대상 및 달력 점에 함께 적용)
+  // 검색/상태 필터
   const f = filters || { group: '전체', status: null, query: '' };
   const q = String(f.query || '').trim().toLowerCase();
   const matchFilter = (name) => {
     if (q && !name.toLowerCase().includes(q)) return false;
-    if (f.group && f.group !== '전체' && groupOf(name) !== f.group) return false;
     if (f.status && statusOf(name) !== f.status) return false;
     return true;
   };
   const setF = (patch) => setFilters && setFilters({ ...f, ...patch });
   const toggleStatus = (s) => setF({ status: f.status === s ? null : s });
 
-  const selBelts = beltsScheduledOn(schedules, selectedDate).filter(matchFilter);
+  // 검색어 또는 상태 선택 시: 전체 벨트에서 조건에 맞는 목록을 정리해 표시
+  const showResults = !!(q || f.status);
+  const resultBelts = all
+    .filter((b) => matchFilter(b.name))
+    .sort((a, b) => {
+      const ga = GROUP_ORDER.indexOf(a.group);
+      const gb = GROUP_ORDER.indexOf(b.group);
+      if (ga !== gb) return ga - gb;
+      return a.name.localeCompare(b.name);
+    });
+  const STATUS_LABEL = { ok: '정상', warn: '주의', bad: '이상', none: '미점검' };
+  // 검색창에서 Enter: 일치 벨트가 1개 이상이면 첫 벨트 점검화면으로 이동
+  const onSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    if (resultBelts.length > 0) onPickBelt(resultBelts[0].name, selectedDate);
+  };
+
+  const selBelts = beltsScheduledOn(schedules, selectedDate);
 
   return (
     <>
@@ -90,21 +100,11 @@ export default function FieldCalendar({
           <>
             <input
               className="search"
-              placeholder="🔍 벨트명 검색 (예: S-101, CWF, K-651)"
+              placeholder="🔍 벨트명 검색 후 Enter (예: S-101, K-651)"
               value={f.query}
               onChange={(e) => setF({ query: e.target.value })}
+              onKeyDown={onSearchEnter}
             />
-            <div className="chips">
-              {chipDefs.map((c) => (
-                <span
-                  key={c.name}
-                  className={'chip' + (c.name === f.group ? ' active' : '')}
-                  onClick={() => setF({ group: c.name })}
-                >
-                  {c.name} {c.count}
-                </span>
-              ))}
-            </div>
             <div className="stats">
               {STAT_DEFS.map((s) => (
                 <div
@@ -120,32 +120,62 @@ export default function FieldCalendar({
           </>
         )}
 
+        {showResults && (
+          <>
+            <div className="sel-date-title">
+              {q ? `🔍 "${f.query}" 검색 결과` : `📋 ${STATUS_LABEL[f.status]} 벨트`}
+              <span className="badge">{resultBelts.length}대</span>
+              <button className="clear-filter" onClick={() => setF({ query: '', status: null })}>✕ 해제</button>
+            </div>
+            <div className="belt-grid">
+              {resultBelts.length === 0 && <div className="note">조건에 맞는 벨트가 없습니다.</div>}
+              {resultBelts.map((b) => {
+                const s = statusOf(b.name);
+                return (
+                  <button key={b.name} className="belt" onClick={() => onPickBelt(b.name, selectedDate)}>
+                    <span className={'dot ' + s} />
+                    <div className="info">
+                      <div className="name">{b.name}</div>
+                      <div className="sub">{b.group} · {STATUS_LABEL[s]}</div>
+                    </div>
+                    <span className="due none">점검하기</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         <div className="cal-head">
           <button onClick={onPrev} aria-label="이전 달">‹</button>
           <span className="ym">{year}년 {month}월</span>
           <button onClick={onNext} aria-label="다음 달">›</button>
         </div>
 
-        <div className="sel-date-title">
-          📋 {selectedDate} 점검 예정
-          <span className="badge">{selBelts.length}대</span>
-        </div>
-        <div className="belt-grid">
-          {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
-          {selBelts.map((b) => {
-            const s = statusOf(b);
-            return (
-              <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
-                <span className={'dot ' + s} />
-                <div className="info">
-                  <div className="name">{b}</div>
-                  <div className="sub">{groupOf(b)} · {s === 'none' ? '미점검' : '점검됨'}</div>
-                </div>
-                <span className="due none">입력하기</span>
-              </button>
-            );
-          })}
-        </div>
+        {!showResults && (
+          <>
+            <div className="sel-date-title">
+              📋 {selectedDate} 점검 예정
+              <span className="badge">{selBelts.length}대</span>
+            </div>
+            <div className="belt-grid">
+              {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
+              {selBelts.map((b) => {
+                const s = statusOf(b);
+                return (
+                  <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
+                    <span className={'dot ' + s} />
+                    <div className="info">
+                      <div className="name">{b}</div>
+                      <div className="sub">{groupOf(b)} · {s === 'none' ? '미점검' : '점검됨'}</div>
+                    </div>
+                    <span className="due none">입력하기</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div className="cal">
           {WD.map((w, i) => (

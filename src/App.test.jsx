@@ -21,11 +21,27 @@ describe('App 통합 렌더', () => {
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
-  it('점검모드에도 검색·구역칩·상태 통계가 보인다', () => {
+  it('점검모드에 검색창과 상태 통계가 보인다 (구역 칩 없음)', () => {
     render(<App />);
     expect(screen.getByPlaceholderText(/벨트명 검색/)).toBeInTheDocument();
     expect(screen.getByText('미점검')).toBeInTheDocument();
-    expect(screen.getByText(/전체/)).toBeInTheDocument();
+  });
+
+  it('점검모드 상태 통계 클릭 시 해당 상태 벨트 목록이 표시된다', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('미점검'));
+    expect(screen.getByText(/미점검 벨트/)).toBeInTheDocument();
+    // 시드 데이터의 미점검 벨트가 목록에 나타난다
+    expect(screen.getAllByText('S-101').length).toBeGreaterThan(0);
+  });
+
+  it('점검모드에서 벨트명 검색 후 Enter 시 점검 화면으로 이동한다', () => {
+    render(<App />);
+    const box = screen.getByPlaceholderText(/벨트명 검색/);
+    fireEvent.change(box, { target: { value: 'S-101' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    // 점검 입력 폼으로 이동 (점검자 라벨 + 점검 완료 저장 버튼)
+    expect(screen.getByText('✅ 점검 완료 저장')).toBeInTheDocument();
   });
 
   it('관리모드 탭을 누르면 목록이 렌더된다', () => {
