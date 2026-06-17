@@ -1,6 +1,14 @@
 import { beltsScheduledOn } from '../lib/selectors.js';
+import { GROUP_ORDER, flattenBelts, statusCounts } from '../lib/belts.js';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
+
+const STAT_DEFS = [
+  { key: 'ok', label: '정상', cls: 'ok' },
+  { key: 'warn', label: '주의', cls: 'warn' },
+  { key: 'bad', label: '이상', cls: 'bad' },
+  { key: 'none', label: '미점검', cls: 'none' },
+];
 
 function pad(n) {
   return n < 10 ? '0' + n : '' + n;
@@ -9,6 +17,7 @@ function pad(n) {
 export default function FieldCalendar({
   year,
   month, // 1-based
+  groups,
   schedules,
   today,
   statusOf,
@@ -18,6 +27,8 @@ export default function FieldCalendar({
   onNext,
   onPickBelt,
   groupOf,
+  filters,
+  setFilters,
   onOpenLeaderboard,
   fixedInspector,
   onOpenDeviceInspector,
@@ -32,7 +43,29 @@ export default function FieldCalendar({
 
   const dateStr = (d) => `${year}-${pad(month)}-${pad(d)}`;
 
-  const selBelts = beltsScheduledOn(schedules, selectedDate);
+  // 전체 벨트 기준 개요 통계 + 구역 칩
+  const all = groups ? flattenBelts(groups) : [];
+  const counts = statusCounts(all, statusOf);
+  const groupNames = groups
+    ? Object.keys(groups).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b))
+    : [];
+  const chipDefs = [{ name: '전체', count: all.length }].concat(
+    groupNames.map((g) => ({ name: g, count: groups[g].length }))
+  );
+
+  // 검색/구역/상태 필터 (선택일 점검 대상 및 달력 점에 함께 적용)
+  const f = filters || { group: '전체', status: null, query: '' };
+  const q = String(f.query || '').trim().toLowerCase();
+  const matchFilter = (name) => {
+    if (q && !name.toLowerCase().includes(q)) return false;
+    if (f.group && f.group !== '전체' && groupOf(name) !== f.group) return false;
+    if (f.status && statusOf(name) !== f.status) return false;
+    return true;
+  };
+  const setF = (patch) => setFilters && setFilters({ ...f, ...patch });
+  const toggleStatus = (s) => setF({ status: f.status === s ? null : s });
+
+  const selBelts = beltsScheduledOn(schedules, selectedDate).filter(matchFilter);
 
   return (
     <>
@@ -52,6 +85,41 @@ export default function FieldCalendar({
             <span className="set">{fixedInspector ? '변경' : '고정하기'}</span>
           </button>
         )}
+
+        {setFilters && (
+          <>
+            <input
+              className="search"
+              placeholder="🔍 벨트명 검색 (예: S-101, CWF, K-651)"
+              value={f.query}
+              onChange={(e) => setF({ query: e.target.value })}
+            />
+            <div className="chips">
+              {chipDefs.map((c) => (
+                <span
+                  key={c.name}
+                  className={'chip' + (c.name === f.group ? ' active' : '')}
+                  onClick={() => setF({ group: c.name })}
+                >
+                  {c.name} {c.count}
+                </span>
+              ))}
+            </div>
+            <div className="stats">
+              {STAT_DEFS.map((s) => (
+                <div
+                  key={s.key}
+                  className={'stat ' + s.cls + (f.status === s.key ? ' sel-' + s.cls : '')}
+                  onClick={() => toggleStatus(s.key)}
+                >
+                  <div className="num">{counts[s.key] || 0}</div>
+                  <div className="lbl">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="cal-head">
           <button onClick={onPrev} aria-label="이전 달">‹</button>
           <span className="ym">{year}년 {month}월</span>
@@ -86,7 +154,7 @@ export default function FieldCalendar({
           {cells.map((d, i) => {
             if (d == null) return <div key={'e' + i} className="day empty" />;
             const ds = dateStr(d);
-            const belts = beltsScheduledOn(schedules, ds);
+            const belts = beltsScheduledOn(schedules, ds).filter(matchFilter);
             const isToday = ds === today;
             const isSel = ds === selectedDate;
             return (

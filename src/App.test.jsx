@@ -21,6 +21,13 @@ describe('App 통합 렌더', () => {
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
+  it('점검모드에도 검색·구역칩·상태 통계가 보인다', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText(/벨트명 검색/)).toBeInTheDocument();
+    expect(screen.getByText('미점검')).toBeInTheDocument();
+    expect(screen.getByText(/전체/)).toBeInTheDocument();
+  });
+
   it('관리모드 탭을 누르면 목록이 렌더된다', () => {
     render(<App />);
     openAdmin();

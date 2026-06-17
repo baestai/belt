@@ -380,6 +380,7 @@ export default function App() {
         <FieldCalendar
           year={cal.year}
           month={cal.month}
+          groups={groups}
           schedules={schedules}
           today={today}
           statusOf={statusOf}
@@ -389,6 +390,8 @@ export default function App() {
           onNext={() => navMonth(1)}
           onPickBelt={handlePickBelt}
           groupOf={groupOf}
+          filters={filters}
+          setFilters={setFilters}
           onOpenLeaderboard={() => setModal('leaderboard')}
           fixedInspector={fixedInspector}
           onOpenDeviceInspector={() => setModal('deviceInspector')}
