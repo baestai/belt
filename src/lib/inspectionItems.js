@@ -11,31 +11,30 @@ export const DEFAULT_PULLEYS = [
 ];
 
 export const INSPECTION_ITEMS = [
-  { key: 'spillage', no: 1, title: '낙광 상태', type: 'yn' },
-  { key: 'belt', no: 2, title: '벨트 상태 / 마모', type: 'yn' },
+  { key: 'belt', no: 1, title: '벨트 상태 / 마모', type: 'yn' },
   {
     key: 'pulley',
-    no: 3,
+    no: 2,
     title: 'Pulley — 베어링 상태 / 온도',
     type: 'pulley',
   },
   {
     key: 'motor',
-    no: 4,
+    no: 3,
     title: 'Motor',
     type: 'subs',
     subs: ['진동', '발열', '이음'],
   },
   {
     key: 'reducer',
-    no: 5,
+    no: 4,
     title: '감속기',
     type: 'subs',
     subs: ['진동', '발열', '이음'],
   },
   {
     key: 'electric',
-    no: 6,
+    no: 5,
     title: '전기장치',
     type: 'subs',
     editable: true, // 벨트마다 설치 유무가 달라 점검모드에서 추가/삭제 가능
@@ -43,7 +42,7 @@ export const INSPECTION_ITEMS = [
   },
   {
     key: 'lubrication',
-    no: 7,
+    no: 6,
     title: '급유 / 급지',
     type: 'subs',
     subs: ['급유 (Oil)', '급지 (Grease)'],

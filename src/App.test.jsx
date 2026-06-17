@@ -115,7 +115,7 @@ describe('App 통합 렌더', () => {
     openAdmin();
     fireEvent.click(screen.getByText('S-101'));
     fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
-    // 낙광 상태 불량 선택
+    // 첫 항목(벨트 상태) 불량 선택
     const items = document.querySelectorAll('.insp-item');
     const firstItem = items[0];
     fireEvent.click(within(firstItem).getByText('불량'));
