@@ -86,17 +86,22 @@ describe('종합 상태 산출', () => {
   it('가장 나쁜 상태를 채택한다', () => {
     const rec = {
       items: {
-        a: { status: 'ok' },
-        b: { status: 'warn' },
-        c: { subs: { x: 'ok', y: 'bad' } },
+        spillage: { status: 'ok' },
+        belt: { status: 'warn' },
+        motor: { subs: { 진동: 'ok', 발열: 'bad' } },
       },
     };
     expect(aggregateStatus(rec)).toBe('bad');
   });
 
   it('warn까지만 있으면 warn', () => {
-    const rec = { items: { a: { status: 'ok' }, b: { status: 'warn' } } };
+    const rec = { items: { spillage: { status: 'ok' }, belt: { status: 'warn' } } };
     expect(aggregateStatus(rec)).toBe('warn');
+  });
+
+  it('제외된 항목(rsc·safety)은 종합 상태에 반영되지 않는다', () => {
+    const rec = { items: { spillage: { status: 'ok' }, rsc: { subs: { Roller: 'bad' } }, safety: { status: 'bad' } } };
+    expect(aggregateStatus(rec)).toBe('ok');
   });
 });
 
