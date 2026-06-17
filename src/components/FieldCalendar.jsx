@@ -26,6 +26,7 @@ export default function FieldCalendar({
   onPrev,
   onNext,
   onPickBelt,
+  onOpenBelt,
   groupOf,
   filters,
   setFilters,
@@ -69,10 +70,11 @@ export default function FieldCalendar({
       return a.name.localeCompare(b.name);
     });
   const STATUS_LABEL = { ok: '정상', warn: '주의', bad: '이상', none: '미점검' };
-  // 검색창에서 Enter: 일치 벨트가 1개 이상이면 첫 벨트 점검화면으로 이동
+  // 검색창에서 Enter: 일치 벨트가 1개 이상이면 첫 벨트로 이동
+  // (최근 점검결과 있으면 상세, 없으면 점검 입력 — onOpenBelt가 판단)
   const onSearchEnter = (e) => {
     if (e.key !== 'Enter') return;
-    if (resultBelts.length > 0) onPickBelt(resultBelts[0].name, selectedDate);
+    if (resultBelts.length > 0) onOpenBelt(resultBelts[0].name);
   };
 
   const selBelts = beltsScheduledOn(schedules, selectedDate);
@@ -132,13 +134,13 @@ export default function FieldCalendar({
               {resultBelts.map((b) => {
                 const s = statusOf(b.name);
                 return (
-                  <button key={b.name} className="belt" onClick={() => onPickBelt(b.name, selectedDate)}>
+                  <button key={b.name} className="belt" onClick={() => onOpenBelt(b.name)}>
                     <span className={'dot ' + s} />
                     <div className="info">
                       <div className="name">{b.name}</div>
                       <div className="sub">{b.group} · {STATUS_LABEL[s]}</div>
                     </div>
-                    <span className="due none">점검하기</span>
+                    <span className="due none">{s === 'none' ? '점검하기' : '결과보기'}</span>
                   </button>
                 );
               })}

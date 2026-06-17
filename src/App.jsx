@@ -42,6 +42,7 @@ export default function App() {
   const [state, setState] = useState(() => loadState());
   const [view, setView] = useState('calendar'); // list | detail | calendar | form
   const [selectedBelt, setSelectedBelt] = useState(null);
+  const [detailFrom, setDetailFrom] = useState('list'); // 상세 진입 출처(뒤로가기 대상)
   const [formCtx, setFormCtx] = useState(null); // { belt, date }
   const [filters, setFilters] = useState({ group: '전체', status: null, query: '' });
   const today = todayStr();
@@ -125,8 +126,9 @@ export default function App() {
   );
 
   // ===== 핸들러 =====
-  const handleSelectBelt = (belt) => {
+  const handleSelectBelt = (belt, from = 'list') => {
     setSelectedBelt(belt);
+    setDetailFrom(from);
     setView('detail');
   };
 
@@ -285,6 +287,16 @@ export default function App() {
     setView('form');
   };
 
+  // 점검모드 검색/상태 목록에서 벨트 선택: 최근 점검결과가 있으면 상세(결과)로,
+  // 없으면 바로 점검 입력 화면으로 이동
+  const handleOpenBeltSmart = (name) => {
+    if (latestRecord(records, name)) {
+      handleSelectBelt({ name, group: groupOf(name) }, 'calendar');
+    } else {
+      handlePickBelt(name, selDate);
+    }
+  };
+
   const handleSaveRecord = (record) => {
     setState((s) => {
       // 같은 벨트+같은 날짜 기록은 덮어쓰기
@@ -366,7 +378,7 @@ export default function App() {
           records={records}
           schedule={schedules[selectedBelt.name]}
           today={today}
-          onBack={() => setView('list')}
+          onBack={() => setView(detailFrom)}
           onInspect={handleInspect}
           onDeleteBelt={handleDeleteBelt}
           onSaveSchedule={handleSaveSchedule}
@@ -389,6 +401,7 @@ export default function App() {
           onPrev={() => navMonth(-1)}
           onNext={() => navMonth(1)}
           onPickBelt={handlePickBelt}
+          onOpenBelt={handleOpenBeltSmart}
           groupOf={groupOf}
           filters={filters}
           setFilters={setFilters}

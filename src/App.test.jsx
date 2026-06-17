@@ -35,13 +35,27 @@ describe('App 통합 렌더', () => {
     expect(screen.getAllByText('S-101').length).toBeGreaterThan(0);
   });
 
-  it('점검모드에서 벨트명 검색 후 Enter 시 점검 화면으로 이동한다', () => {
+  it('점검모드: 점검결과 없는 벨트 검색 후 Enter 시 점검 입력화면으로 이동', () => {
     render(<App />);
     const box = screen.getByPlaceholderText(/벨트명 검색/);
     fireEvent.change(box, { target: { value: 'S-101' } });
     fireEvent.keyDown(box, { key: 'Enter' });
-    // 점검 입력 폼으로 이동 (점검자 라벨 + 점검 완료 저장 버튼)
+    // 점검 입력 폼으로 이동 (점검 완료 저장 버튼)
     expect(screen.getByText('✅ 점검 완료 저장')).toBeInTheDocument();
+  });
+
+  it('점검모드: 점검결과 있는 벨트 검색 후 Enter 시 최근 결과(상세)로 이동', () => {
+    render(<App />);
+    // 먼저 S-101 점검을 한 건 저장 (관리모드 → 상세 → 점검 → 저장)
+    openAdmin();
+    fireEvent.click(screen.getByText('S-101'));
+    fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
+    fireEvent.click(screen.getByText('✅ 점검 완료 저장'));
+    // 저장 후 점검모드(캘린더)로 복귀 → 검색 후 Enter
+    const box = screen.getByPlaceholderText(/벨트명 검색/);
+    fireEvent.change(box, { target: { value: 'S-101' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(screen.getByText('벨트 상세')).toBeInTheDocument();
   });
 
   it('관리모드 탭을 누르면 목록이 렌더된다', () => {
