@@ -18,7 +18,7 @@ describe('월 키', () => {
 describe('월간 보고서', () => {
   const records = [
     mkRecord('S-101', '2026-06-10', (r) => (r.items.belt.status = 'bad')),
-    mkRecord('S-102', '2026-06-12', (r) => (r.items.safety.status = 'warn')),
+    mkRecord('S-102', '2026-06-12', (r) => (r.items.belt.status = 'warn')),
     mkRecord('S-103', '2026-06-13'),
     mkRecord('S-104', '2026-05-10'),
   ];

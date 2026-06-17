@@ -107,7 +107,7 @@ describe('App 통합 렌더', () => {
     fireEvent.click(screen.getByText('S-101'));
     expect(screen.getByText('벨트 상세')).toBeInTheDocument();
     fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
-    expect(screen.getByText(/RSC/)).toBeInTheDocument();
+    expect(screen.getByText(/Pulley/)).toBeInTheDocument();
   });
 
   it('점검 폼 저장 후 상태가 반영된다', () => {

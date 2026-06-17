@@ -1,4 +1,8 @@
 // 벨트 구역(구분) 기본 정의 및 순수 로직
+import { INSPECTION_ITEMS } from './inspectionItems.js';
+
+// 현재 유효한 점검 항목 키 집합 (제외된 항목이 구기록에 남아 있어도 무시)
+const VALID_ITEM_KEYS = new Set(INSPECTION_ITEMS.map((d) => d.key));
 
 export function cwf(prefix) {
   const arr = [];
@@ -74,6 +78,7 @@ export function aggregateStatus(record) {
     if (rank[s] > rank[worst]) worst = s;
   };
   for (const key of Object.keys(record.items)) {
+    if (!VALID_ITEM_KEYS.has(key)) continue; // 제외된 항목(RSC·안전장치 등)은 무시
     const it = record.items[key];
     if (!it) continue;
     if (it.status) consider(it.status);

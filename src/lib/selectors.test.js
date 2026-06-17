@@ -13,7 +13,7 @@ import {
 import { INSPECTION_ITEMS, emptyRecord } from './inspectionItems.js';
 
 const recA1 = { belt: 'S-101', group: 'SILO', date: '2026-04-10', inspector: '김현장', items: {} };
-const recA2 = { belt: 'S-101', group: 'SILO', date: '2026-06-10', inspector: '이정비', items: { x: { status: 'bad' } } };
+const recA2 = { belt: 'S-101', group: 'SILO', date: '2026-06-10', inspector: '이정비', items: { belt: { status: 'bad' } } };
 const recB = { belt: 'S-102', group: 'SILO', date: '2026-05-01', inspector: '김현장', items: {} };
 const records = [recA1, recA2, recB];
 
@@ -47,11 +47,11 @@ describe('기록 셀렉터', () => {
 describe('미해결 이상', () => {
   it('불량 하위 항목을 추출', () => {
     const rec = emptyRecord('S-101', 'SILO', '2026-06-15', '김현장');
-    rec.items.rsc.subs.Roller = 'bad';
-    rec.items.safety.status = 'warn';
+    rec.items.motor.subs.진동 = 'bad';
+    rec.items.belt.status = 'warn';
     const issues = openIssues(rec, INSPECTION_ITEMS);
     expect(issues.length).toBe(2);
-    expect(issues.some((i) => i.detail === 'Roller')).toBe(true);
+    expect(issues.some((i) => i.detail === '진동')).toBe(true);
   });
 
   it('이상 없으면 빈 배열', () => {

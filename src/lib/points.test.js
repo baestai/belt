@@ -15,8 +15,8 @@ describe('점검 포인트', () => {
 
   it('이상 발견 시 보너스 가산', () => {
     const r = rec('A', '홍길동', '2026-06-01', (x) => {
-      x.items.rsc.subs.Roller = 'bad';
-      x.items.safety.status = 'bad';
+      x.items.motor.subs.진동 = 'bad';
+      x.items.belt.status = 'bad';
     });
     expect(recordPoints(r)).toBe(POINTS.base + 2 * POINTS.perIssue);
   });

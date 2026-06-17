@@ -10,13 +10,18 @@ import {
 import { aggregateStatus } from './belts.js';
 
 describe('점검 항목 정의', () => {
-  it('9개 항목이 정의된다', () => {
-    expect(INSPECTION_ITEMS.length).toBe(9);
+  it('7개 항목이 정의된다 (RSC·안전장치 제외)', () => {
+    expect(INSPECTION_ITEMS.length).toBe(7);
   });
 
-  it('RSC 3개, 전기장치 5개, 급유급지 2개 하위', () => {
+  it('RSC·안전장치 항목은 존재하지 않는다', () => {
+    const keys = INSPECTION_ITEMS.map((d) => d.key);
+    expect(keys).not.toContain('rsc');
+    expect(keys).not.toContain('safety');
+  });
+
+  it('전기장치 5개, 급유급지 2개 하위', () => {
     const byKey = Object.fromEntries(INSPECTION_ITEMS.map((d) => [d.key, d]));
-    expect(byKey.rsc.subs.length).toBe(3);
     expect(byKey.electric.subs.length).toBe(5);
     expect(byKey.lubrication.subs.length).toBe(2);
   });
