@@ -28,6 +28,7 @@ export default function FieldCalendar({
   onNext,
   onPickBelt,
   onOpenBelt,
+  onEditBelt,
   groupOf,
   filters,
   setFilters,
@@ -141,14 +142,25 @@ export default function FieldCalendar({
               {resultBelts.map((b) => {
                 const s = statusOf(b.name);
                 return (
-                  <button key={b.name} className="belt" onClick={() => onOpenBelt(b.name)}>
+                  <div key={b.name} className="belt">
                     <span className={'dot ' + s} />
-                    <div className="info">
-                      <div className="name">{b.name}</div>
-                      <div className="sub">{b.group} · {STATUS_LABEL[s]}</div>
-                    </div>
-                    <span className="due none">{s === 'none' ? '점검하기' : '결과보기'}</span>
-                  </button>
+                    <button className="belt-tap" onClick={() => onOpenBelt(b.name)}>
+                      <div className="info">
+                        <div className="name">{b.name}</div>
+                        <div className="sub">{b.group} · {STATUS_LABEL[s]}</div>
+                      </div>
+                    </button>
+                    {s === 'none' ? (
+                      <button className="due none belt-act" onClick={() => onOpenBelt(b.name)}>점검하기</button>
+                    ) : (
+                      <>
+                        <button className="due none belt-act" onClick={() => onOpenBelt(b.name)}>결과보기</button>
+                        {onEditBelt && (
+                          <button className="due belt-act belt-edit" onClick={() => onEditBelt(b.name)}>✏ 수정</button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 );
               })}
             </div>

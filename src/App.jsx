@@ -316,6 +316,13 @@ export default function App() {
     }
   };
 
+  // 점검모드 목록(정상/주의/이상)에서 바로 점검결과 수정: 최근 기록을 그 날짜로 열어 편집
+  const handleEditBeltLatest = (name) => {
+    const rec = latestRecord(records, name);
+    if (rec) handleEditRecord(rec);
+    else handlePickBelt(name, selDate);
+  };
+
   const handleSaveRecord = (record) => {
     setState((s) => {
       // 같은 벨트+같은 날짜 기록은 덮어쓰기
@@ -511,6 +518,7 @@ export default function App() {
           onNext={() => navMonth(1)}
           onPickBelt={handlePickBelt}
           onOpenBelt={handleOpenBeltSmart}
+          onEditBelt={handleEditBeltLatest}
           groupOf={groupOf}
           filters={filters}
           setFilters={setFilters}
