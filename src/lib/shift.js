@@ -287,6 +287,20 @@ export function cancelExtraWork(list, id) {
   return (list || []).filter((e) => e.id !== id);
 }
 
+// 관리자: 추가 근무 편성 수정
+export function adminUpdateExtraWork(list, id, patch = {}) {
+  return (list || []).map((e) => {
+    if (e.id !== id) return e;
+    const next = { ...e, ...patch };
+    if (!next.date) throw new Error('날짜를 선택하세요.');
+    if (!next.person) throw new Error('근무자를 선택하세요.');
+    if (!EXTRA_WORK_REASONS.includes(next.reason)) {
+      throw new Error('추가 근무 사유는 교육 / GIB / PSM 중에서 선택하세요.');
+    }
+    return next;
+  });
+}
+
 // 기간 내 추가 근무 인원별 건수 집계, 내림차순
 export function extraWorkCounts(list, period) {
   const map = {};

@@ -536,6 +536,73 @@ function AdminSubCard({ sub, onEdit, onDelete }) {
   );
 }
 
+// ── 관리자 추가 근무 편성 입력/수정 폼 ─────────────────
+function AdminExtraForm({ shiftGroups, today, edit, onSubmit, onClose }) {
+  const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
+  const [date, setDate] = useState(edit?.date || today);
+  const [person, setPerson] = useState(edit?.person || allNames[0] || '');
+  const [reason, setReason] = useState(edit?.reason || EXTRA_WORK_REASONS[0]);
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    setErr('');
+    try {
+      onSubmit({ date, person, reason });
+      onClose();
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3>{edit ? '✏ 추가 근무 수정' : '➕ 추가 근무 편성 추가'}</h3>
+        <label>날짜</label>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <label>근무자</label>
+        <select value={person} onChange={(e) => setPerson(e.target.value)}>
+          {allNames.length === 0 && <option value="">(편성된 인원 없음)</option>}
+          {SHIFT_GROUPS.map((g) => (
+            <optgroup key={g} label={`${g}조`}>
+              {(shiftGroups[g] || []).map((n) => <option key={n} value={n}>{n}</option>)}
+            </optgroup>
+          ))}
+        </select>
+        <label>사유</label>
+        <select value={reason} onChange={(e) => setReason(e.target.value)}>
+          {EXTRA_WORK_REASONS.map((r) => <option key={r}>{r}</option>)}
+        </select>
+        {err && <p className="sub-err">{err}</p>}
+        <div className="modal-actions">
+          <button className="add-btn secondary" onClick={onClose}>취소</button>
+          <button className="add-btn" disabled={!person} onClick={submit}>{edit ? '수정 저장' : '편성 추가'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 관리자용 추가 근무 카드 (수정/삭제) ────────────────
+function AdminExtraCard({ extra, onEdit, onDelete }) {
+  return (
+    <div className="sub-card filled">
+      <div className="sub-card-top">
+        <span className="sub-badge sub-extra">{extra.reason}</span>
+        <span className="sub-card-date">{fmtKDate(extra.date)}</span>
+        <span className="sub-status">추가 근무</span>
+      </div>
+      <div className="sub-card-body">
+        <div>근무자: <b>{extra.person}</b></div>
+      </div>
+      <div className="sub-card-actions">
+        <button className="add-btn secondary" onClick={() => onEdit(extra)}>✏ 수정</button>
+        <button className="add-btn secondary" onClick={() => onDelete(extra)}>🗑 삭제</button>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 ───────────────────────────────────────────────
 export default function SubstitutionPage({
   shiftGroups,
@@ -556,11 +623,15 @@ export default function SubstitutionPage({
   onAdminCreateSub,
   onAdminUpdateSub,
   onAdminDeleteSub,
+  onAdminCreateExtra,
+  onAdminUpdateExtra,
+  onAdminDeleteExtra,
   onClose,
 }) {
   const [me, setMe] = useState(null);
   const [adminPw, setAdminPw] = useState(null); // 관리자 로그인 시 입력한 비밀번호
   const [adminForm, setAdminForm] = useState(null); // { edit } | { create:true }
+  const [adminExtraForm, setAdminExtraForm] = useState(null); // { edit } | { create:true }
   const [tab, setTab] = useState('list'); // 'list' | 'extra' | 'board' | 'count'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
@@ -584,6 +655,22 @@ export default function SubstitutionPage({
     if (!window.confirm(`${fmtKDate(sub.date)} ${sub.requester}(${sub.group}조)의 대근 편성을 삭제할까요?`)) return;
     try {
       onAdminDeleteSub(sub.id, adminPw);
+    } catch (e) {
+      window.alert(e.message || String(e));
+    }
+  };
+
+  const submitAdminExtraForm = (payload) => {
+    if (adminExtraForm && adminExtraForm.edit) {
+      onAdminUpdateExtra(adminExtraForm.edit.id, payload, adminPw);
+    } else {
+      onAdminCreateExtra(payload, adminPw);
+    }
+  };
+  const deleteAdminExtra = (extra) => {
+    if (!window.confirm(`${fmtKDate(extra.date)} ${extra.person}의 추가 근무(${extra.reason})를 삭제할까요?`)) return;
+    try {
+      onAdminDeleteExtra(extra.id, adminPw);
     } catch (e) {
       window.alert(e.message || String(e));
     }
@@ -648,9 +735,7 @@ export default function SubstitutionPage({
       <main style={{ padding: 16 }}>
         <div className="seg">
           <button className={tab === 'list' ? 'active' : ''} onClick={() => setTab('list')}>대근 {isAdmin ? '편성' : '목록'}</button>
-          {!isAdmin && (
-            <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무</button>
-          )}
+          <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무{isAdmin ? ' 편성' : ''}</button>
           <button className={tab === 'board' ? 'active' : ''} onClick={() => setTab('board')}>근무표</button>
           <button className={tab === 'count' ? 'active' : ''} onClick={() => setTab('count')}>집계</button>
         </div>
@@ -708,7 +793,30 @@ export default function SubstitutionPage({
           </>
         )}
 
-        {tab === 'extra' && (
+        {tab === 'extra' && isAdmin && (
+          <>
+            <div className="sub-toolbar">
+              <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setAdminExtraForm({ create: true })}>
+                ＋ 추가 근무 편성 추가
+              </button>
+            </div>
+            <p className="sub-hint">관리자는 모든 추가 근무 편성을 추가·수정·삭제할 수 있습니다.</p>
+            {sortedExtra.length === 0 ? (
+              <p className="sub-empty">추가 근무 편성 내역이 없습니다.</p>
+            ) : (
+              sortedExtra.map((e) => (
+                <AdminExtraCard
+                  key={e.id}
+                  extra={e}
+                  onEdit={(ex) => setAdminExtraForm({ edit: ex })}
+                  onDelete={deleteAdminExtra}
+                />
+              ))
+            )}
+          </>
+        )}
+
+        {tab === 'extra' && !isAdmin && (
           <>
             <div className="sub-toolbar">
               <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setShowExtra(true)}>
@@ -826,6 +934,16 @@ export default function SubstitutionPage({
           edit={adminForm.edit}
           onSubmit={submitAdminForm}
           onClose={() => setAdminForm(null)}
+        />
+      )}
+
+      {adminExtraForm && (
+        <AdminExtraForm
+          shiftGroups={shiftGroups}
+          today={today}
+          edit={adminExtraForm.edit}
+          onSubmit={submitAdminExtraForm}
+          onClose={() => setAdminExtraForm(null)}
         />
       )}
     </>

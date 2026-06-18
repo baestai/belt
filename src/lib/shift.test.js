@@ -25,6 +25,7 @@ import {
   createExtraWork,
   cancelExtraWork,
   extraWorkCounts,
+  adminUpdateExtraWork,
 } from './shift.js';
 
 describe('교대 근무표 — 기준 사실 검증', () => {
@@ -356,6 +357,21 @@ describe('관리자 대근 편성', () => {
     list = adminCreateSubstitution(list, { date: '2026-06-20', group: 'B', requester: '김세준', reason: '교육' });
     const updated = adminUpdateSubstitution(list, list[0].id, { reason: '경조사' });
     expect(updated[1].reason).toBe('교육');
+  });
+
+  it('adminUpdateExtraWork: 날짜/근무자/사유 수정', () => {
+    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    const id = list[0].id;
+    list = adminUpdateExtraWork(list, id, { date: '2026-06-21', person: '김영진', reason: 'PSM' });
+    expect(list[0]).toMatchObject({ date: '2026-06-21', person: '김영진', reason: 'PSM' });
+  });
+
+  it('adminUpdateExtraWork: 잘못된 사유/누락 시 에러', () => {
+    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    const id = list[0].id;
+    expect(() => adminUpdateExtraWork(list, id, { reason: '휴가' })).toThrow();
+    expect(() => adminUpdateExtraWork(list, id, { person: '' })).toThrow();
+    expect(() => adminUpdateExtraWork(list, id, { date: '' })).toThrow();
   });
 });
 

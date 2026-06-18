@@ -27,6 +27,7 @@ import {
   adminUpdateSubstitution,
   createExtraWork,
   cancelExtraWork,
+  adminUpdateExtraWork,
 } from './lib/shift.js';
 import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
@@ -376,6 +377,21 @@ export default function App() {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
   };
+  // 관리자 추가 근무 편성: 비밀번호 확인 후 입력/수정/삭제
+  const handleAdminCreateExtra = (payload, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const next = createExtraWork(stateRef.current.extraWorks || [], payload);
+    setState((s) => ({ ...s, extraWorks: next }));
+  };
+  const handleAdminUpdateExtra = (id, patch, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const next = adminUpdateExtraWork(stateRef.current.extraWorks || [], id, patch);
+    setState((s) => ({ ...s, extraWorks: next }));
+  };
+  const handleAdminDeleteExtra = (id, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, extraWorks: cancelExtraWork(s.extraWorks || [], id) }));
+  };
   // 추가 근무(교육/GIB/PSM) — throw 가능하므로 setState 밖에서 계산
   const handleCreateExtra = (payload) => {
     const next = createExtraWork(stateRef.current.extraWorks || [], payload);
@@ -549,6 +565,9 @@ export default function App() {
           onAdminCreateSub={handleAdminCreateSub}
           onAdminUpdateSub={handleAdminUpdateSub}
           onAdminDeleteSub={handleAdminDeleteSub}
+          onAdminCreateExtra={handleAdminCreateExtra}
+          onAdminUpdateExtra={handleAdminUpdateExtra}
+          onAdminDeleteExtra={handleAdminDeleteExtra}
           onClose={() => setView('calendar')}
         />
       )}
