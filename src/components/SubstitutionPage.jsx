@@ -185,8 +185,12 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen
 }
 
 // ── 대근자 선택(모집중 클릭) ──────────────────────────
-function ClaimPicker({ sub, shiftGroups, onClaim, onClose }) {
-  const candidates = eligibleSubstitutes(shiftGroups, sub.date, sub.shift, [sub.requester]);
+function ClaimPicker({ sub, shiftGroups, substitutions = [], onClaim, onClose }) {
+  // 같은 날 이미 대근을 맡은 직원은 제외 (1일 최대 1회)
+  const busy = substitutions
+    .filter((s) => s.date === sub.date && s.substitute && s.id !== sub.id)
+    .map((s) => s.substitute);
+  const candidates = eligibleSubstitutes(shiftGroups, sub.date, sub.shift, [sub.requester, ...busy]);
   const [pick, setPick] = useState(candidates[0]?.name || '');
   const [err, setErr] = useState('');
 
@@ -485,6 +489,7 @@ export default function SubstitutionPage({
         <ClaimPicker
           sub={pickFor}
           shiftGroups={shiftGroups}
+          substitutions={substitutions}
           onClaim={onClaimSub}
           onClose={() => setPickFor(null)}
         />

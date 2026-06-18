@@ -134,6 +134,16 @@ export function createSubstitution(list, { date, group, requester, reason }, { f
 
 // 대근 확정: 대근자가 비어있는 신청을 맡음
 export function claimSubstitution(list, id, substitute, shiftGroups) {
+  const target = list.find((s) => s.id === id);
+  // 대근자는 하루 최대 1회만 가능 (같은 날 다른 대근을 이미 맡고 있으면 불가)
+  if (target) {
+    const already = list.some(
+      (s) => s.id !== id && s.date === target.date && s.substitute === substitute
+    );
+    if (already) {
+      throw new Error('해당 날짜에 이미 대근을 맡은 직원입니다. (1일 최대 1회)');
+    }
+  }
   return list.map((s) => {
     if (s.id !== id) return s;
     if (s.status !== 'open') throw new Error('이미 처리된 대근입니다.');

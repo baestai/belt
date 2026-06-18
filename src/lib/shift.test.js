@@ -184,6 +184,16 @@ describe('대근 신청/확정 (불변 연산)', () => {
     expect(() => claimSubstitution(list, id, '정영균', groups)).toThrow();
   });
 
+  it('대근자는 하루 최대 1회만 가능', () => {
+    // 6/18 주간 대근 가능자(위치2) C조 김영진이 두 건을 모두 맡으려 하면 두 번째는 에러
+    let list = [];
+    list = createSubstitution(list, { date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가' });
+    list = createSubstitution(list, { date: '2026-06-18', group: 'A', requester: '고영철', reason: '휴가' });
+    const [id1, id2] = list.map((s) => s.id);
+    list = claimSubstitution(list, id1, '김영진', groups);
+    expect(() => claimSubstitution(list, id2, '김영진', groups)).toThrow(/1일 최대 1회/);
+  });
+
   it('본인은 대근할 수 없다', () => {
     let list = createSubstitution([], {
       date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가',
