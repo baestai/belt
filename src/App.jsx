@@ -15,6 +15,14 @@ import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
+import SubstitutionPage from './components/SubstitutionPage.jsx';
+import {
+  setPin as setPinFn,
+  createSubstitution,
+  claimSubstitution,
+  unclaimSubstitution,
+  cancelSubstitution,
+} from './lib/shift.js';
 import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
@@ -312,6 +320,28 @@ export default function App() {
     setView('calendar');
   };
 
+  // ===== 대근(代勤) 핸들러 =====
+  const handleSetPin = (name, pin) => {
+    // setPinFn이 형식(숫자 4자리+) 검증 후 throw → 컴포넌트에서 처리
+    const pins = setPinFn(state.shiftPins || {}, name, pin);
+    setState((s) => ({ ...s, shiftPins: pins }));
+  };
+  const handleCreateSub = (payload) => {
+    setState((s) => ({ ...s, substitutions: createSubstitution(s.substitutions || [], payload) }));
+  };
+  const handleClaimSub = (id, substitute) => {
+    setState((s) => ({
+      ...s,
+      substitutions: claimSubstitution(s.substitutions || [], id, substitute, s.shiftGroups),
+    }));
+  };
+  const handleUnclaimSub = (id) => {
+    setState((s) => ({ ...s, substitutions: unclaimSubstitution(s.substitutions || [], id) }));
+  };
+  const handleCancelSub = (id) => {
+    setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
+  };
+
   // 점검표 인쇄/PDF: 대상 기록을 렌더한 뒤 브라우저 인쇄 대화상자 호출
   useEffect(() => {
     if (!printTarget) return;
@@ -411,6 +441,20 @@ export default function App() {
         />
       )}
 
+      {view === 'shift' && (
+        <SubstitutionPage
+          shiftGroups={state.shiftGroups}
+          shiftPins={state.shiftPins || {}}
+          substitutions={state.substitutions || []}
+          today={today}
+          onSetPin={handleSetPin}
+          onCreateSub={handleCreateSub}
+          onClaimSub={handleClaimSub}
+          onUnclaimSub={handleUnclaimSub}
+          onCancelSub={handleCancelSub}
+        />
+      )}
+
       {view === 'form' && formCtx && (
         <InspectionForm
           belt={formCtx.belt}
@@ -489,6 +533,12 @@ export default function App() {
           onClick={() => setView('calendar')}
         >
           <span className="ic">🦺</span>점검모드
+        </button>
+        <button
+          className={view === 'shift' ? 'active' : ''}
+          onClick={() => setView('shift')}
+        >
+          <span className="ic">🔁</span>대근
         </button>
         <button
           className={view === 'list' || view === 'detail' ? 'active' : ''}

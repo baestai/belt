@@ -49,6 +49,9 @@ export async function fetchCloud() {
     quickMemos: cfg.quickMemos || [],
     beltConfigs: cfg.beltConfigs || {},
     adminPw: cfg.adminPw,
+    shiftGroups: cfg.shiftGroups,
+    shiftPins: cfg.shiftPins || {},
+    substitutions: cfg.substitutions || [],
     schedules,
     records,
   };
@@ -137,7 +140,7 @@ function toRecordRow(r) {
 
 function configChanged(prev, next) {
   const pick = (s) =>
-    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw });
+    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw, shiftGroups: s?.shiftGroups, shiftPins: s?.shiftPins, substitutions: s?.substitutions });
   return pick(prev) !== pick(next);
 }
 
@@ -149,6 +152,9 @@ async function upsertConfig(state) {
     quickMemos: state.quickMemos,
     beltConfigs: state.beltConfigs,
     adminPw: state.adminPw,
+    shiftGroups: state.shiftGroups,
+    shiftPins: state.shiftPins,
+    substitutions: state.substitutions,
   };
   const { error } = await supabase.from('settings').upsert({ key: CONFIG_KEY, value });
   if (error) throw error;

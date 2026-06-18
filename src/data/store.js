@@ -5,6 +5,7 @@
 import { defaultGroups } from '../lib/belts.js';
 import { defaultInspectors, DEFAULT_ADMIN_PW } from '../lib/auth.js';
 import { DEFAULT_PULLEYS } from '../lib/inspectionItems.js';
+import { defaultShiftGroups } from '../lib/shift.js';
 
 export const STORAGE_KEY = 'belt-inspection-state-v1';
 
@@ -18,6 +19,10 @@ export function defaultState() {
     records: [], // 점검 기록 배열
     schedules: {}, // { beltName: { nextDate, cycle } }
     adminPw: DEFAULT_ADMIN_PW,
+    // ── 대근(代勤) 관리 ──
+    shiftGroups: defaultShiftGroups(), // { A:[...], B:[...], C:[...], D:[...] }
+    shiftPins: {}, // { name: '1234' } 대근 페이지 로그인용 PIN (내부 구분용)
+    substitutions: [], // 대근 신청/확정 기록 배열
   };
 }
 
