@@ -293,18 +293,37 @@ button.sub-cell-sub{background:var(--warnbg);border:1px solid var(--warn);border
 button.sub-cell-admin{width:100%;background:none;border:none;border-top:1px dashed var(--line);cursor:pointer;font:inherit;color:inherit}
 button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 
-/* 대근 편성 캘린더 */
-.sub-cal-wrap{margin:12px 0}
-.sub-cal .day.sub-cal-day{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:54px;padding:4px 2px}
-.sub-cal-dnum{font-size:13px;font-weight:700;line-height:1}
-.sub-cal-shifts{display:flex;gap:3px}
-.sub-cal-g{font-style:normal;font-size:10px;font-weight:700;border-radius:6px;padding:0 4px;line-height:1.4}
-.sub-cal-g.day{color:#fff;background:var(--warn)}
-.sub-cal-g.night{color:#fff;background:var(--accent)}
-.sub-cal-marks{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
-.sub-cal-mark{font-style:normal;font-size:9px;font-weight:700;border-radius:5px;padding:0 3px;line-height:1.4}
-.sub-cal-mark.sub{color:var(--ok);background:rgba(16,185,129,.16)}
-.sub-cal-mark.extra{color:var(--accent);background:rgba(59,130,246,.16)}
+/* 대근 편성 캘린더 (근무현황 한눈에) */
+.sc-wrap{margin:14px 0}
+.sc-head{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:12px}
+.sc-head button{background:var(--panel2);border:1px solid var(--line);color:var(--accent);font-size:18px;line-height:1;width:32px;height:32px;border-radius:9px;cursor:pointer;transition:.15s var(--ease)}
+.sc-head button:hover{border-color:var(--accent);transform:translateY(-1px)}
+.sc-ym{font-size:16px;font-weight:800;min-width:96px;text-align:center}
+.sc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.sc-wd{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:2px 0}
+.sc-wd.sun{color:var(--bad)} .sc-wd.sat{color:var(--info)}
+.sc-empty{aspect-ratio:auto}
+.sc-cell{display:flex;flex-direction:column;gap:3px;min-height:76px;padding:5px;border:1px solid var(--line);border-radius:11px;background:var(--panel);cursor:pointer;font:inherit;color:inherit;text-align:left;transition:transform .15s var(--ease),border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.sc-cell:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.sc-cell.today{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent)}
+.sc-cell.sel{background:var(--accent-weak);border-color:var(--accent)}
+.sc-top{display:flex;align-items:center;justify-content:space-between;min-height:16px}
+.sc-date{font-size:13px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.sc-date.sun{color:var(--bad)} .sc-date.sat{color:var(--info)}
+.sc-cell.today .sc-date{color:var(--accent)}
+.sc-dots{display:flex;gap:3px}
+.sc-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.sc-dot.sub{background:var(--ok)} .sc-dot.extra{background:var(--info)}
+.sc-shift{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;line-height:1;border-radius:7px;padding:3px 5px;font-variant-numeric:tabular-nums}
+.sc-shift b{font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 4px;line-height:1}
+.sc-shift.day{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.sc-shift.day b{background:var(--warn)}
+.sc-shift.night{background:var(--info-weak);color:var(--info)}
+.sc-shift.night b{background:var(--info)}
+.sc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:11px;color:var(--muted);margin-top:12px}
+.sc-legend span{display:flex;align-items:center;gap:5px}
+.sc-tag{font-style:normal;font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 5px;line-height:1}
+.sc-tag.day{background:var(--warn)} .sc-tag.night{background:var(--info)}
 
 /* 선택일 근무현황 상세 */
 .sub-day-detail{margin-top:12px}
@@ -387,11 +406,9 @@ header{box-shadow:var(--shadow-sm);backdrop-filter:saturate(1.2)}
 
 /* 야간 근무 · 추가근무 등은 정보색(블루)로 분리 → 주간(amber)과 대비 */
 .sub-night{color:var(--info)}
-.sub-cal-g.night{background:var(--info)}
 .sub-cell-extra-tag{background:var(--info)}
 .sub-cell-extra-nm{color:var(--info)}
 .sub-badge.sub-extra{background:var(--info);border-color:var(--info)}
-.sub-cal-mark.extra{color:var(--info);background:var(--info-weak)}
 
 /* 상태 = 색 + 아이콘 + 텍스트 (접근성) */
 .stat .lbl{display:inline-flex;align-items:center;justify-content:center;gap:3px}

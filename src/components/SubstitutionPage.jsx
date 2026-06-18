@@ -283,53 +283,54 @@ function ShiftCalendar({ refDate, selected, today, substitutions = [], extraWork
   for (const e of extraWorks) (extraByDate[e.date] || (extraByDate[e.date] = [])).push(e);
 
   return (
-    <div className="sub-cal-wrap">
-      <div className="cal-head">
+    <div className="sc-wrap">
+      <div className="sc-head">
         <button onClick={onPrevMonth} aria-label="이전 달">‹</button>
-        <span className="ym">{y}년 {m}월</span>
+        <span className="sc-ym">{y}년 {m}월</span>
         <button onClick={onNextMonth} aria-label="다음 달">›</button>
       </div>
-      <div className="cal sub-cal">
+      <div className="sc-grid">
         {CAL_WD.map((w, i) => (
-          <div key={w} className={'wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '')}>{w}</div>
+          <div key={w} className={'sc-wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '')}>{w}</div>
         ))}
         {cells.map((d, i) => {
-          if (d == null) return <div key={'e' + i} className="day empty" />;
+          if (d == null) return <div key={'e' + i} className="sc-empty" />;
           const ds = dateStr(d);
           const s = shiftsOnDate(ds);
           const dayG = SHIFT_GROUPS.find((g) => s[g] === 'day');
           const nightG = SHIFT_GROUPS.find((g) => s[g] === 'night');
           const subs = subByDate[ds] || [];
           const extras = extraByDate[ds] || [];
+          const wd = new Date(y, m - 1, d).getDay();
           const isToday = ds === today;
           const isSel = ds === selected;
           return (
             <button
               key={ds}
-              className={'day sub-cal-day' + (isToday ? ' today' : '') + (isSel && !isToday ? ' sel' : '')}
+              className={'sc-cell' + (isToday ? ' today' : '') + (isSel && !isToday ? ' sel' : '')}
               onClick={() => onSelectDate(ds)}
             >
-              <span className="sub-cal-dnum">{d}</span>
-              <span className="sub-cal-shifts">
-                <i className="sub-cal-g day" title="주간">{dayG}</i>
-                <i className="sub-cal-g night" title="야간">{nightG}</i>
+              <span className="sc-top">
+                <span className={'sc-date' + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '')}>{d}</span>
+                {(subs.length > 0 || extras.length > 0) && (
+                  <span className="sc-dots">
+                    {subs.length > 0 && <i className="sc-dot sub" title={`대근 ${subs.length}건`} />}
+                    {extras.length > 0 && <i className="sc-dot extra" title={`추가근무 ${extras.length}건`} />}
+                  </span>
+                )}
               </span>
-              {(subs.length > 0 || extras.length > 0) && (
-                <span className="sub-cal-marks">
-                  {subs.length > 0 && <i className="sub-cal-mark sub" title="대근">대{subs.length}</i>}
-                  {extras.length > 0 && <i className="sub-cal-mark extra" title="추가근무">추{extras.length}</i>}
-                </span>
-              )}
+              <span className="sc-shift day"><b>주</b>{dayG || '-'}</span>
+              <span className="sc-shift night"><b>야</b>{nightG || '-'}</span>
             </button>
           );
         })}
       </div>
-      <p className="sub-legend">
-        <span className="sub-cal-g day">조</span>=주간 ·{' '}
-        <span className="sub-cal-g night">조</span>=야간 ·{' '}
-        <i className="sub-cal-mark sub">대</i>=대근 ·{' '}
-        <i className="sub-cal-mark extra">추</i>=추가근무
-      </p>
+      <div className="sc-legend">
+        <span><i className="sc-tag day">주</i>주간조</span>
+        <span><i className="sc-tag night">야</i>야간조</span>
+        <span><i className="sc-dot sub" />대근</span>
+        <span><i className="sc-dot extra" />추가근무</span>
+      </div>
     </div>
   );
 }
