@@ -337,7 +337,7 @@ header h1 + .notif-wrap{margin-left:auto}
 .notif-btn{position:relative}
 .notif-badge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .notif-backdrop{position:fixed;inset:0;z-index:45}
-.notif-panel{position:absolute;top:34px;right:0;z-index:46;width:min(86vw,320px);background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden;animation:fadeInUp .18s var(--ease)}
+.notif-panel{position:fixed;top:56px;right:10px;z-index:46;width:min(92vw,340px);max-height:72vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);animation:fadeInUp .18s var(--ease)}
 .notif-head{padding:11px 14px;font-size:13px;font-weight:800;border-bottom:1px solid var(--line);background:var(--panel2)}
 .notif-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
 .notif-item{display:flex;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;align-items:flex-start}
@@ -474,8 +474,8 @@ header{box-shadow:var(--shadow-sm);backdrop-filter:saturate(1.2)}
 .status-text.bad::before{content:'✕ '}
 
 /* 헤더 SVG 아이콘 */
-.hdr-btn.labeled .hdr-svg{width:21px;height:21px;display:block}
-.hdr-btn.labeled svg{stroke:var(--text)}
+.hdr-svg{width:21px;height:21px;display:block}
+.hdr-btn svg{stroke:var(--text)}
 header .logo svg{width:22px;height:22px;display:block}
 
 /* 테마 전환 버튼 (전 화면 공통, 우하단 플로팅) */
