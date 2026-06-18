@@ -20,7 +20,7 @@ import {
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
-const SUB_REASONS = ['휴가', '교육', '청원'];
+const SUB_REASONS = ['휴가', '교육', '청원', '검진'];
 
 function addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
