@@ -4,7 +4,7 @@ import { aggregateStatus, statusLabel } from '../lib/belts.js';
 const KO = { ok: '양호', bad: '불량', warn: '주의' };
 
 // 한 항목의 점검 결과를 사람이 읽는 문자열로
-function itemText(def, it) {
+export function itemText(def, it) {
   if (!it) return '-';
   if (def.type === 'subs' || def.type === 'pulley') {
     const subs = it.subs || {};

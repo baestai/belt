@@ -1,4 +1,4 @@
-import { beltsScheduledOn } from '../lib/selectors.js';
+import { beltsScheduledOn, beltsForDate, beltsInspectedOn } from '../lib/selectors.js';
 import { GROUP_ORDER, flattenBelts, statusCounts } from '../lib/belts.js';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -19,6 +19,7 @@ export default function FieldCalendar({
   month, // 1-based
   groups,
   schedules,
+  records = [],
   today,
   statusOf,
   selectedDate,
@@ -78,7 +79,9 @@ export default function FieldCalendar({
     if (resultBelts.length > 0) onOpenBelt(resultBelts[0].name);
   };
 
-  const selBelts = beltsScheduledOn(schedules, selectedDate);
+  // 해당일 점검 대상: 예정 ∪ 실제 기록(완료 후 예정일이 넘어가도 다시 열람·수정 가능)
+  const selBelts = beltsForDate(schedules, records, selectedDate);
+  const inspectedSet = new Set(beltsInspectedOn(records, selectedDate));
 
   return (
     <>
@@ -168,14 +171,15 @@ export default function FieldCalendar({
               {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
               {selBelts.map((b) => {
                 const s = statusOf(b);
+                const done = inspectedSet.has(b);
                 return (
                   <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
                     <span className={'dot ' + s} />
                     <div className="info">
                       <div className="name">{b}</div>
-                      <div className="sub">{groupOf(b)} · {s === 'none' ? '미점검' : '점검됨'}</div>
+                      <div className="sub">{groupOf(b)} · {done ? '점검완료' : (s === 'none' ? '미점검' : '점검됨')}</div>
                     </div>
-                    <span className="due none">입력하기</span>
+                    <span className="due none">{done ? '결과보기·수정' : '입력하기'}</span>
                   </button>
                 );
               })}

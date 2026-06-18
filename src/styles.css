@@ -163,7 +163,14 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .insp-row .x{background:none;border:none;color:var(--bad);font-size:16px;cursor:pointer;padding:0 4px}
 .err{color:var(--bad);font-size:13px;margin-top:8px;white-space:pre-line}
 
-.tl-print{margin-top:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer}
+.tl-print{margin-top:6px;margin-right:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer}
+
+/* 결과보기 모달 */
+.result-tbl{width:100%;border-collapse:collapse;margin-top:4px;font-size:13px}
+.result-tbl th,.result-tbl td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.result-tbl th{background:var(--panel2);font-weight:700}
+.result-bad{color:var(--bad);font-weight:700}
+.result-memo{margin-top:3px;font-size:12px;color:var(--muted)}
 
 /* 빠른 메모 + 음성 입력 */
 .memo-wrap{margin-top:10px}

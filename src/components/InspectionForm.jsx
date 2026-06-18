@@ -99,7 +99,8 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
     setItem(key, (it) => (it.values = { ...it.values, [field]: val }));
 
   // 벨트마다 설치 상태가 달라 점검 폼에서 행을 추가/삭제한다.
-  // 비밀번호 확인 후 앱 상태(벨트별 구성)에 '즉시 영속'하고, 현재 폼에도 반영한다.
+  // 설치구성(Pulley/전기장치) 추가·삭제는 비밀번호 없이 누구나 가능하며,
+  // 앱 상태(벨트별 구성)에 '즉시 영속'하고 현재 폼에도 반영한다.
   // (Pulley: subs+temps / 전기장치: subs)
   const addRow = (key) => {
     const n = String(newRow[key] || '').trim();
@@ -108,10 +109,8 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
       window.alert('이미 등록된 구분입니다.');
       return;
     }
-    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
-    if (pw === null) return;
     try {
-      onAddItem(belt.name, key, n, pw); // 즉시 영속
+      onAddItem(belt.name, key, n); // 즉시 영속
     } catch (e) {
       window.alert(e.message);
       return;
@@ -124,10 +123,8 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
   };
   const removeRow = (key, name) => {
     if (!window.confirm(`"${name}" 구분을 삭제할까요?`)) return;
-    const pw = window.prompt('관리자 비밀번호를 입력하세요:');
-    if (pw === null) return;
     try {
-      onRemoveItem(belt.name, key, name, pw); // 즉시 영속
+      onRemoveItem(belt.name, key, name); // 즉시 영속
     } catch (e) {
       window.alert(e.message);
       return;

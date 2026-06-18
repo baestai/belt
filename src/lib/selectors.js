@@ -83,3 +83,21 @@ export function nextDateFrom(dateStr, cycle) {
 export function beltsScheduledOn(schedules, dateStr) {
   return Object.keys(schedules).filter((b) => schedules[b]?.nextDate === dateStr);
 }
+
+// 특정 날짜에 실제 점검 기록이 있는 벨트명 목록 (중복 제거)
+export function beltsInspectedOn(records, dateStr) {
+  const set = new Set();
+  for (const r of records || []) {
+    if (r.date === dateStr) set.add(r.belt);
+  }
+  return [...set];
+}
+
+// 특정 날짜의 점검 대상 벨트명: 예정 ∪ 기록 (정렬)
+export function beltsForDate(schedules, records, dateStr) {
+  const set = new Set([
+    ...beltsScheduledOn(schedules, dateStr),
+    ...beltsInspectedOn(records, dateStr),
+  ]);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}

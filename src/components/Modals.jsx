@@ -1,9 +1,53 @@
 import { useRef, useState } from 'react';
-import { GROUP_ORDER } from '../lib/belts.js';
+import { GROUP_ORDER, aggregateStatus, statusLabel } from '../lib/belts.js';
 import { monthlyReport, recordsToTable, downloadCSV } from '../lib/report.js';
 import { leaderboard, POINTS } from '../lib/points.js';
+import { INSPECTION_ITEMS } from '../lib/inspectionItems.js';
+import { itemText } from './PrintableRecord.jsx';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
+
+// 점검 결과 읽기전용 보기 — 점검모드/관리모드 공통
+export function ResultModal({ record, onClose, onPrint }) {
+  if (!record) return null;
+  const overall = statusLabel(aggregateStatus(record));
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>📄 점검 결과 — {record.belt}</h3>
+        <div className="note" style={{ padding: '0 0 8px' }}>
+          {record.group} · 점검일 {record.date} · 점검자 {record.inspector} · 종합 {overall}
+        </div>
+        <table className="result-tbl">
+          <thead>
+            <tr><th style={{ width: 32 }}>No</th><th>점검 항목</th><th>결과</th></tr>
+          </thead>
+          <tbody>
+            {INSPECTION_ITEMS.map((def) => {
+              const it = record.items?.[def.key];
+              const txt = itemText(def, it);
+              const bad = /불량/.test(txt);
+              return (
+                <tr key={def.key}>
+                  <td>{def.no}</td>
+                  <td>
+                    {def.title}
+                    {it?.memo ? <div className="result-memo">📝 {it.memo}</div> : null}
+                  </td>
+                  <td className={bad ? 'result-bad' : undefined}>{txt}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="modal-actions">
+          {onPrint && <button className="ma-cancel" onClick={() => onPrint(record)}>🖨 점검표 인쇄</button>}
+          <button className="ma-ok" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LeaderboardModal({ records, onClose }) {
   const now = new Date();

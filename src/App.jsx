@@ -26,7 +26,7 @@ import {
   createExtraWork,
   cancelExtraWork,
 } from './lib/shift.js';
-import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
@@ -64,6 +64,7 @@ export default function App() {
   const [selDate, setSelDate] = useState(today);
   const [modal, setModal] = useState(null); // 'add' | 'inspectors' | 'report' | 'backup'
   const [printTarget, setPrintTarget] = useState(null); // 인쇄(PDF)할 점검 기록
+  const [resultTarget, setResultTarget] = useState(null); // 읽기전용 결과보기 대상 기록
   const [fixedInspector, setFixedInspector] = useState(() => getDeviceInspector()); // 기기 고정 점검자
   const [adminAuthed, setAdminAuthed] = useState(false); // 관리모드 인증 여부(세션 단위)
 
@@ -200,8 +201,8 @@ export default function App() {
   };
 
   // 점검모드: 벨트별 설치 구성(Pulley/전기장치) 추가·삭제를 즉시 영속 (점검 완료 저장과 무관)
-  const handleAddBeltItem = (beltName, key, name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+  // 설치구성 편집은 비밀번호 없이 누구나 가능 (관리자/일반 사용자 공통)
+  const handleAddBeltItem = (beltName, key, name) => {
     const n = String(name || '').trim();
     if (!n) throw new Error('구분명을 입력하세요.');
     if (effectiveItemList(state, beltName, key).includes(n)) throw new Error('이미 등록된 구분입니다.');
@@ -215,8 +216,7 @@ export default function App() {
     });
   };
 
-  const handleRemoveBeltItem = (beltName, key, name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+  const handleRemoveBeltItem = (beltName, key, name) => {
     setState((s) => {
       const cfg = s.beltConfigs?.[beltName] || {};
       const cur = cfg[key] || effectiveItemList(s, beltName, key);
@@ -466,6 +466,7 @@ export default function App() {
           onSaveSchedule={handleSaveSchedule}
           onCopyConfig={handleCopyConfigToGroup}
           onPrint={setPrintTarget}
+          onViewResult={setResultTarget}
           groupCount={(groups[selectedBelt.group] || []).length}
         />
       )}
@@ -476,6 +477,7 @@ export default function App() {
           month={cal.month}
           groups={groups}
           schedules={schedules}
+          records={records}
           today={today}
           statusOf={statusOf}
           selectedDate={selDate}
@@ -591,6 +593,14 @@ export default function App() {
           onSave={handleFixInspector}
           onClear={handleClearFixInspector}
           onClose={() => setModal(null)}
+        />
+      )}
+
+      {resultTarget && (
+        <ResultModal
+          record={resultTarget}
+          onPrint={(r) => { setResultTarget(null); setPrintTarget(r); }}
+          onClose={() => setResultTarget(null)}
         />
       )}
 

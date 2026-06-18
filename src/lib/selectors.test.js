@@ -9,6 +9,8 @@ import {
   dueInfo,
   nextDateFrom,
   beltsScheduledOn,
+  beltsInspectedOn,
+  beltsForDate,
 } from './selectors.js';
 import { INSPECTION_ITEMS, emptyRecord } from './inspectionItems.js';
 
@@ -91,5 +93,20 @@ describe('날짜/예정일 로직', () => {
       'S-103': { nextDate: '2026-06-21', cycle: 'monthly' },
     };
     expect(beltsScheduledOn(sched, '2026-06-20').sort()).toEqual(['S-101', 'S-102']);
+  });
+
+  it('특정일 점검 기록 있는 벨트 (중복 제거)', () => {
+    expect(beltsInspectedOn(records, '2026-06-10')).toEqual(['S-101']);
+    expect(beltsInspectedOn(records, '2026-05-01')).toEqual(['S-102']);
+    expect(beltsInspectedOn(records, '2026-01-01')).toEqual([]);
+  });
+
+  it('특정일 점검 대상 = 예정 ∪ 기록 (완료로 예정일이 넘어가도 포함)', () => {
+    // S-101은 6/10 기록 있으나 예정일은 7/10로 넘어간 상태 → 6/10에도 대상으로 보여야 함
+    const sched = {
+      'S-101': { nextDate: '2026-07-10', cycle: 'monthly' },
+      'S-103': { nextDate: '2026-06-10', cycle: 'monthly' },
+    };
+    expect(beltsForDate(sched, records, '2026-06-10')).toEqual(['S-101', 'S-103']);
   });
 });
