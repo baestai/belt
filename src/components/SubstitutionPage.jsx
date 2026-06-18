@@ -1049,6 +1049,15 @@ export default function SubstitutionPage({
     ? sorted.filter((s) => s.requester === me || s.substitute === me)
     : sorted;
 
+  // 관리자 전체 편성 목록: 오늘 이후만, 가까운 날짜가 위로(오름차순)
+  const upcomingSorted = useMemo(
+    () =>
+      substitutions
+        .filter((s) => s.date >= today)
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    [substitutions, today]
+  );
+
   const sortedExtra = useMemo(
     () => [...extraWorks].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
     [extraWorks]
@@ -1075,6 +1084,11 @@ export default function SubstitutionPage({
           )}
           <span className="logo">🔁</span>
           <h1>대근(代勤) 관리</h1>
+          <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서" style={{ marginLeft: 'auto' }}>
+            <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </a>
         </header>
         <main style={{ padding: 16 }}>
           <LoginGate
@@ -1103,6 +1117,11 @@ export default function SubstitutionPage({
         {!isAdmin && (
           <NotificationBell me={me} myGroup={myGroup} substitutions={substitutions} swaps={swaps} today={today} />
         )}
+        <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서">
+          <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </a>
         <button className="hdr-btn" title="로그아웃" onClick={() => { setMe(null); setAdminPw(null); }}>🚪</button>
         <span className="mode-badge" style={{ background: 'var(--accent)', color: '#fff' }}>
           {isAdmin ? '🔧 관리자' : `${me} · ${myGroup}조`}
@@ -1152,11 +1171,11 @@ export default function SubstitutionPage({
               onEditExtra={(ex) => setAdminExtraForm({ edit: ex })}
             />
 
-            <p className="sub-hint" style={{ marginTop: 16 }}>전체 편성 목록</p>
-            {sorted.length === 0 ? (
-              <p className="sub-empty">대근 편성 내역이 없습니다.</p>
+            <p className="sub-hint" style={{ marginTop: 16 }}>다가오는 편성 목록 (오늘 이후)</p>
+            {upcomingSorted.length === 0 ? (
+              <p className="sub-empty">예정된 대근 편성이 없습니다.</p>
             ) : (
-              sorted.map((s) => (
+              upcomingSorted.map((s) => (
                 <AdminSubCard
                   key={s.id}
                   sub={s}

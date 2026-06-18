@@ -330,6 +330,7 @@ button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 .seg-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;vertical-align:middle}
 
 /* 알림 벨 */
+header h1 + .notif-wrap{margin-left:auto}
 .notif-wrap{position:relative;display:inline-flex}
 .notif-btn{position:relative}
 .notif-badge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
