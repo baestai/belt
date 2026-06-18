@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대근 관리 설명서 · 3선탄 통합관리</title>
+  <style>
+    :root{
+      --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --line:#2a313c;
+      --text:#e6e9ef; --muted:#9aa4b2; --accent:#f97316;
+      --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --info:#3b82f6;
+      --okbg:#10241a; --warnbg:#2c2410; --badbg:#2c1414;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0a0d12;color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:880px;margin:0 auto;padding:0 18px 80px}
+
+    .hero{background:linear-gradient(160deg,#1f242d 0%,#0e1116 100%);border-bottom:1px solid var(--line);padding:54px 18px 46px;text-align:center}
+    .hero .logo{font-size:46px}
+    .hero h1{font-size:26px;font-weight:800;margin:12px 0 6px}
+    .hero p{color:var(--muted);font-size:15px;max-width:600px;margin:0 auto}
+    .hero .cta{display:inline-flex;gap:10px;margin-top:24px;flex-wrap:wrap;justify-content:center}
+    .btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:700;font-size:14px}
+    .btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+
+    .toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:32px 0 8px}
+    .toc a{font-size:13px;color:var(--muted);text-decoration:none;padding:7px 14px;background:var(--panel);border:1px solid var(--line);border-radius:20px}
+    .toc a:hover{border-color:var(--accent);color:var(--text)}
+
+    section{margin-top:40px}
+    h2{font-size:20px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+    .lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+    .badge{font-size:12px;padding:4px 11px;border-radius:20px;font-weight:700}
+    .badge.user{background:#3a2a12;color:#fed7aa}
+    .badge.admin{background:#13294d;color:#bfdbfe}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:680px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+    .card h3{font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+    .card p{font-size:13.5px;color:var(--muted)}
+    .card p b{color:var(--text)}
+
+    .steps{counter-reset:s;list-style:none;margin-top:6px}
+    .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px solid var(--line)}
+    .steps li:last-child{border-bottom:none}
+    .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:11px;width:30px;height:30px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+    .steps li b{color:var(--text)}
+    .steps li span{color:var(--muted);font-size:13.5px}
+
+    .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+    .legend div{display:flex;align-items:center;gap:8px;font-size:13.5px}
+    .tag{font-size:11px;font-weight:800;color:#fff;border-radius:5px;padding:2px 7px}
+    .tag.day{background:var(--warn)} .tag.night{background:var(--info)}
+    .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+    .dot.sub{background:var(--ok)} .dot.extra{background:var(--info)}
+
+    .note{background:var(--warnbg);border:1px solid var(--warn);color:#fde68a;border-radius:12px;padding:14px 16px;font-size:13.5px;margin-top:16px}
+    .note b{color:#fff}
+
+    table.rot{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;background:var(--panel);border-radius:12px;overflow:hidden}
+    table.rot th,table.rot td{border:1px solid var(--line);padding:8px 6px;text-align:center}
+    table.rot th{background:var(--panel2);font-weight:700}
+    table.rot .d{color:var(--warn);font-weight:700}
+    table.rot .n{color:var(--info);font-weight:700}
+    table.rot .o{color:var(--muted)}
+
+    footer{text-align:center;color:var(--muted);font-size:12px;margin-top:54px;padding-top:24px;border-top:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="logo">🔁</div>
+    <h1>대근(代勤) 관리 설명서</h1>
+    <p>4조 2교대 근무표를 바탕으로 대근 신청·확정, 맞교환, 추가근무, 집계를 한 곳에서 관리합니다. 휴대폰에서 바로 신청하고, 관리자는 전체 편성을 편성·수정할 수 있습니다.</p>
+    <div class="cta">
+      <a class="btn" href="/">앱 열기 →</a>
+      <a class="btn ghost" href="#login">사용법 보기</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <nav class="toc">
+      <a href="#login">로그인</a>
+      <a href="#rotation">교대 근무표</a>
+      <a href="#request">대근 신청·확정</a>
+      <a href="#swap">맞교환</a>
+      <a href="#extra">추가 근무</a>
+      <a href="#notif">알림</a>
+      <a href="#calendar">캘린더·근무표</a>
+      <a href="#count">집계</a>
+      <a href="#admin">관리자</a>
+      <a href="#rules">규칙</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <section id="login">
+      <h2>🔐 로그인</h2>
+      <p class="lead">화면 상단의 🔁 대근 버튼으로 들어옵니다. 두 가지 방식이 있습니다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="badge user">개인</span></h3>
+          <p>이름을 고르고 <b>PIN(숫자 4~6자리)</b>으로 로그인합니다. 처음이면 입력한 값이 내 PIN으로 저장됩니다. PIN을 잊으면 <b>“PIN 분실 — 초기화 신청”</b> 후 관리자 승인을 받습니다. <br>※ PIN은 내부 인원 구분용 간이 인증입니다.</p>
+        </div>
+        <div class="card">
+          <h3><span class="badge admin">관리자</span></h3>
+          <p>로그인 화면 아래 <b>🔧 관리자 모드</b>에서 관리자 비밀번호로 진입합니다. 모든 대근·추가근무·맞교환을 편성·수정·삭제하고 변경 이력을 볼 수 있습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="rotation">
+      <h2>🗓 4조 2교대 근무표</h2>
+      <p class="lead">8일 주기로 <b>주간 2일 → 휴무 2일 → 야간 2일 → 휴무 2일</b>이 반복됩니다.</p>
+      <table class="rot">
+        <thead><tr><th>구분</th><th>1·2일차</th><th>3·4일차</th><th>5·6일차</th><th>7·8일차</th></tr></thead>
+        <tbody>
+          <tr><td>근무</td><td class="d">주간 07:00~19:00</td><td class="o">휴무</td><td class="n">야간 19:00~07:00</td><td class="o">휴무</td></tr>
+        </tbody>
+      </table>
+      <div class="note">💡 대근 자격: <b>주간 근무 후 첫 휴무엔 주간 대근, 둘째 휴무엔 야간 대근</b>이 가능합니다(야간 근무 후엔 반대). 즉 쉬는 날 상대 시간대를 메워줄 수 있는 사람만 대근할 수 있습니다.</div>
+    </section>
+
+    <section id="request">
+      <h2>📝 대근 신청 · 확정</h2>
+      <p class="lead">내 근무를 비울 때 신청하면, 자격 있는 동료가 대근을 맡습니다.</p>
+      <ol class="steps">
+        <li><b>‘대근 목록’ 탭 → ＋ 대근 신청.</b> <span>날짜와 사유(휴가·교육·청원·검진)를 선택합니다. 그 날 내 근무 시간대는 자동으로 잡힙니다.</span></li>
+        <li><b>모집중으로 등록됩니다.</b> <span>같은 시간대 정원(3명)을 넘으면 확인 후 신청할 수 있습니다.</span></li>
+        <li><b>대근자가 ‘내가 대근하기’를 누르면 확정.</b> <span>대근자는 하루 최대 1회만 맡을 수 있습니다.</span></li>
+        <li><b>취소·삭제.</b> <span>내가 올린 신청은 삭제, 내가 맡은 대근은 ‘대근 취소’로 되돌릴 수 있습니다.</span></li>
+      </ol>
+      <div class="note">⭐ <b>자동 추천:</b> 대근자를 고를 때 후보가 <b>그 주 근무시간이 적은 사람 → 정산기간 대근 횟수가 적은 사람</b> 순으로 정렬되어, 가장 공평한 인원이 맨 위에 ⭐로 추천됩니다.</div>
+    </section>
+
+    <section id="swap">
+      <h2>🔄 대근 맞교환</h2>
+      <p class="lead">내 근무를 동료의 근무와 1:1로 맞바꿉니다.</p>
+      <ol class="steps">
+        <li><b>‘맞교환’ 탭 → ＋ 맞교환 신청.</b> <span>내 근무 날짜와 상대·상대의 근무 날짜를 고릅니다(양쪽 모두 근무일이어야 함).</span></li>
+        <li><b>상대가 수락하면 자동 반영.</b> <span>양쪽 근무가 서로의 대근으로 2건 자동 생성됩니다.</span></li>
+        <li><b>거절·철회·해제.</b> <span>받은 요청은 거절할 수 있고, 수락된 맞교환은 ‘맞교환 해제’로 되돌릴 수 있습니다.</span></li>
+      </ol>
+    </section>
+
+    <section id="extra">
+      <h2>➕ 추가 근무</h2>
+      <p class="lead">대근과 무관하게 별도로 근무하는 경우 기록합니다.</p>
+      <div class="grid">
+        <div class="card"><h3>사유 구분</h3><p><b>교육대근·PSM</b>은 8시간, <b>GIB</b>는 12시간으로 계산되어 주 52시간 집계에 반영됩니다.</p></div>
+        <div class="card"><h3>신청</h3><p>‘추가 근무’ 탭에서 날짜·사유를 선택해 신청합니다. 관리자는 모든 인원의 추가근무를 편성·수정할 수 있습니다.</p></div>
+      </div>
+    </section>
+
+    <section id="notif">
+      <h2>🔔 알림</h2>
+      <p class="lead">개인 로그인 시 헤더의 🔔 벨에 나와 관련된 소식이 모입니다.</p>
+      <div class="grid">
+        <div class="card"><h3>🙋 대근 모집</h3><p>내가 자격 있는 모집중 대근이 있으면 알려줍니다.</p></div>
+        <div class="card"><h3>✅ 내 대근 확정</h3><p>내가 올린 신청에 대근자가 정해지면 표시됩니다.</p></div>
+        <div class="card"><h3>📌 대근 예정</h3><p>내가 맡은 대근 근무 일정을 모아 보여줍니다.</p></div>
+        <div class="card"><h3>🔄 맞교환 요청</h3><p>나에게 온 맞교환 요청을 알려줍니다.</p></div>
+      </div>
+    </section>
+
+    <section id="calendar">
+      <h2>📅 캘린더 · 근무표</h2>
+      <p class="lead">근무 현황을 한눈에 봅니다.</p>
+      <div class="grid">
+        <div class="card"><h3>🗓 편성 캘린더</h3><p><b>정산기간(매월 16일~익월 15일)</b> 단위로 표시됩니다. 각 날짜에 그날 <b>주간조/야간조</b>와 대근·추가근무 표시(점)가 보입니다. 날짜를 누르면 그날 조별 근무현황 상세가 펼쳐집니다.</p></div>
+        <div class="card"><h3>📋 근무표</h3><p>정산기간 표로 A~D조의 주/야/휴무와 대근 교체·추가근무를 함께 봅니다. 관리자는 셀을 눌러 바로 수정합니다.</p></div>
+      </div>
+      <div class="legend">
+        <div><span class="tag day">주</span> 주간조</div>
+        <div><span class="tag night">야</span> 야간조</div>
+        <div><span class="dot sub"></span> 대근</div>
+        <div><span class="dot extra"></span> 추가근무</div>
+      </div>
+    </section>
+
+    <section id="count">
+      <h2>📊 집계</h2>
+      <p class="lead">정산기간(16일~익월 15일) 기준으로 집계합니다.</p>
+      <div class="grid">
+        <div class="card"><h3>⏱ 부담시간 합산</h3><p>인원별 대근(12h)·추가근무 시간을 막대그래프로 합산해 보여줍니다.</p></div>
+        <div class="card"><h3>🏅 대근·추가근무 건수</h3><p>확정된 대근과 추가근무를 인원별 건수로 순위 집계합니다.</p></div>
+      </div>
+    </section>
+
+    <section id="admin">
+      <h2>🔧 관리자 기능</h2>
+      <p class="lead">관리자 비밀번호로 로그인하면 사용할 수 있습니다.</p>
+      <div class="grid">
+        <div class="card"><h3>대근 편성</h3><p>원 근무자·사유·대근자를 직접 지정해 편성을 추가·수정·삭제합니다. 목록은 <b>오늘 이후</b> 건만 가까운 날짜순으로 보입니다.</p></div>
+        <div class="card"><h3>추가 근무 편성</h3><p>모든 인원의 추가근무를 직접 편성·수정·삭제합니다.</p></div>
+        <div class="card"><h3>변경 이력</h3><p>대근·맞교환의 추가·수정·삭제·확정을 <b>누가·언제·무엇을</b> 했는지 ‘이력’ 탭에서 확인합니다(최신순).</p></div>
+        <div class="card"><h3>PIN 초기화 승인</h3><p>PIN을 분실한 인원의 초기화 신청을 승인합니다.</p></div>
+      </div>
+    </section>
+
+    <section id="rules">
+      <h2>📐 알아두면 좋은 규칙</h2>
+      <div class="grid">
+        <div class="card"><h3>⏱ 주 52시간</h3><p>일요일~토요일 기준 총 근무시간(기본+대근+추가)이 52시간을 넘으면 <b>“주 52시간 초과” 알림</b>이 뜹니다(저장은 가능, 확인용).</p></div>
+        <div class="card"><h3>🛌 휴무일 교육</h3><p>휴무일에 사유가 ‘교육’이면 대근이 필요 없어 대근자 칸에 <b>‘휴무일 교육’</b>으로 표시되고 모집 대상에서 제외됩니다.</p></div>
+        <div class="card"><h3>👥 정원</h3><p>같은 날 같은 시간대 대근 신청은 최대 3명까지가 기준입니다(초과 시 확인 후 진행).</p></div>
+        <div class="card"><h3>🔁 1일 1회</h3><p>한 사람이 같은 날 맡을 수 있는 대근은 1회입니다.</p></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>❓ 자주 묻는 질문</h2>
+      <div class="grid">
+        <div class="card"><h3>PIN을 잊었어요</h3><p>로그인 화면에서 ‘PIN 분실 — 초기화 신청’을 누르고 관리자 승인을 받은 뒤 새로 설정하세요.</p></div>
+        <div class="card"><h3>대근자가 안 보여요</h3><p>그 날 자격(쉬는 날 상대 시간대 가능)이 있는 인원만 대근할 수 있습니다. 자격자가 없으면 목록이 비어 있을 수 있습니다.</p></div>
+        <div class="card"><h3>맞교환을 취소하고 싶어요</h3><p>수락 전이면 ‘요청 철회’, 수락 후면 ‘맞교환 해제’로 되돌립니다. 해제 시 자동 생성된 대근 2건도 함께 삭제됩니다.</p></div>
+        <div class="card"><h3>다른 기기와 공유되나요</h3><p>클라우드가 연결되면 모든 기기에서 같은 대근 데이터를 함께 사용합니다.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      3선탄 통합관리 · 대근 관리 설명서<br>
+      <a class="btn" style="margin-top:14px" href="/">앱으로 돌아가기 →</a>
+    </footer>
+  </div>
+</body>
+</html>

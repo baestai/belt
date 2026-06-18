@@ -1101,7 +1101,7 @@ export default function SubstitutionPage({
           )}
           <span className="logo">🔁</span>
           <h1>대근(代勤) 관리</h1>
-          <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서" style={{ marginLeft: 'auto' }}>
+          <a className="hdr-btn" href="/manual-shift.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서" style={{ marginLeft: 'auto' }}>
             <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
@@ -1134,7 +1134,7 @@ export default function SubstitutionPage({
         {!isAdmin && (
           <NotificationBell me={me} myGroup={myGroup} substitutions={substitutions} swaps={swaps} today={today} />
         )}
-        <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서">
+        <a className="hdr-btn" href="/manual-shift.html" target="_blank" rel="noopener" aria-label="사용설명서" title="사용설명서">
           <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
           </svg>
