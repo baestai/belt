@@ -24,7 +24,7 @@ import {
   unclaimSubstitution,
   cancelSubstitution,
 } from './lib/shift.js';
-import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
@@ -343,6 +343,28 @@ export default function App() {
     setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
   };
 
+  // 교대조 인원 편성 (관리모드)
+  const handleAddShiftMember = (group, name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const n = String(name || '').trim();
+    if (!n) throw new Error('이름을 입력하세요.');
+    const cur = state.shiftGroups || defaultShiftGroups();
+    for (const g of Object.keys(cur)) {
+      if ((cur[g] || []).includes(n)) throw new Error(`이미 ${g}조에 편성된 인원입니다.`);
+    }
+    setState((s) => {
+      const sg = s.shiftGroups || defaultShiftGroups();
+      return { ...s, shiftGroups: { ...sg, [group]: [...(sg[group] || []), n] } };
+    });
+  };
+  const handleRemoveShiftMember = (group, name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => {
+      const sg = s.shiftGroups || defaultShiftGroups();
+      return { ...s, shiftGroups: { ...sg, [group]: (sg[group] || []).filter((x) => x !== name) } };
+    });
+  };
+
   // 점검표 인쇄/PDF: 대상 기록을 렌더한 뒤 브라우저 인쇄 대화상자 호출
   useEffect(() => {
     if (!printTarget) return;
@@ -399,6 +421,7 @@ export default function App() {
           onOpenReport={() => setModal('report')}
           onOpenBackup={() => setModal('backup')}
           onOpenLeaderboard={() => setModal('leaderboard')}
+          onOpenShiftGroups={() => setModal('shiftGroups')}
           cloud={isCloudConfigured}
         />
       )}
@@ -513,6 +536,14 @@ export default function App() {
           memos={quickMemos}
           onAdd={handleAddQuickMemo}
           onRemove={handleRemoveQuickMemo}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'shiftGroups' && (
+        <ShiftGroupModal
+          shiftGroups={state.shiftGroups || defaultShiftGroups()}
+          onAdd={handleAddShiftMember}
+          onRemove={handleRemoveShiftMember}
           onClose={() => setModal(null)}
         />
       )}

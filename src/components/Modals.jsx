@@ -294,6 +294,80 @@ export function QuickMemoModal({ memos, onAdd, onRemove, onClose }) {
   );
 }
 
+export function ShiftGroupModal({ shiftGroups, onAdd, onRemove, onClose }) {
+  const groupNames = ['A', 'B', 'C', 'D'];
+  const [group, setGroup] = useState('A');
+  const [name, setName] = useState('');
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+
+  const add = () => {
+    try {
+      onAdd(group, name, pw);
+      setName('');
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  const remove = (g, n) => {
+    try {
+      onRemove(g, n, pw);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>🔁 교대조 인원 편성</h3>
+        <div className="note" style={{ padding: '0 0 8px' }}>
+          A·B·C·D조 인원을 편집합니다. 대근 관리의 로그인·근무표·대근 가능자 판정에 사용됩니다.
+        </div>
+        {groupNames.map((g) => (
+          <div key={g} style={{ marginBottom: 10 }}>
+            <div className="group-title" style={{ marginBottom: 4 }}>
+              {g}조{' '}
+              <span style={{ color: 'var(--muted)', fontWeight: 400 }}>
+                ({(shiftGroups[g] || []).length}명)
+              </span>
+            </div>
+            {(shiftGroups[g] || []).length === 0 && (
+              <div className="note">편성된 인원이 없습니다.</div>
+            )}
+            {(shiftGroups[g] || []).map((n) => (
+              <div className="insp-row" key={n}>
+                <span className="nm">{n}</span>
+                <button className="x" onClick={() => remove(g, n)} aria-label={`${n} 삭제`}>🗑</button>
+              </div>
+            ))}
+          </div>
+        ))}
+        <label>인원 추가 — 대상 조</label>
+        <select value={group} onChange={(e) => setGroup(e.target.value)}>
+          {groupNames.map((g) => <option key={g} value={g}>{g}조</option>)}
+        </select>
+        <label>이름</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 홍길동"
+          onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+        />
+        <label>🔒 관리자 비밀번호</label>
+        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="추가/삭제 시 필요" />
+        {error && <div className="err">{error}</div>}
+        <div className="modal-actions">
+          <button className="ma-cancel" onClick={onClose}>닫기</button>
+          <button className="ma-ok" onClick={add}>추가</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ReportModal({ records, onClose }) {
   const now = new Date();
   const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

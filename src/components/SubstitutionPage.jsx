@@ -104,7 +104,7 @@ function daysInPeriod(start, end) {
 }
 
 // ── 정산기간 교대표 (16일~익월15일) ───────────────────
-function ShiftBoard({ start, end, today, myGroup, substitutions = [] }) {
+function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen }) {
   const days = daysInPeriod(start, end);
   // { 'date|group': [sub, ...] } 빠른 조회
   const subMap = {};
@@ -138,9 +138,17 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [] }) {
                         <div key={sub.id} className="sub-cell-swap">
                           <span className="sub-cell-req">{sub.requester}</span>
                           <span className="sub-cell-arrow">↓</span>
-                          <span className={`sub-cell-sub ${sub.substitute ? '' : 'open'}`}>
-                            {sub.substitute || '모집중'}
-                          </span>
+                          {sub.substitute ? (
+                            <span className="sub-cell-sub">{sub.substitute}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="sub-cell-sub open"
+                              onClick={() => onPickOpen && onPickOpen(sub)}
+                            >
+                              모집중 ▾
+                            </button>
+                          )}
                         </div>
                       ))}
                     </td>
@@ -157,6 +165,53 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [] }) {
         <span className="sub-off">휴무</span>
       </p>
       <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자</p>
+    </div>
+  );
+}
+
+// ── 대근자 선택(모집중 클릭) ──────────────────────────
+function ClaimPicker({ sub, shiftGroups, onClaim, onClose }) {
+  const candidates = eligibleSubstitutes(shiftGroups, sub.date, sub.shift, [sub.requester]);
+  const [pick, setPick] = useState(candidates[0]?.name || '');
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    setErr('');
+    try {
+      onClaim(sub.id, pick);
+      onClose();
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3>🙋 대근자 선택</h3>
+        <p className="sub-hint">
+          {fmtKDate(sub.date)} · {SHIFT_LABEL[sub.shift]} · 원 근무자 {sub.requester}({sub.group}조)
+        </p>
+        {candidates.length === 0 ? (
+          <p className="sub-err" style={{ marginTop: 12 }}>
+            이 날 대근 가능한 인원이 없습니다.
+          </p>
+        ) : (
+          <>
+            <label>대근 가능자</label>
+            <select value={pick} onChange={(e) => setPick(e.target.value)}>
+              {candidates.map((c) => (
+                <option key={c.name} value={c.name}>{c.name} ({c.group}조)</option>
+              ))}
+            </select>
+          </>
+        )}
+        {err && <p className="sub-err">{err}</p>}
+        <div className="modal-actions">
+          <button className="add-btn secondary" onClick={onClose}>취소</button>
+          <button className="add-btn" disabled={!pick} onClick={submit}>대근 확정</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -262,6 +317,7 @@ export default function SubstitutionPage({
   const [tab, setTab] = useState('list'); // 'list' | 'board' | 'count'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
+  const [pickFor, setPickFor] = useState(null); // 모집중 클릭한 대근 건
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
 
@@ -351,7 +407,14 @@ export default function SubstitutionPage({
               <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.end, 1))}>다음 ▶</button>
             </div>
             <p className="sub-period">{boardPeriod.start} ~ {boardPeriod.end}</p>
-            <ShiftBoard start={boardPeriod.start} end={boardPeriod.end} today={today} myGroup={myGroup} substitutions={substitutions} />
+            <ShiftBoard
+              start={boardPeriod.start}
+              end={boardPeriod.end}
+              today={today}
+              myGroup={myGroup}
+              substitutions={substitutions}
+              onPickOpen={setPickFor}
+            />
           </>
         )}
 
@@ -382,6 +445,15 @@ export default function SubstitutionPage({
           today={today}
           onCreate={onCreateSub}
           onClose={() => setShowReq(false)}
+        />
+      )}
+
+      {pickFor && (
+        <ClaimPicker
+          sub={pickFor}
+          shiftGroups={shiftGroups}
+          onClaim={onClaimSub}
+          onClose={() => setPickFor(null)}
         />
       )}
     </>

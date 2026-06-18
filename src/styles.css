@@ -250,6 +250,7 @@ header h1 + .hdr-btn{margin-left:auto}
 .sub-cell-req{font-size:11px;color:var(--muted);text-decoration:line-through}
 .sub-cell-arrow{font-size:10px;color:var(--muted)}
 .sub-cell-sub{font-size:12px;font-weight:700;color:var(--ok)}
+button.sub-cell-sub{background:var(--warnbg);border:1px solid var(--warn);border-radius:8px;padding:2px 8px;cursor:pointer}
 .sub-cell-sub.open{color:var(--warn);font-weight:600}
 
 /* 대근 카드 */
