@@ -9,6 +9,7 @@ import {
   eligibleSubstitutes,
   groupOfPerson,
   createSubstitution,
+  isSlotFull,
   claimSubstitution,
   cancelSubstitution,
   unclaimSubstitution,
@@ -135,6 +136,19 @@ describe('대근 신청/확정 (불변 연산)', () => {
     })).toThrow(/최대 3/);
   });
 
+  it('isSlotFull: 정원 도달 여부 / force로 초과 신청 가능', () => {
+    let list = [];
+    const names = ['백종호', '고영철', '이경운', '김주홍'];
+    for (let i = 0; i < 3; i++) {
+      list = createSubstitution(list, { date: '2026-06-18', group: 'A', requester: names[i], reason: '휴가' });
+    }
+    expect(isSlotFull(list, '2026-06-18', 'day')).toBe(true);
+    // force 없이는 에러, force=true면 통과
+    expect(() => createSubstitution(list, { date: '2026-06-18', group: 'A', requester: names[3], reason: '휴가' })).toThrow();
+    const forced = createSubstitution(list, { date: '2026-06-18', group: 'A', requester: names[3], reason: '휴가' }, { force: true });
+    expect(forced.length).toBe(4);
+  });
+
   it('동일인이 같은 날 같은 시간대 중복 신청하면 에러', () => {
     let list = createSubstitution([], {
       date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가',
@@ -235,11 +249,12 @@ describe('정산 기간 / 집계', () => {
 });
 
 describe('PIN', () => {
-  it('setPin은 4자리 이상 숫자만 허용', () => {
+  it('setPin은 4~6자리 숫자만 허용', () => {
     expect(() => setPin({}, '백종호', '12')).toThrow();
     expect(() => setPin({}, '백종호', 'abcd')).toThrow();
-    const pins = setPin({}, '백종호', '1234');
-    expect(hasPin(pins, '백종호')).toBe(true);
+    expect(() => setPin({}, '백종호', '1234567')).toThrow(); // 7자리 초과
+    expect(hasPin(setPin({}, '백종호', '1234'), '백종호')).toBe(true);
+    expect(hasPin(setPin({}, '백종호', '123456'), '백종호')).toBe(true);
   });
 
   it('verifyPin은 일치 여부 반환', () => {

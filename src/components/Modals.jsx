@@ -294,7 +294,7 @@ export function QuickMemoModal({ memos, onAdd, onRemove, onClose }) {
   );
 }
 
-export function ShiftGroupModal({ shiftGroups, onAdd, onRemove, onClose }) {
+export function ShiftGroupModal({ shiftGroups, pinResets = [], onAdd, onRemove, onApproveReset, onClose }) {
   const groupNames = ['A', 'B', 'C', 'D'];
   const [group, setGroup] = useState('A');
   const [name, setName] = useState('');
@@ -318,6 +318,14 @@ export function ShiftGroupModal({ shiftGroups, onAdd, onRemove, onClose }) {
       setError(e.message);
     }
   };
+  const approve = (n) => {
+    try {
+      onApproveReset(n, pw);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
+  };
 
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -326,6 +334,21 @@ export function ShiftGroupModal({ shiftGroups, onAdd, onRemove, onClose }) {
         <div className="note" style={{ padding: '0 0 8px' }}>
           A·B·C·D조 인원을 편집합니다. 대근 관리의 로그인·근무표·대근 가능자 판정에 사용됩니다.
         </div>
+
+        {pinResets.length > 0 && (
+          <div className="card" style={{ marginTop: 4, borderColor: 'var(--warn)' }}>
+            <h3 style={{ marginBottom: 8 }}>🔑 PIN 초기화 신청 ({pinResets.length})</h3>
+            <div className="note" style={{ padding: '0 0 6px' }}>
+              승인하면 해당 인원의 PIN이 삭제되어 다음 로그인 시 새 PIN을 설정합니다. (관리자 비밀번호 필요)
+            </div>
+            {pinResets.map((n) => (
+              <div className="insp-row" key={n}>
+                <span className="nm">{n}</span>
+                <button className="add-btn" onClick={() => approve(n)}>승인</button>
+              </div>
+            ))}
+          </div>
+        )}
         {groupNames.map((g) => (
           <div key={g} style={{ marginBottom: 10 }}>
             <div className="group-title" style={{ marginBottom: 4 }}>

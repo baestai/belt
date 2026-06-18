@@ -105,7 +105,8 @@ function newId() {
 export const MAX_SUBS_PER_SHIFT = 3;
 
 // 신청: 신청자(원 근무자)가 근무하는 날의 시간대를 자동 산출
-export function createSubstitution(list, { date, group, requester, reason }) {
+// force=true면 정원 초과(MAX_SUBS_PER_SHIFT)를 무시하고 신청 (관리자 확인 후 강행)
+export function createSubstitution(list, { date, group, requester, reason }, { force = false } = {}) {
   const shift = shiftOfGroup(group, date);
   if (shift !== 'day' && shift !== 'night') {
     throw new Error('해당 날짜는 근무일이 아니라 대근 신청이 필요 없습니다.');
@@ -114,7 +115,7 @@ export function createSubstitution(list, { date, group, requester, reason }) {
   if (sameSlot.some((s) => s.requester === requester)) {
     throw new Error('이미 같은 날 같은 시간대에 대근을 신청했습니다.');
   }
-  if (sameSlot.length >= MAX_SUBS_PER_SHIFT) {
+  if (!force && sameSlot.length >= MAX_SUBS_PER_SHIFT) {
     throw new Error(`해당 날짜의 ${SHIFT_LABEL[shift]} 대근 신청은 최대 ${MAX_SUBS_PER_SHIFT}명까지 가능합니다.`);
   }
   const sub = {
@@ -197,6 +198,12 @@ export function verifyPin(pins, name, input) {
 }
 export function setPin(pins, name, input) {
   const v = String(input || '').trim();
-  if (!/^\d{4,}$/.test(v)) throw new Error('PIN은 숫자 4자리 이상이어야 합니다.');
+  if (!/^\d{4,6}$/.test(v)) throw new Error('PIN은 숫자 4~6자리여야 합니다.');
   return { ...(pins || {}), [name]: v };
+}
+
+// 같은 날짜 + 시간대의 대근 신청이 정원(MAX_SUBS_PER_SHIFT)에 도달했는지
+export function isSlotFull(list, date, shift) {
+  const n = (list || []).filter((s) => s.date === date && s.shift === shift).length;
+  return n >= MAX_SUBS_PER_SHIFT;
 }

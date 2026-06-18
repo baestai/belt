@@ -9,6 +9,7 @@ import {
   eligibleShift,
   eligibleSubstitutes,
   groupOfPerson,
+  isSlotFull,
   settlementPeriod,
   inPeriod,
   substituteCounts,
@@ -29,18 +30,19 @@ function fmtKDate(dateStr) {
 }
 
 // ── 로그인 게이트 ──────────────────────────────────────
-function LoginGate({ shiftGroups, shiftPins, onLogin, onSetPin }) {
+function LoginGate({ shiftGroups, shiftPins, pinResets = [], onLogin, onSetPin, onRequestPinReset }) {
   const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
   const [name, setName] = useState(allNames[0] || '');
   const [pin, setPin] = useState('');
   const [err, setErr] = useState('');
   const needSetup = name && !hasPin(shiftPins, name);
+  const resetPending = name && pinResets.includes(name);
 
   const submit = () => {
     setErr('');
     try {
       if (needSetup) {
-        onSetPin(name, pin); // 4자리+ 숫자 검증은 setPin에서
+        onSetPin(name, pin); // 4~6자리 숫자 검증은 setPin에서
         onLogin(name);
       } else if (verifyPin(shiftPins, name, pin)) {
         onLogin(name);
@@ -50,6 +52,12 @@ function LoginGate({ shiftGroups, shiftPins, onLogin, onSetPin }) {
     } catch (e) {
       setErr(e.message || String(e));
     }
+  };
+
+  const requestReset = () => {
+    if (!name) return;
+    onRequestPinReset && onRequestPinReset(name);
+    window.alert(`${name}님의 PIN 초기화를 신청했습니다.\n관리자 승인 후 새 PIN을 설정할 수 있습니다.`);
   };
 
   return (
@@ -70,24 +78,31 @@ function LoginGate({ shiftGroups, shiftPins, onLogin, onSetPin }) {
         ))}
       </select>
       <label className="sub-lbl">
-        {needSetup ? '새 PIN 설정 (숫자 4자리 이상)' : 'PIN'}
+        {needSetup ? '새 PIN 설정 (숫자 4~6자리)' : 'PIN'}
       </label>
       <input
         className="sub-input"
         type="password"
         inputMode="numeric"
+        maxLength={6}
         value={pin}
-        placeholder={needSetup ? '처음이시면 PIN을 만드세요' : 'PIN 입력'}
-        onChange={(e) => setPin(e.target.value)}
+        placeholder={needSetup ? '처음이시면 PIN을 만드세요 (4~6자리)' : 'PIN 입력'}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
       />
       {needSetup && (
         <p className="sub-hint">⚠️ 등록된 PIN이 없습니다. 입력한 값이 내 PIN으로 저장됩니다. (내부 인원 구분용)</p>
       )}
+      {resetPending && (
+        <p className="sub-hint">⏳ PIN 초기화 신청이 접수되었습니다. 관리자 승인 후 새 PIN을 설정하세요.</p>
+      )}
       {err && <p className="sub-err">{err}</p>}
       <button className="primary-btn" onClick={submit}>
         {needSetup ? 'PIN 만들고 시작' : '로그인'}
       </button>
+      {!needSetup && (
+        <button className="ghost-btn" onClick={requestReset}>PIN 분실 — 초기화 신청</button>
+      )}
     </div>
   );
 }
@@ -217,7 +232,7 @@ function ClaimPicker({ sub, shiftGroups, onClaim, onClose }) {
 }
 
 // ── 대근 신청 폼 ───────────────────────────────────────
-function RequestForm({ me, myGroup, today, onCreate, onClose }) {
+function RequestForm({ me, myGroup, today, substitutions = [], onCreate, onClose }) {
   const [date, setDate] = useState(today);
   const [reason, setReason] = useState('휴가');
   const [err, setErr] = useState('');
@@ -226,8 +241,16 @@ function RequestForm({ me, myGroup, today, onCreate, onClose }) {
 
   const submit = () => {
     setErr('');
+    const payload = { date, group: myGroup, requester: me, reason };
     try {
-      onCreate({ date, group: myGroup, requester: me, reason });
+      // 정원(주간/야간 각 3명) 초과 시: 빈 화면 대신 확인창 → 확인하면 강행
+      if (isWork && isSlotFull(substitutions, date, shift)) {
+        const ok = window.confirm('대근 가능 인원이 초과되었습니다.\n그래도 대근 신청하시겠습니까?');
+        if (!ok) return;
+        onCreate(payload, { force: true });
+      } else {
+        onCreate(payload);
+      }
       onClose();
     } catch (e) {
       setErr(e.message || String(e));
@@ -251,9 +274,7 @@ function RequestForm({ me, myGroup, today, onCreate, onClose }) {
         <select value={reason} onChange={(e) => setReason(e.target.value)}>
           <option>휴가</option>
           <option>교육</option>
-          <option>병가</option>
           <option>경조사</option>
-          <option>기타</option>
         </select>
         {err && <p className="sub-err">{err}</p>}
         <div className="modal-actions">
@@ -305,9 +326,11 @@ function SubCard({ sub, me, shiftGroups, onClaim, onUnclaim, onCancel }) {
 export default function SubstitutionPage({
   shiftGroups,
   shiftPins,
+  pinResets = [],
   substitutions,
   today,
   onSetPin,
+  onRequestPinReset,
   onCreateSub,
   onClaimSub,
   onUnclaimSub,
@@ -348,8 +371,10 @@ export default function SubstitutionPage({
           <LoginGate
             shiftGroups={shiftGroups}
             shiftPins={shiftPins}
+            pinResets={pinResets}
             onLogin={setMe}
             onSetPin={onSetPin}
+            onRequestPinReset={onRequestPinReset}
           />
         </main>
       </>
@@ -450,6 +475,7 @@ export default function SubstitutionPage({
           me={me}
           myGroup={myGroup}
           today={today}
+          substitutions={substitutions}
           onCreate={onCreateSub}
           onClose={() => setShowReq(false)}
         />

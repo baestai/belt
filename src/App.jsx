@@ -327,20 +327,38 @@ export default function App() {
     const pins = setPinFn(state.shiftPins || {}, name, pin);
     setState((s) => ({ ...s, shiftPins: pins }));
   };
-  const handleCreateSub = (payload) => {
-    setState((s) => ({ ...s, substitutions: createSubstitution(s.substitutions || [], payload) }));
+  // 순수 함수가 throw할 수 있으므로 setState 업데이터 밖에서 먼저 계산(렌더 중 throw로 인한 빈 화면 방지)
+  const handleCreateSub = (payload, opts) => {
+    const next = createSubstitution(stateRef.current.substitutions || [], payload, opts);
+    setState((s) => ({ ...s, substitutions: next }));
   };
   const handleClaimSub = (id, substitute) => {
-    setState((s) => ({
-      ...s,
-      substitutions: claimSubstitution(s.substitutions || [], id, substitute, s.shiftGroups || defaultShiftGroups()),
-    }));
+    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
+    const next = claimSubstitution(stateRef.current.substitutions || [], id, substitute, sg);
+    setState((s) => ({ ...s, substitutions: next }));
   };
   const handleUnclaimSub = (id) => {
     setState((s) => ({ ...s, substitutions: unclaimSubstitution(s.substitutions || [], id) }));
   };
   const handleCancelSub = (id) => {
     setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
+  };
+
+  // PIN 초기화: 사용자가 신청 → 관리모드에서 승인하면 해당 PIN 삭제(재설정 가능)
+  const handleRequestPinReset = (name) => {
+    setState((s) => {
+      const cur = s.pinResets || [];
+      if (cur.includes(name)) return s;
+      return { ...s, pinResets: [...cur, name] };
+    });
+  };
+  const handleApprovePinReset = (name, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => {
+      const pins = { ...(s.shiftPins || {}) };
+      delete pins[name];
+      return { ...s, shiftPins: pins, pinResets: (s.pinResets || []).filter((x) => x !== name) };
+    });
   };
 
   // 교대조 인원 편성 (관리모드)
@@ -470,9 +488,11 @@ export default function App() {
         <SubstitutionPage
           shiftGroups={state.shiftGroups || defaultShiftGroups()}
           shiftPins={state.shiftPins || {}}
+          pinResets={state.pinResets || []}
           substitutions={state.substitutions || []}
           today={today}
           onSetPin={handleSetPin}
+          onRequestPinReset={handleRequestPinReset}
           onCreateSub={handleCreateSub}
           onClaimSub={handleClaimSub}
           onUnclaimSub={handleUnclaimSub}
@@ -544,8 +564,10 @@ export default function App() {
       {modal === 'shiftGroups' && (
         <ShiftGroupModal
           shiftGroups={state.shiftGroups || defaultShiftGroups()}
+          pinResets={state.pinResets || []}
           onAdd={handleAddShiftMember}
           onRemove={handleRemoveShiftMember}
+          onApproveReset={handleApprovePinReset}
           onClose={() => setModal(null)}
         />
       )}
