@@ -258,6 +258,7 @@ button.sub-cell-sub{background:var(--warnbg);border:1px solid var(--warn);border
 .sub-card.filled{border-color:var(--ok)}
 .sub-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .sub-badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+.sub-badge.sub-extra{background:var(--accent);color:#fff;border-color:var(--accent)}
 .sub-card-date{font-weight:700;font-size:15px}
 .sub-status{margin-left:auto;font-size:12px;font-weight:700;padding:3px 10px;border-radius:14px}
 .sub-status.open{color:var(--warn);background:var(--warnbg)}

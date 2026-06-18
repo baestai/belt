@@ -23,6 +23,8 @@ import {
   claimSubstitution,
   unclaimSubstitution,
   cancelSubstitution,
+  createExtraWork,
+  cancelExtraWork,
 } from './lib/shift.js';
 import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
@@ -343,6 +345,14 @@ export default function App() {
   const handleCancelSub = (id) => {
     setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
   };
+  // 추가 근무(교육/GIB/PSM) — throw 가능하므로 setState 밖에서 계산
+  const handleCreateExtra = (payload) => {
+    const next = createExtraWork(stateRef.current.extraWorks || [], payload);
+    setState((s) => ({ ...s, extraWorks: next }));
+  };
+  const handleCancelExtra = (id) => {
+    setState((s) => ({ ...s, extraWorks: cancelExtraWork(s.extraWorks || [], id) }));
+  };
 
   // PIN 초기화: 사용자가 신청 → 관리모드에서 승인하면 해당 PIN 삭제(재설정 가능)
   const handleRequestPinReset = (name) => {
@@ -490,6 +500,7 @@ export default function App() {
           shiftPins={state.shiftPins || {}}
           pinResets={state.pinResets || []}
           substitutions={state.substitutions || []}
+          extraWorks={state.extraWorks || []}
           today={today}
           onSetPin={handleSetPin}
           onRequestPinReset={handleRequestPinReset}
@@ -497,6 +508,8 @@ export default function App() {
           onClaimSub={handleClaimSub}
           onUnclaimSub={handleUnclaimSub}
           onCancelSub={handleCancelSub}
+          onCreateExtra={handleCreateExtra}
+          onCancelExtra={handleCancelExtra}
           onClose={() => setView('calendar')}
         />
       )}

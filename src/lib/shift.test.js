@@ -19,6 +19,10 @@ import {
   hasPin,
   verifyPin,
   setPin,
+  EXTRA_WORK_REASONS,
+  createExtraWork,
+  cancelExtraWork,
+  extraWorkCounts,
 } from './shift.js';
 
 describe('교대 근무표 — 기준 사실 검증', () => {
@@ -254,6 +258,57 @@ describe('정산 기간 / 집계', () => {
     expect(substituteCounts(list, period)).toEqual([
       { name: '김영진', count: 2 },
       { name: '곽환', count: 1 },
+    ]);
+  });
+});
+
+describe('추가 근무', () => {
+  it('사유는 교육/GIB/PSM 세 가지', () => {
+    expect(EXTRA_WORK_REASONS).toEqual(['교육', 'GIB', 'PSM']);
+  });
+
+  it('정상 신청 시 항목이 추가된다', () => {
+    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    expect(list.length).toBe(1);
+    expect(list[0]).toMatchObject({ date: '2026-06-20', person: '백종호', reason: '교육' });
+    expect(list[0].id).toBeTruthy();
+  });
+
+  it('잘못된 사유는 에러', () => {
+    expect(() => createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '휴가' })).toThrow();
+  });
+
+  it('날짜·신청자 누락 시 에러', () => {
+    expect(() => createExtraWork([], { date: '', person: '백종호', reason: '교육' })).toThrow();
+    expect(() => createExtraWork([], { date: '2026-06-20', person: '', reason: '교육' })).toThrow();
+  });
+
+  it('같은 날 같은 사유 중복 신청은 에러', () => {
+    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: 'GIB' });
+    expect(() => createExtraWork(list, { date: '2026-06-20', person: '백종호', reason: 'GIB' })).toThrow();
+    // 사유가 다르면 가능
+    const list2 = createExtraWork(list, { date: '2026-06-20', person: '백종호', reason: 'PSM' });
+    expect(list2.length).toBe(2);
+  });
+
+  it('취소(삭제)', () => {
+    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    const id = list[0].id;
+    list = cancelExtraWork(list, id);
+    expect(list.length).toBe(0);
+  });
+
+  it('extraWorkCounts는 기간 내 인원별 내림차순 집계', () => {
+    const period = { start: '2026-06-16', end: '2026-07-15' };
+    const list = [
+      { id: '1', date: '2026-06-20', person: '백종호', reason: '교육' },
+      { id: '2', date: '2026-06-22', person: '백종호', reason: 'GIB' },
+      { id: '3', date: '2026-06-25', person: '김영진', reason: 'PSM' },
+      { id: '4', date: '2026-05-01', person: '백종호', reason: '교육' }, // 기간 외
+    ];
+    expect(extraWorkCounts(list, period)).toEqual([
+      { name: '백종호', count: 2 },
+      { name: '김영진', count: 1 },
     ]);
   });
 });

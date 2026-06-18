@@ -15,6 +15,8 @@ import {
   substituteCounts,
   hasPin,
   verifyPin,
+  EXTRA_WORK_REASONS,
+  extraWorkCounts,
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
@@ -334,12 +336,74 @@ function SubCard({ sub, me, shiftGroups, substitutions = [], onClaim, onUnclaim,
   );
 }
 
+// ── 추가 근무 신청 폼 ──────────────────────────────────
+function ExtraWorkForm({ me, myGroup, today, onCreate, onClose }) {
+  const [date, setDate] = useState(today);
+  const [reason, setReason] = useState(EXTRA_WORK_REASONS[0]);
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    setErr('');
+    try {
+      onCreate({ date, person: me, reason });
+      onClose();
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3>➕ 추가 근무 신청</h3>
+        <label>신청자</label>
+        <input value={`${me} (${myGroup}조)`} disabled />
+        <label>날짜</label>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <p className="sub-hint">대근과 무관하게 신청하는 추가 근무입니다.</p>
+        <label>사유</label>
+        <select value={reason} onChange={(e) => setReason(e.target.value)}>
+          {EXTRA_WORK_REASONS.map((r) => <option key={r}>{r}</option>)}
+        </select>
+        {err && <p className="sub-err">{err}</p>}
+        <div className="modal-actions">
+          <button className="add-btn secondary" onClick={onClose}>취소</button>
+          <button className="add-btn" onClick={submit}>신청</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 추가 근무 카드 1건 ─────────────────────────────────
+function ExtraCard({ extra, me, onCancel }) {
+  const isMine = extra.person === me;
+  return (
+    <div className="sub-card filled">
+      <div className="sub-card-top">
+        <span className="sub-badge sub-extra">{extra.reason}</span>
+        <span className="sub-card-date">{fmtKDate(extra.date)}</span>
+        <span className="sub-status">추가 근무</span>
+      </div>
+      <div className="sub-card-body">
+        <div>근무자: <b>{extra.person}</b></div>
+      </div>
+      {isMine && (
+        <div className="sub-card-actions">
+          <button className="add-btn secondary" onClick={() => onCancel(extra.id)}>신청 삭제</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 메인 ───────────────────────────────────────────────
 export default function SubstitutionPage({
   shiftGroups,
   shiftPins,
   pinResets = [],
   substitutions,
+  extraWorks = [],
   today,
   onSetPin,
   onRequestPinReset,
@@ -347,12 +411,15 @@ export default function SubstitutionPage({
   onClaimSub,
   onUnclaimSub,
   onCancelSub,
+  onCreateExtra,
+  onCancelExtra,
   onClose,
 }) {
   const [me, setMe] = useState(null);
-  const [tab, setTab] = useState('list'); // 'list' | 'board' | 'count'
+  const [tab, setTab] = useState('list'); // 'list' | 'extra' | 'board' | 'count'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
+  const [showExtra, setShowExtra] = useState(false);
   const [pickFor, setPickFor] = useState(null); // 모집중 클릭한 대근 건
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
@@ -360,6 +427,7 @@ export default function SubstitutionPage({
   const myGroup = me ? groupOfPerson(shiftGroups, me) : null;
   const period = settlementPeriod(today);
   const counts = useMemo(() => substituteCounts(substitutions, period), [substitutions, period.start, period.end]);
+  const extraCounts = useMemo(() => extraWorkCounts(extraWorks, period), [extraWorks, period.start, period.end]);
 
   const sorted = useMemo(
     () => [...substitutions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
@@ -368,6 +436,12 @@ export default function SubstitutionPage({
   const visible = onlyMine
     ? sorted.filter((s) => s.requester === me || s.substitute === me)
     : sorted;
+
+  const sortedExtra = useMemo(
+    () => [...extraWorks].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
+    [extraWorks]
+  );
+  const visibleExtra = onlyMine ? sortedExtra.filter((e) => e.person === me) : sortedExtra;
 
   if (!me) {
     return (
@@ -410,6 +484,7 @@ export default function SubstitutionPage({
       <main style={{ padding: 16 }}>
         <div className="seg">
           <button className={tab === 'list' ? 'active' : ''} onClick={() => setTab('list')}>대근 목록</button>
+          <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무</button>
           <button className={tab === 'board' ? 'active' : ''} onClick={() => setTab('board')}>근무표</button>
           <button className={tab === 'count' ? 'active' : ''} onClick={() => setTab('count')}>집계</button>
         </div>
@@ -444,6 +519,27 @@ export default function SubstitutionPage({
           </>
         )}
 
+        {tab === 'extra' && (
+          <>
+            <div className="sub-toolbar">
+              <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setShowExtra(true)}>
+                ＋ 추가 근무 신청
+              </button>
+              <label className="sub-check">
+                <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
+                내 관련만
+              </label>
+            </div>
+            {visibleExtra.length === 0 ? (
+              <p className="sub-empty">추가 근무 신청 내역이 없습니다.</p>
+            ) : (
+              visibleExtra.map((e) => (
+                <ExtraCard key={e.id} extra={e} me={me} onCancel={onCancelExtra} />
+              ))
+            )}
+          </>
+        )}
+
         {tab === 'board' && (
           <>
             <div className="sub-toolbar">
@@ -464,22 +560,40 @@ export default function SubstitutionPage({
         )}
 
         {tab === 'count' && (
-          <div className="card">
-            <h3>🏅 대근 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
-            {counts.length === 0 ? (
-              <p className="sub-empty">이 정산 기간 확정된 대근이 없습니다.</p>
-            ) : (
-              <ol className="sub-rank">
-                {counts.map((c, i) => (
-                  <li key={c.name} className={c.name === me ? 'sub-me-row' : ''}>
-                    <span className="sub-rank-no">{i + 1}</span>
-                    <span className="sub-rank-name">{c.name}</span>
-                    <span className="sub-rank-cnt">{c.count}건</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
+          <>
+            <div className="card">
+              <h3>🏅 대근 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
+              {counts.length === 0 ? (
+                <p className="sub-empty">이 정산 기간 확정된 대근이 없습니다.</p>
+              ) : (
+                <ol className="sub-rank">
+                  {counts.map((c, i) => (
+                    <li key={c.name} className={c.name === me ? 'sub-me-row' : ''}>
+                      <span className="sub-rank-no">{i + 1}</span>
+                      <span className="sub-rank-name">{c.name}</span>
+                      <span className="sub-rank-cnt">{c.count}건</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+            <div className="card">
+              <h3>➕ 추가 근무 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
+              {extraCounts.length === 0 ? (
+                <p className="sub-empty">이 정산 기간 추가 근무가 없습니다.</p>
+              ) : (
+                <ol className="sub-rank">
+                  {extraCounts.map((c, i) => (
+                    <li key={c.name} className={c.name === me ? 'sub-me-row' : ''}>
+                      <span className="sub-rank-no">{i + 1}</span>
+                      <span className="sub-rank-name">{c.name}</span>
+                      <span className="sub-rank-cnt">{c.count}건</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </>
         )}
       </main>
 
@@ -491,6 +605,16 @@ export default function SubstitutionPage({
           substitutions={substitutions}
           onCreate={onCreateSub}
           onClose={() => setShowReq(false)}
+        />
+      )}
+
+      {showExtra && (
+        <ExtraWorkForm
+          me={me}
+          myGroup={myGroup}
+          today={today}
+          onCreate={onCreateExtra}
+          onClose={() => setShowExtra(false)}
         />
       )}
 

@@ -217,3 +217,44 @@ export function isSlotFull(list, date, shift) {
   const n = (list || []).filter((s) => s.date === date && s.shift === shift).length;
   return n >= MAX_SUBS_PER_SHIFT;
 }
+
+// ── 추가 근무 (대근과 무관한 별도 근무) ────────────────
+// 사유는 교육 / GIB / PSM 중 하나
+export const EXTRA_WORK_REASONS = ['교육', 'GIB', 'PSM'];
+
+// extra: { id, date, person, reason, createdAt }
+export function createExtraWork(list, { date, person, reason }) {
+  if (!date) throw new Error('날짜를 선택하세요.');
+  if (!person) throw new Error('신청자를 선택하세요.');
+  if (!EXTRA_WORK_REASONS.includes(reason)) {
+    throw new Error('추가 근무 사유는 교육 / GIB / PSM 중에서 선택하세요.');
+  }
+  if ((list || []).some((e) => e.date === date && e.person === person && e.reason === reason)) {
+    throw new Error('같은 날 같은 사유의 추가 근무를 이미 신청했습니다.');
+  }
+  const extra = {
+    id: newId(),
+    date,
+    person,
+    reason,
+    createdAt: new Date().toISOString(),
+  };
+  return [...(list || []), extra];
+}
+
+export function cancelExtraWork(list, id) {
+  return (list || []).filter((e) => e.id !== id);
+}
+
+// 기간 내 추가 근무 인원별 건수 집계, 내림차순
+export function extraWorkCounts(list, period) {
+  const map = {};
+  for (const e of list || []) {
+    if (!e.person) continue;
+    if (!inPeriod(e.date, period)) continue;
+    map[e.person] = (map[e.person] || 0) + 1;
+  }
+  return Object.entries(map)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
