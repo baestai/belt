@@ -26,6 +26,29 @@ function buildEmpty(belt, date, inspector, beltItems) {
 
 const KO_STATUS = { ok: '양호', bad: '불량', warn: '주의' };
 
+// 지난 점검 온도 대비 추세: 상승 'up' / 하강 'down' / 비교불가·동일 null
+function tempTrend(cur, prev) {
+  const c = parseFloat(cur);
+  const p = parseFloat(prev);
+  if (!Number.isFinite(c) || !Number.isFinite(p)) return null; // 첫 입력이거나 이전 값 없음
+  if (c > p) return 'up';
+  if (c < p) return 'down';
+  return null; // 동일
+}
+// 온도 옆 추세 세모 (상승=빨강▲ / 하강=파랑▼)
+function TempTrend({ cur, prev }) {
+  const t = tempTrend(cur, prev);
+  if (!t) return null;
+  return (
+    <span
+      className={`temp-trend ${t}`}
+      title={t === 'up' ? `지난점검(${prev}℃)보다 상승` : `지난점검(${prev}℃)보다 하강`}
+    >
+      {t === 'up' ? '▲' : '▼'}
+    </span>
+  );
+}
+
 // 지난 점검의 해당 항목 요약 문자열 (전월 대비 비교용). 비교할 게 없으면 null
 function prevSummary(def, prevItem) {
   if (!prevItem) return null;
@@ -264,6 +287,7 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
                     <tbody>
                       {Object.keys(it.subs).map((s) => {
                         const t = it.temps[s] && typeof it.temps[s] === 'object' ? it.temps[s] : { L: '', R: '' };
+                        const prevT = normalizeTemp(prevRecord?.items?.[def.key]?.temps?.[s]);
                         return (
                         <tr key={s}>
                           <td className="nm">{s}</td>
@@ -280,22 +304,28 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
                             </span>
                           </td>
                           <td>
-                            <input
-                              className="temp-in"
-                              inputMode="decimal"
-                              aria-label={`${s} 온도 L`}
-                              value={t.L}
-                              onChange={(e) => setTemp(def.key, s, 'L', e.target.value)}
-                            />
+                            <span className="temp-cell">
+                              <input
+                                className="temp-in"
+                                inputMode="decimal"
+                                aria-label={`${s} 온도 L`}
+                                value={t.L}
+                                onChange={(e) => setTemp(def.key, s, 'L', e.target.value)}
+                              />
+                              <TempTrend cur={t.L} prev={prevT.L} />
+                            </span>
                           </td>
                           <td>
-                            <input
-                              className="temp-in"
-                              inputMode="decimal"
-                              aria-label={`${s} 온도 R`}
-                              value={t.R}
-                              onChange={(e) => setTemp(def.key, s, 'R', e.target.value)}
-                            />
+                            <span className="temp-cell">
+                              <input
+                                className="temp-in"
+                                inputMode="decimal"
+                                aria-label={`${s} 온도 R`}
+                                value={t.R}
+                                onChange={(e) => setTemp(def.key, s, 'R', e.target.value)}
+                              />
+                              <TempTrend cur={t.R} prev={prevT.R} />
+                            </span>
                           </td>
                           <td>
                             <button
