@@ -278,45 +278,46 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
   );
 }
 
-// ── 대근 편성 월간 캘린더 ──────────────────────────────
+// ── 대근 편성 캘린더 (정산기간: 16일~익월 15일) ─────────
 const CAL_WD = ['일', '월', '화', '수', '목', '금', '토'];
-function pad2(n) {
-  return n < 10 ? '0' + n : '' + n;
+function parseYmdParts(ds) {
+  const [y, m, d] = ds.split('-').map(Number);
+  return { y, m, d, wd: new Date(y, m - 1, d).getDay() };
 }
-function ShiftCalendar({ refDate, selected, today, substitutions = [], extraWorks = [], onSelectDate, onPrevMonth, onNextMonth }) {
-  const [y, m] = refDate.split('-').map(Number); // m: 1-based
-  const startWd = new Date(y, m - 1, 1).getDay();
-  const daysInMonth = new Date(y, m, 0).getDate();
+function ShiftCalendar({ start, end, selected, today, substitutions = [], extraWorks = [], onSelectDate, onPrev, onNext }) {
+  const days = daysInPeriod(start, end); // ['2026-06-16', ... '2026-07-15']
+  const firstWd = parseYmdParts(start).wd;
   const cells = [];
-  for (let i = 0; i < startWd; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  const dateStr = (d) => `${y}-${pad2(m)}-${pad2(d)}`;
+  for (let i = 0; i < firstWd; i++) cells.push(null);
+  for (const ds of days) cells.push(ds);
 
   const subByDate = {};
   for (const s of substitutions) (subByDate[s.date] || (subByDate[s.date] = [])).push(s);
   const extraByDate = {};
   for (const e of extraWorks) (extraByDate[e.date] || (extraByDate[e.date] = [])).push(e);
 
+  const sp = parseYmdParts(start);
+  const rangeTxt = `${start.slice(5).replace('-', '/')} ~ ${end.slice(5).replace('-', '/')}`;
+
   return (
     <div className="sc-wrap">
       <div className="sc-head">
-        <button onClick={onPrevMonth} aria-label="이전 달">‹</button>
-        <span className="sc-ym">{y}년 {m}월</span>
-        <button onClick={onNextMonth} aria-label="다음 달">›</button>
+        <button onClick={onPrev} aria-label="이전 정산기간">‹</button>
+        <span className="sc-ym">{sp.y}년 {sp.m}월 정산<small className="sc-range">{rangeTxt}</small></span>
+        <button onClick={onNext} aria-label="다음 정산기간">›</button>
       </div>
       <div className="sc-grid">
         {CAL_WD.map((w, i) => (
           <div key={w} className={'sc-wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '')}>{w}</div>
         ))}
-        {cells.map((d, i) => {
-          if (d == null) return <div key={'e' + i} className="sc-empty" />;
-          const ds = dateStr(d);
+        {cells.map((ds, i) => {
+          if (ds == null) return <div key={'e' + i} className="sc-empty" />;
+          const { m, d, wd } = parseYmdParts(ds);
           const s = shiftsOnDate(ds);
           const dayG = SHIFT_GROUPS.find((g) => s[g] === 'day');
           const nightG = SHIFT_GROUPS.find((g) => s[g] === 'night');
           const subs = subByDate[ds] || [];
           const extras = extraByDate[ds] || [];
-          const wd = new Date(y, m - 1, d).getDay();
           const isToday = ds === today;
           const isSel = ds === selected;
           return (
@@ -326,7 +327,7 @@ function ShiftCalendar({ refDate, selected, today, substitutions = [], extraWork
               onClick={() => onSelectDate(ds)}
             >
               <span className="sc-top">
-                <span className={'sc-date' + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '')}>{d}</span>
+                <span className={'sc-date' + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '')}>{d === 1 ? `${m}/1` : d}</span>
                 {(subs.length > 0 || extras.length > 0) && (
                   <span className="sc-dots">
                     {subs.length > 0 && <i className="sc-dot sub" title={`대근 ${subs.length}건`} />}
@@ -1013,10 +1014,11 @@ export default function SubstitutionPage({
   const [pickFor, setPickFor] = useState(null); // 모집중 클릭한 대근 건
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
-  const [calRef, setCalRef] = useState(today); // 편성 캘린더가 보여줄 달
+  const [calRef, setCalRef] = useState(today); // 편성 캘린더가 보여줄 정산기간 기준일
   const [calSel, setCalSel] = useState(today); // 캘린더에서 선택한 날짜
-  const calPrev = () => { const [y, m] = calRef.split('-').map(Number); setCalRef(fmtYmd(new Date(y, m - 2, 1))); };
-  const calNext = () => { const [y, m] = calRef.split('-').map(Number); setCalRef(fmtYmd(new Date(y, m, 1))); };
+  const calPeriod = settlementPeriod(calRef); // 16일~익월 15일
+  const calPrev = () => setCalRef(addDays(calPeriod.start, -1));
+  const calNext = () => setCalRef(addDays(calPeriod.end, 1));
 
   const isAdmin = !!adminPw;
   const myGroup = me && !isAdmin ? groupOfPerson(shiftGroups, me) : null;
@@ -1169,14 +1171,15 @@ export default function SubstitutionPage({
             <p className="sub-hint">관리자는 모든 대근 편성을 추가·수정·삭제할 수 있습니다.</p>
 
             <ShiftCalendar
-              refDate={calRef}
+              start={calPeriod.start}
+              end={calPeriod.end}
               selected={calSel}
               today={today}
               substitutions={substitutions}
               extraWorks={extraWorks}
               onSelectDate={setCalSel}
-              onPrevMonth={calPrev}
-              onNextMonth={calNext}
+              onPrev={calPrev}
+              onNext={calNext}
             />
             <DayDetail
               date={calSel}
