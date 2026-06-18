@@ -9,7 +9,7 @@ import {
   removeInspector as removeInspectorFn,
 } from './lib/auth.js';
 import { DEFAULT_PULLEYS, INSPECTION_ITEMS } from './lib/inspectionItems.js';
-import { statusOf as statusOfFn, latestRecord, previousRecord, nextDateFrom } from './lib/selectors.js';
+import { statusOf as statusOfFn, latestRecord, nextDateFrom } from './lib/selectors.js';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
@@ -365,10 +365,12 @@ export default function App() {
     else handlePickBelt(name, selDate);
   };
 
-  const handleSaveRecord = (record) => {
+  const handleSaveRecord = (record, origDate) => {
     setState((s) => {
-      // 같은 벨트+같은 날짜 기록은 덮어쓰기
-      const others = s.records.filter((r) => !(r.belt === record.belt && r.date === record.date));
+      // 같은 벨트+같은 날짜 기록은 덮어쓰기. 점검일을 바꿔 저장한 경우 원래 날짜 기록도 정리.
+      const others = s.records.filter(
+        (r) => !(r.belt === record.belt && (r.date === record.date || (origDate && r.date === origDate)))
+      );
       const records = [...others, record];
       // 점검 완료 시 다음 예정일 자동 계산
       const cur = s.schedules[record.belt];
@@ -706,7 +708,7 @@ export default function App() {
           initialRecord={records.find(
             (r) => r.belt === formCtx.belt.name && r.date === formCtx.date
           )}
-          prevRecord={previousRecord(records, formCtx.belt.name, formCtx.date)}
+          records={records}
           onAddItem={handleAddBeltItem}
           onRemoveItem={handleRemoveBeltItem}
           onCancel={() => setView('calendar')}

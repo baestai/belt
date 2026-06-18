@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   INSPECTION_ITEMS,
   DEFAULT_PULLEYS,
@@ -83,7 +83,7 @@ function prevSummary(def, prevItem) {
   return null;
 }
 
-export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], defaultInspector, initialRecord, prevRecord, onAddItem, onRemoveItem, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], defaultInspector, initialRecord, records = [], onAddItem, onRemoveItem, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, beltItems.pulley)
@@ -92,6 +92,16 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
   const [touched, setTouched] = useState(() => new Set());
   const [error, setError] = useState('');
   const [newRow, setNewRow] = useState({}); // 항목 key별 '새 구분명' 입력값
+  const origDate = date; // 폼 열 때의 원래 점검일 (저장 시 날짜 변경 정리용)
+
+  // 지난 점검(전월) = 이 점검일보다 앞선 날짜 중 가장 최근 기록.
+  // 점검일을 바꾸면 비교 대상도 즉시 갱신되고, 늦게 입력해도 날짜 순서로 비교한다.
+  const prevRecord = useMemo(() => {
+    const cur = record.date;
+    return (records || [])
+      .filter((r) => r.belt === belt.name && String(r.date) < String(cur))
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))[0] || null;
+  }, [records, belt.name, record.date]);
 
   const markTouched = (key) =>
     setTouched((prev) => {
@@ -172,7 +182,7 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
       setError(errs.join('\n'));
       return;
     }
-    onSave(record);
+    onSave(record, origDate);
   };
 
   return (
@@ -187,8 +197,15 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
           <span className="dot none" />
           <div>
             <div className="name">{belt.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {belt.group} · 점검일 {record.date}
+            <div className="insp-date-row">
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{belt.group} · 점검일</span>
+              <input
+                type="date"
+                className="insp-date"
+                value={record.date}
+                onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))}
+                aria-label="점검일"
+              />
             </div>
           </div>
           <button className="change" onClick={onCancel}>변경</button>
