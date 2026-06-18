@@ -104,8 +104,14 @@ function daysInPeriod(start, end) {
 }
 
 // ── 정산기간 교대표 (16일~익월15일) ───────────────────
-function ShiftBoard({ start, end, today, myGroup }) {
+function ShiftBoard({ start, end, today, myGroup, substitutions = [] }) {
   const days = daysInPeriod(start, end);
+  // { 'date|group': [sub, ...] } 빠른 조회
+  const subMap = {};
+  for (const s of substitutions) {
+    const k = `${s.date}|${s.group}`;
+    (subMap[k] || (subMap[k] = [])).push(s);
+  }
   return (
     <div className="sub-board">
       <table className="sub-table">
@@ -123,11 +129,23 @@ function ShiftBoard({ start, end, today, myGroup }) {
             return (
               <tr key={d} className={d === today ? 'sub-today-row' : ''}>
                 <td className="sub-date">{fmtKDate(d)}</td>
-                {SHIFT_GROUPS.map((g) => (
-                  <td key={g} className={`${SHIFT_CLASS[s[g]]} ${g === myGroup ? 'sub-me-col' : ''}`}>
-                    {SHIFT_LABEL[s[g]]}
-                  </td>
-                ))}
+                {SHIFT_GROUPS.map((g) => {
+                  const subs = subMap[`${d}|${g}`] || [];
+                  return (
+                    <td key={g} className={`${SHIFT_CLASS[s[g]]} ${g === myGroup ? 'sub-me-col' : ''}`}>
+                      {SHIFT_LABEL[s[g]]}
+                      {subs.map((sub) => (
+                        <div key={sub.id} className="sub-cell-swap">
+                          <span className="sub-cell-req">{sub.requester}</span>
+                          <span className="sub-cell-arrow">↓</span>
+                          <span className={`sub-cell-sub ${sub.substitute ? '' : 'open'}`}>
+                            {sub.substitute || '모집중'}
+                          </span>
+                        </div>
+                      ))}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}
@@ -138,6 +156,7 @@ function ShiftBoard({ start, end, today, myGroup }) {
         <span className="sub-night">야간 {SHIFT_TIME.night}</span> ·{' '}
         <span className="sub-off">휴무</span>
       </p>
+      <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자</p>
     </div>
   );
 }
@@ -332,7 +351,7 @@ export default function SubstitutionPage({
               <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.end, 1))}>다음 ▶</button>
             </div>
             <p className="sub-period">{boardPeriod.start} ~ {boardPeriod.end}</p>
-            <ShiftBoard start={boardPeriod.start} end={boardPeriod.end} today={today} myGroup={myGroup} />
+            <ShiftBoard start={boardPeriod.start} end={boardPeriod.end} today={today} myGroup={myGroup} substitutions={substitutions} />
           </>
         )}
 
