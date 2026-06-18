@@ -20,7 +20,7 @@ import {
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
-const SUB_REASONS = ['휴가', '교육', '경조사'];
+const SUB_REASONS = ['휴가', '교육', '청원'];
 
 function addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -355,9 +355,7 @@ function RequestForm({ me, myGroup, today, substitutions = [], onCreate, onClose
         </p>
         <label>사유</label>
         <select value={reason} onChange={(e) => setReason(e.target.value)}>
-          <option>휴가</option>
-          <option>교육</option>
-          <option>경조사</option>
+          {SUB_REASONS.map((r) => <option key={r}>{r}</option>)}
         </select>
         {err && <p className="sub-err">{err}</p>}
         <div className="modal-actions">
