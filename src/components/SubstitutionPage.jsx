@@ -20,6 +20,7 @@ import {
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
+const SUB_REASONS = ['휴가', '교육', '경조사'];
 
 function addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -155,7 +156,7 @@ function daysInPeriod(start, end) {
 }
 
 // ── 정산기간 교대표 (16일~익월15일) ───────────────────
-function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks = [], shiftGroups = {}, onPickOpen }) {
+function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks = [], shiftGroups = {}, onPickOpen, isAdmin = false, onEditSub, onEditExtra }) {
   const days = daysInPeriod(start, end);
   // { 'date|group': [sub, ...] } 빠른 조회
   const subMap = {};
@@ -195,27 +196,54 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
                     <td key={g} className={`${SHIFT_CLASS[s[g]]} ${g === myGroup ? 'sub-me-col' : ''}`}>
                       {SHIFT_LABEL[s[g]]}
                       {subs.map((sub) => (
-                        <div key={sub.id} className="sub-cell-swap">
-                          <span className="sub-cell-req">{sub.requester}</span>
-                          <span className="sub-cell-arrow">↓</span>
-                          {sub.substitute ? (
-                            <span className="sub-cell-sub">{sub.substitute}</span>
-                          ) : (
-                            <button
-                              type="button"
-                              className="sub-cell-sub open"
-                              onClick={() => onPickOpen && onPickOpen(sub)}
-                            >
-                              대근 ▾
-                            </button>
-                          )}
-                        </div>
+                        isAdmin ? (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            className="sub-cell-swap sub-cell-admin"
+                            onClick={() => onEditSub && onEditSub(sub)}
+                            title="클릭하여 수정"
+                          >
+                            <span className="sub-cell-req">{sub.requester}</span>
+                            <span className="sub-cell-arrow">↓</span>
+                            <span className="sub-cell-sub">{sub.substitute || '미정'}</span>
+                          </button>
+                        ) : (
+                          <div key={sub.id} className="sub-cell-swap">
+                            <span className="sub-cell-req">{sub.requester}</span>
+                            <span className="sub-cell-arrow">↓</span>
+                            {sub.substitute ? (
+                              <span className="sub-cell-sub">{sub.substitute}</span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="sub-cell-sub open"
+                                onClick={() => onPickOpen && onPickOpen(sub)}
+                              >
+                                대근 ▾
+                              </button>
+                            )}
+                          </div>
+                        )
                       ))}
                       {extras.map((e) => (
-                        <div key={e.id} className="sub-cell-extra">
-                          <span className="sub-cell-extra-tag">{e.reason}</span>
-                          <span className="sub-cell-extra-nm">{e.person}</span>
-                        </div>
+                        isAdmin ? (
+                          <button
+                            key={e.id}
+                            type="button"
+                            className="sub-cell-extra sub-cell-admin"
+                            onClick={() => onEditExtra && onEditExtra(e)}
+                            title="클릭하여 수정"
+                          >
+                            <span className="sub-cell-extra-tag">{e.reason}</span>
+                            <span className="sub-cell-extra-nm">{e.person}</span>
+                          </button>
+                        ) : (
+                          <div key={e.id} className="sub-cell-extra">
+                            <span className="sub-cell-extra-tag">{e.reason}</span>
+                            <span className="sub-cell-extra-nm">{e.person}</span>
+                          </div>
+                        )
                       ))}
                     </td>
                   );
@@ -230,7 +258,7 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
         <span className="sub-night">야간 {SHIFT_TIME.night}</span> ·{' '}
         <span className="sub-off">휴무</span>
       </p>
-      <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자 · <span className="sub-cell-extra-tag">교육/GIB/PSM</span>=추가근무</p>
+      <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자 · <span className="sub-cell-extra-tag">교육대근/GIB/PSM</span>=추가근무</p>
     </div>
   );
 }
@@ -497,7 +525,10 @@ function AdminSubForm({ shiftGroups, today, edit, onSubmit, onClose }) {
           {members.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
         <label>사유</label>
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="예: 휴가, 교육, 경조사" />
+        <select value={reason} onChange={(e) => setReason(e.target.value)}>
+          {SUB_REASONS.map((r) => <option key={r}>{r}</option>)}
+          {reason && !SUB_REASONS.includes(reason) && <option>{reason}</option>}
+        </select>
         <label>대근자 (선택)</label>
         <select value={substitute} onChange={(e) => setSubstitute(e.target.value)}>
           <option value="">미정 (모집중)</option>
@@ -854,6 +885,9 @@ export default function SubstitutionPage({
               extraWorks={extraWorks}
               shiftGroups={shiftGroups}
               onPickOpen={setPickFor}
+              isAdmin={isAdmin}
+              onEditSub={(sub) => setAdminForm({ edit: sub })}
+              onEditExtra={(ex) => setAdminExtraForm({ edit: ex })}
             />
           </>
         )}

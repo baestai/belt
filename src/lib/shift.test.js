@@ -26,6 +26,10 @@ import {
   cancelExtraWork,
   extraWorkCounts,
   adminUpdateExtraWork,
+  weekRange,
+  weeklyHours,
+  exceedsWeeklyLimit,
+  WEEKLY_HOUR_LIMIT,
 } from './shift.js';
 
 describe('교대 근무표 — 기준 사실 검증', () => {
@@ -266,14 +270,14 @@ describe('정산 기간 / 집계', () => {
 });
 
 describe('추가 근무', () => {
-  it('사유는 교육/GIB/PSM 세 가지', () => {
-    expect(EXTRA_WORK_REASONS).toEqual(['교육', 'GIB', 'PSM']);
+  it('사유는 교육대근/GIB/PSM 세 가지', () => {
+    expect(EXTRA_WORK_REASONS).toEqual(['교육대근', 'GIB', 'PSM']);
   });
 
   it('정상 신청 시 항목이 추가된다', () => {
-    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육대근' });
     expect(list.length).toBe(1);
-    expect(list[0]).toMatchObject({ date: '2026-06-20', person: '백종호', reason: '교육' });
+    expect(list[0]).toMatchObject({ date: '2026-06-20', person: '백종호', reason: '교육대근' });
     expect(list[0].id).toBeTruthy();
   });
 
@@ -282,8 +286,8 @@ describe('추가 근무', () => {
   });
 
   it('날짜·신청자 누락 시 에러', () => {
-    expect(() => createExtraWork([], { date: '', person: '백종호', reason: '교육' })).toThrow();
-    expect(() => createExtraWork([], { date: '2026-06-20', person: '', reason: '교육' })).toThrow();
+    expect(() => createExtraWork([], { date: '', person: '백종호', reason: '교육대근' })).toThrow();
+    expect(() => createExtraWork([], { date: '2026-06-20', person: '', reason: '교육대근' })).toThrow();
   });
 
   it('같은 날 같은 사유 중복 신청은 에러', () => {
@@ -295,7 +299,7 @@ describe('추가 근무', () => {
   });
 
   it('취소(삭제)', () => {
-    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육대근' });
     const id = list[0].id;
     list = cancelExtraWork(list, id);
     expect(list.length).toBe(0);
@@ -304,10 +308,10 @@ describe('추가 근무', () => {
   it('extraWorkCounts는 기간 내 인원별 내림차순 집계', () => {
     const period = { start: '2026-06-16', end: '2026-07-15' };
     const list = [
-      { id: '1', date: '2026-06-20', person: '백종호', reason: '교육' },
+      { id: '1', date: '2026-06-20', person: '백종호', reason: '교육대근' },
       { id: '2', date: '2026-06-22', person: '백종호', reason: 'GIB' },
       { id: '3', date: '2026-06-25', person: '김영진', reason: 'PSM' },
-      { id: '4', date: '2026-05-01', person: '백종호', reason: '교육' }, // 기간 외
+      { id: '4', date: '2026-05-01', person: '백종호', reason: '교육대근' }, // 기간 외
     ];
     expect(extraWorkCounts(list, period)).toEqual([
       { name: '백종호', count: 2 },
@@ -332,7 +336,7 @@ describe('관리자 대근 편성', () => {
 
   it('adminCreateSubstitution: 휴무일이면 주간으로 편성', () => {
     // 2026-06-18은 B=휴무
-    const list = adminCreateSubstitution([], { date: '2026-06-18', group: 'B', requester: '김세준', reason: '교육' });
+    const list = adminCreateSubstitution([], { date: '2026-06-18', group: 'B', requester: '김세준', reason: '교육대근' });
     expect(list[0].shift).toBe('day');
   });
 
@@ -360,18 +364,57 @@ describe('관리자 대근 편성', () => {
   });
 
   it('adminUpdateExtraWork: 날짜/근무자/사유 수정', () => {
-    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    let list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육대근' });
     const id = list[0].id;
     list = adminUpdateExtraWork(list, id, { date: '2026-06-21', person: '김영진', reason: 'PSM' });
     expect(list[0]).toMatchObject({ date: '2026-06-21', person: '김영진', reason: 'PSM' });
   });
 
   it('adminUpdateExtraWork: 잘못된 사유/누락 시 에러', () => {
-    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육' });
+    const list = createExtraWork([], { date: '2026-06-20', person: '백종호', reason: '교육대근' });
     const id = list[0].id;
     expect(() => adminUpdateExtraWork(list, id, { reason: '휴가' })).toThrow();
     expect(() => adminUpdateExtraWork(list, id, { person: '' })).toThrow();
     expect(() => adminUpdateExtraWork(list, id, { date: '' })).toThrow();
+  });
+});
+
+describe('주 52시간', () => {
+  it('weekRange는 일요일~토요일', () => {
+    expect(weekRange('2026-06-18')).toEqual({ start: '2026-06-14', end: '2026-06-20' });
+  });
+
+  it('WEEKLY_HOUR_LIMIT은 52', () => {
+    expect(WEEKLY_HOUR_LIMIT).toBe(52);
+  });
+
+  it('기본 근무시간 집계 (A조 해당 주 4교대=48시간)', () => {
+    const sg = defaultShiftGroups();
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg })).toBe(48);
+  });
+
+  it('대근 12시간 추가 시 60시간 → 52시간 초과', () => {
+    const sg = defaultShiftGroups();
+    const subs = [{ id: 'x', date: '2026-06-16', shift: 'night', group: 'D', requester: '정영균', substitute: '백종호', status: 'filled' }];
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, substitutions: subs })).toBe(60);
+    expect(exceedsWeeklyLimit('백종호', '2026-06-18', { shiftGroups: sg, substitutions: subs })).toBe(true);
+  });
+
+  it('추가 근무 12시간 추가도 합산', () => {
+    const sg = defaultShiftGroups();
+    const extras = [{ id: 'e', date: '2026-06-16', person: '백종호', reason: 'GIB' }];
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, extraWorks: extras })).toBe(60);
+  });
+
+  it('본인 근무를 대근으로 넘기면(확정) 그 시간은 제외', () => {
+    const sg = defaultShiftGroups();
+    const subs = [{ id: 'y', date: '2026-06-18', shift: 'day', group: 'A', requester: '백종호', substitute: '김영진', status: 'filled' }];
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, substitutions: subs })).toBe(36);
+  });
+
+  it('48시간이면 초과 아님', () => {
+    const sg = defaultShiftGroups();
+    expect(exceedsWeeklyLimit('백종호', '2026-06-18', { shiftGroups: sg })).toBe(false);
   });
 });
 

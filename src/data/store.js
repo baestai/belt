@@ -24,7 +24,7 @@ export function defaultState() {
     shiftPins: {}, // { name: '1234' } 대근 페이지 로그인용 PIN (내부 구분용)
     pinResets: [], // PIN 초기화 신청자 이름 목록 (관리모드 승인 대기)
     substitutions: [], // 대근 신청/확정 기록 배열
-    extraWorks: [], // 추가 근무(교육/GIB/PSM) 신청 기록 배열
+    extraWorks: [], // 추가 근무(교육대근/GIB/PSM) 신청 기록 배열
   };
 }
 

@@ -266,6 +266,8 @@ button.sub-cell-sub{background:var(--warnbg);border:1px solid var(--warn);border
 .sub-cell-extra{display:flex;flex-direction:column;align-items:center;line-height:1.15;margin-top:4px;padding-top:3px;border-top:1px dashed var(--line)}
 .sub-cell-extra-tag{font-size:10px;font-weight:700;color:#fff;background:var(--accent);border-radius:8px;padding:1px 6px}
 .sub-cell-extra-nm{font-size:12px;font-weight:700;color:var(--accent)}
+button.sub-cell-admin{width:100%;background:none;border:none;border-top:1px dashed var(--line);cursor:pointer;font:inherit;color:inherit}
+button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 
 /* 대근 카드 */
 .sub-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}

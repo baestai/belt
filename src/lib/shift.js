@@ -260,15 +260,15 @@ export function isSlotFull(list, date, shift) {
 }
 
 // ── 추가 근무 (대근과 무관한 별도 근무) ────────────────
-// 사유는 교육 / GIB / PSM 중 하나
-export const EXTRA_WORK_REASONS = ['교육', 'GIB', 'PSM'];
+// 사유는 교육대근 / GIB / PSM 중 하나
+export const EXTRA_WORK_REASONS = ['교육대근', 'GIB', 'PSM'];
 
 // extra: { id, date, person, reason, createdAt }
 export function createExtraWork(list, { date, person, reason }) {
   if (!date) throw new Error('날짜를 선택하세요.');
   if (!person) throw new Error('신청자를 선택하세요.');
   if (!EXTRA_WORK_REASONS.includes(reason)) {
-    throw new Error('추가 근무 사유는 교육 / GIB / PSM 중에서 선택하세요.');
+    throw new Error('추가 근무 사유는 교육대근 / GIB / PSM 중에서 선택하세요.');
   }
   if ((list || []).some((e) => e.date === date && e.person === person && e.reason === reason)) {
     throw new Error('같은 날 같은 사유의 추가 근무를 이미 신청했습니다.');
@@ -295,10 +295,74 @@ export function adminUpdateExtraWork(list, id, patch = {}) {
     if (!next.date) throw new Error('날짜를 선택하세요.');
     if (!next.person) throw new Error('근무자를 선택하세요.');
     if (!EXTRA_WORK_REASONS.includes(next.reason)) {
-      throw new Error('추가 근무 사유는 교육 / GIB / PSM 중에서 선택하세요.');
+      throw new Error('추가 근무 사유는 교육대근 / GIB / PSM 중에서 선택하세요.');
     }
     return next;
   });
+}
+
+// ── 주 52시간 제한 (일요일~토요일, 1교대=12시간) ───────
+export const SHIFT_HOURS = 12;
+export const WEEKLY_HOUR_LIMIT = 52;
+
+// dateStr이 속한 주(일요일 00시 ~ 토요일 24시)의 시작·끝 날짜
+export function weekRange(dateStr) {
+  const d = parseYmd(dateStr);
+  const dow = d.getDay(); // 0=일요일
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return { start: fmtYmd(start), end: fmtYmd(end) };
+}
+
+function eachDayInRange(start, end) {
+  const out = [];
+  let cur = parseYmd(start);
+  const last = parseYmd(end);
+  while (cur <= last) {
+    out.push(fmtYmd(cur));
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+  }
+  return out;
+}
+
+// person이 dateStr이 속한 주에 실제로 근무하는 총 시간 (기본근무 + 대근 + 추가근무)
+// 대근으로 빠진(확정된) 본인 근무는 제외, 대근자로 맡은 근무·추가근무는 가산
+export function weeklyHours(
+  person,
+  dateStr,
+  { shiftGroups = {}, substitutions = [], extraWorks = [] } = {}
+) {
+  if (!person) return 0;
+  const group = groupOfPerson(shiftGroups, person);
+  const { start, end } = weekRange(dateStr);
+  const days = eachDayInRange(start, end);
+  let hours = 0;
+  for (const d of days) {
+    // 본인 기본 근무 (단, 그 날 본인 근무를 누군가 대근 확정했으면 제외)
+    if (group) {
+      const sh = shiftOfGroup(group, d);
+      if (sh === 'day' || sh === 'night') {
+        const subbedOut = substitutions.some(
+          (s) => s.date === d && s.requester === person && s.status === 'filled'
+        );
+        if (!subbedOut) hours += SHIFT_HOURS;
+      }
+    }
+    // 대근자로 맡은 근무
+    const asSubCnt = substitutions.filter(
+      (s) => s.date === d && s.substitute === person && s.status === 'filled'
+    ).length;
+    hours += asSubCnt * SHIFT_HOURS;
+    // 추가 근무
+    const extraCnt = (extraWorks || []).filter((e) => e.date === d && e.person === person).length;
+    hours += extraCnt * SHIFT_HOURS;
+  }
+  return hours;
+}
+
+// person의 해당 주 총 근무시간이 52시간을 초과하는지
+export function exceedsWeeklyLimit(person, dateStr, ctx) {
+  return weeklyHours(person, dateStr, ctx) > WEEKLY_HOUR_LIMIT;
 }
 
 // 기간 내 추가 근무 인원별 건수 집계, 내림차순
