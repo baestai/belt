@@ -291,12 +291,17 @@ function RequestForm({ me, myGroup, today, substitutions = [], onCreate, onClose
 }
 
 // ── 대근 카드 1건 ──────────────────────────────────────
-function SubCard({ sub, me, shiftGroups, onClaim, onUnclaim, onCancel }) {
+function SubCard({ sub, me, shiftGroups, substitutions = [], onClaim, onUnclaim, onCancel }) {
   const myGroup = groupOfPerson(shiftGroups, me);
-  const canClaim =
+  const eligible =
     sub.status === 'open' &&
     sub.requester !== me &&
     eligibleShift(myGroup, sub.date) === sub.shift;
+  // 같은 날 내가 이미 다른 대근을 맡고 있으면 불가 (1일 최대 1회)
+  const myBusyToday = substitutions.some(
+    (s) => s.id !== sub.id && s.date === sub.date && s.substitute === me
+  );
+  const canClaim = eligible && !myBusyToday;
   const isMine = sub.requester === me;
   const iAmSub = sub.substitute === me;
 
@@ -315,6 +320,9 @@ function SubCard({ sub, me, shiftGroups, onClaim, onUnclaim, onCancel }) {
       </div>
       <div className="sub-card-actions">
         {canClaim && <button className="add-btn" onClick={() => onClaim(sub.id)}>내가 대근하기</button>}
+        {eligible && myBusyToday && (
+          <button className="add-btn secondary" disabled title="해당 날짜에 이미 대근을 맡았습니다 (1일 최대 1회)">대근 불가</button>
+        )}
         {iAmSub && sub.status === 'filled' && (
           <button className="add-btn secondary" onClick={() => onUnclaim(sub.id)}>대근 취소</button>
         )}
@@ -426,6 +434,7 @@ export default function SubstitutionPage({
                   sub={s}
                   me={me}
                   shiftGroups={shiftGroups}
+                  substitutions={substitutions}
                   onClaim={(id) => onClaimSub(id, me)}
                   onUnclaim={onUnclaimSub}
                   onCancel={onCancelSub}
