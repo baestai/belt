@@ -92,9 +92,20 @@ function LoginGate({ shiftGroups, shiftPins, onLogin, onSetPin }) {
   );
 }
 
-// ── 8일 교대표 ─────────────────────────────────────────
-function ShiftBoard({ startDate, me, myGroup }) {
-  const days = Array.from({ length: 8 }, (_, i) => addDays(startDate, i));
+// 정산기간(start~end) 전체 날짜 배열
+function daysInPeriod(start, end) {
+  const out = [];
+  let cur = start;
+  while (cur <= end) {
+    out.push(cur);
+    cur = addDays(cur, 1);
+  }
+  return out;
+}
+
+// ── 정산기간 교대표 (16일~익월15일) ───────────────────
+function ShiftBoard({ start, end, today, myGroup }) {
+  const days = daysInPeriod(start, end);
   return (
     <div className="sub-board">
       <table className="sub-table">
@@ -110,7 +121,7 @@ function ShiftBoard({ startDate, me, myGroup }) {
           {days.map((d) => {
             const s = shiftsOnDate(d);
             return (
-              <tr key={d}>
+              <tr key={d} className={d === today ? 'sub-today-row' : ''}>
                 <td className="sub-date">{fmtKDate(d)}</td>
                 {SHIFT_GROUPS.map((g) => (
                   <td key={g} className={`${SHIFT_CLASS[s[g]]} ${g === myGroup ? 'sub-me-col' : ''}`}>
@@ -232,7 +243,8 @@ export default function SubstitutionPage({
   const [tab, setTab] = useState('list'); // 'list' | 'board' | 'count'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
-  const [boardStart, setBoardStart] = useState(today);
+  const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
+  const boardPeriod = settlementPeriod(boardRef);
 
   const myGroup = me ? groupOfPerson(shiftGroups, me) : null;
   const period = settlementPeriod(today);
@@ -315,11 +327,12 @@ export default function SubstitutionPage({
         {tab === 'board' && (
           <>
             <div className="sub-toolbar">
-              <button className="add-btn secondary" onClick={() => setBoardStart(addDays(boardStart, -8))}>◀ 이전</button>
-              <button className="add-btn secondary" onClick={() => setBoardStart(today)}>오늘</button>
-              <button className="add-btn secondary" onClick={() => setBoardStart(addDays(boardStart, 8))}>다음 ▶</button>
+              <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.start, -1))}>◀ 이전</button>
+              <button className="add-btn secondary" onClick={() => setBoardRef(today)}>이번</button>
+              <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.end, 1))}>다음 ▶</button>
             </div>
-            <ShiftBoard startDate={boardStart} me={me} myGroup={myGroup} />
+            <p className="sub-period">{boardPeriod.start} ~ {boardPeriod.end}</p>
+            <ShiftBoard start={boardPeriod.start} end={boardPeriod.end} today={today} myGroup={myGroup} />
           </>
         )}
 
