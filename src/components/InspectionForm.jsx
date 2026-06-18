@@ -197,20 +197,23 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
           <span className="dot none" />
           <div>
             <div className="name">{belt.name}</div>
-            <div className="insp-date-row">
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{belt.group} · 점검일</span>
-              <input
-                type="date"
-                className="insp-date"
-                value={record.date}
-                onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))}
-                aria-label="점검일"
-              />
-            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{belt.group}</div>
           </div>
           <button className="change" onClick={onCancel}>변경</button>
         </div>
 
+        <div className="num-row">
+          <label>점검일</label>
+          <input
+            type="date"
+            value={record.date}
+            onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))}
+            aria-label="점검일"
+          />
+        </div>
+        <p className="prev-cmp" style={{ marginTop: -4, marginBottom: 10 }}>
+          🕒 지난 점검 비교 기준: {prevRecord ? `${prevRecord.date} (이 점검일 직전 기록)` : '없음 (이 점검일 이전 기록 없음 — 변화 표시 없음)'}
+        </p>
         <div className="num-row">
           <label>점검자</label>
           <select
