@@ -193,6 +193,9 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .hdr-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:0 4px;text-decoration:none;line-height:1;display:inline-flex;align-items:center}
 header h1 + .hdr-btn{margin-left:auto}
 .hdr-btn + .mode-badge{margin-left:8px}
+.hdr-btn.labeled{flex-direction:column;gap:2px;padding:0 7px}
+.hdr-btn.labeled .hdr-ico{font-size:19px;line-height:1}
+.hdr-btn.labeled .hdr-lbl{font-size:9px;font-weight:700;line-height:1;color:var(--muted)}
 
 /* 점검 포인트 랭킹 */
 .lb-tabs{display:flex;gap:8px;margin-bottom:4px}

@@ -400,10 +400,18 @@ describe('주 52시간', () => {
     expect(exceedsWeeklyLimit('백종호', '2026-06-18', { shiftGroups: sg, substitutions: subs })).toBe(true);
   });
 
-  it('추가 근무 12시간 추가도 합산', () => {
+  it('추가 근무 GIB는 12시간으로 합산', () => {
     const sg = defaultShiftGroups();
     const extras = [{ id: 'e', date: '2026-06-16', person: '백종호', reason: 'GIB' }];
     expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, extraWorks: extras })).toBe(60);
+  });
+
+  it('추가 근무 교육대근·PSM은 8시간으로 합산', () => {
+    const sg = defaultShiftGroups();
+    const edu = [{ id: 'e1', date: '2026-06-16', person: '백종호', reason: '교육대근' }];
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, extraWorks: edu })).toBe(56);
+    const psm = [{ id: 'e2', date: '2026-06-16', person: '백종호', reason: 'PSM' }];
+    expect(weeklyHours('백종호', '2026-06-18', { shiftGroups: sg, extraWorks: psm })).toBe(56);
   });
 
   it('본인 근무를 대근으로 넘기면(확정) 그 시간은 제외', () => {

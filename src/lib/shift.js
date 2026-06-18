@@ -304,6 +304,11 @@ export function adminUpdateExtraWork(list, id, patch = {}) {
 // ── 주 52시간 제한 (일요일~토요일, 1교대=12시간) ───────
 export const SHIFT_HOURS = 12;
 export const WEEKLY_HOUR_LIMIT = 52;
+// 추가 근무 사유별 근무시간 (교육대근·PSM은 8시간, GIB는 12시간)
+export const EXTRA_WORK_HOURS = { '교육대근': 8, 'PSM': 8, 'GIB': 12 };
+function extraHoursOf(reason) {
+  return EXTRA_WORK_HOURS[reason] ?? SHIFT_HOURS;
+}
 
 // dateStr이 속한 주(일요일 00시 ~ 토요일 24시)의 시작·끝 날짜
 export function weekRange(dateStr) {
@@ -353,9 +358,10 @@ export function weeklyHours(
       (s) => s.date === d && s.substitute === person && s.status === 'filled'
     ).length;
     hours += asSubCnt * SHIFT_HOURS;
-    // 추가 근무
-    const extraCnt = (extraWorks || []).filter((e) => e.date === d && e.person === person).length;
-    hours += extraCnt * SHIFT_HOURS;
+    // 추가 근무 (사유별 시간: 교육대근·PSM 8h, GIB 12h)
+    for (const e of extraWorks || []) {
+      if (e.date === d && e.person === person) hours += extraHoursOf(e.reason);
+    }
   }
   return hours;
 }

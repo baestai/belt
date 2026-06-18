@@ -90,12 +90,18 @@ export default function FieldCalendar({
         <span className="logo">🦺</span>
         <h1>3선탄 통합관리</h1>
         {onOpenLeaderboard && (
-          <button className="hdr-btn" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">🏆</button>
+          <button className="hdr-btn labeled" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">
+            <span className="hdr-ico">🏆</span><span className="hdr-lbl">Top10</span>
+          </button>
         )}
         {onOpenShift && (
-          <button className="hdr-btn" onClick={onOpenShift} aria-label="대근 관리">🔁</button>
+          <button className="hdr-btn labeled" onClick={onOpenShift} aria-label="대근 관리">
+            <span className="hdr-ico">🔁</span><span className="hdr-lbl">대근</span>
+          </button>
         )}
-        <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">📖</a>
+        <a className="hdr-btn labeled" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">
+          <span className="hdr-ico">📖</span><span className="hdr-lbl">설명서</span>
+        </a>
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">

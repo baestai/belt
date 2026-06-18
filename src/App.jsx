@@ -346,17 +346,19 @@ export default function App() {
     const pins = setPinFn(state.shiftPins || {}, name, pin);
     setState((s) => ({ ...s, shiftPins: pins }));
   };
-  // 주 52시간 초과 검사 (대근/추가근무 반영된 예정 상태로 계산) → 초과 시 throw
-  const assertWeekly = (person, date, { substitutions, extraWorks }) => {
-    if (!person) return;
+  // 주 52시간 초과 확인 (대근/추가근무 반영된 예정 상태로 계산)
+  // 차단이 아닌 알림: 초과 시 확인창을 띄우고, 사용자가 계속 진행을 누르면 true
+  const confirmWeekly = (person, date, { substitutions, extraWorks }) => {
+    if (!person) return true;
     const sg = stateRef.current.shiftGroups || defaultShiftGroups();
     if (exceedsWeeklyLimit(person, date, {
       shiftGroups: sg,
       substitutions: substitutions ?? (stateRef.current.substitutions || []),
       extraWorks: extraWorks ?? (stateRef.current.extraWorks || []),
     })) {
-      throw new Error('주 52시간 초과되었습니다.');
+      return window.confirm('주 52시간 초과되었습니다.\n그래도 계속 진행하시겠습니까?');
     }
+    return true;
   };
   // 순수 함수가 throw할 수 있으므로 setState 업데이터 밖에서 먼저 계산(렌더 중 throw로 인한 빈 화면 방지)
   const handleCreateSub = (payload, opts) => {
@@ -367,7 +369,7 @@ export default function App() {
     const sg = stateRef.current.shiftGroups || defaultShiftGroups();
     const next = claimSubstitution(stateRef.current.substitutions || [], id, substitute, sg);
     const sub = next.find((x) => x.id === id);
-    if (sub) assertWeekly(substitute, sub.date, { substitutions: next });
+    if (sub && !confirmWeekly(substitute, sub.date, { substitutions: next })) return;
     setState((s) => ({ ...s, substitutions: next }));
   };
   const handleUnclaimSub = (id) => {
@@ -381,14 +383,14 @@ export default function App() {
   const handleAdminCreateSub = (payload, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = adminCreateSubstitution(stateRef.current.substitutions || [], payload);
-    if (payload.substitute) assertWeekly(payload.substitute, payload.date, { substitutions: next });
+    if (payload.substitute && !confirmWeekly(payload.substitute, payload.date, { substitutions: next })) return;
     setState((s) => ({ ...s, substitutions: next }));
   };
   const handleAdminUpdateSub = (id, patch, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = adminUpdateSubstitution(stateRef.current.substitutions || [], id, patch);
     const sub = next.find((x) => x.id === id);
-    if (sub && sub.substitute) assertWeekly(sub.substitute, sub.date, { substitutions: next });
+    if (sub && sub.substitute && !confirmWeekly(sub.substitute, sub.date, { substitutions: next })) return;
     setState((s) => ({ ...s, substitutions: next }));
   };
   const handleAdminDeleteSub = (id, pw) => {
@@ -399,14 +401,14 @@ export default function App() {
   const handleAdminCreateExtra = (payload, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = createExtraWork(stateRef.current.extraWorks || [], payload);
-    assertWeekly(payload.person, payload.date, { extraWorks: next });
+    if (!confirmWeekly(payload.person, payload.date, { extraWorks: next })) return;
     setState((s) => ({ ...s, extraWorks: next }));
   };
   const handleAdminUpdateExtra = (id, patch, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = adminUpdateExtraWork(stateRef.current.extraWorks || [], id, patch);
     const ex = next.find((x) => x.id === id);
-    if (ex) assertWeekly(ex.person, ex.date, { extraWorks: next });
+    if (ex && !confirmWeekly(ex.person, ex.date, { extraWorks: next })) return;
     setState((s) => ({ ...s, extraWorks: next }));
   };
   const handleAdminDeleteExtra = (id, pw) => {
@@ -416,7 +418,7 @@ export default function App() {
   // 추가 근무(교육대근/GIB/PSM) — throw 가능하므로 setState 밖에서 계산
   const handleCreateExtra = (payload) => {
     const next = createExtraWork(stateRef.current.extraWorks || [], payload);
-    assertWeekly(payload.person, payload.date, { extraWorks: next });
+    if (!confirmWeekly(payload.person, payload.date, { extraWorks: next })) return;
     setState((s) => ({ ...s, extraWorks: next }));
   };
   const handleCancelExtra = (id) => {
