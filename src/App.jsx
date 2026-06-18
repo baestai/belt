@@ -17,6 +17,7 @@ import InspectionForm from './components/InspectionForm.jsx';
 import PrintableRecord from './components/PrintableRecord.jsx';
 import SubstitutionPage from './components/SubstitutionPage.jsx';
 import {
+  defaultShiftGroups,
   setPin as setPinFn,
   createSubstitution,
   claimSubstitution,
@@ -332,7 +333,7 @@ export default function App() {
   const handleClaimSub = (id, substitute) => {
     setState((s) => ({
       ...s,
-      substitutions: claimSubstitution(s.substitutions || [], id, substitute, s.shiftGroups),
+      substitutions: claimSubstitution(s.substitutions || [], id, substitute, s.shiftGroups || defaultShiftGroups()),
     }));
   };
   const handleUnclaimSub = (id) => {
@@ -443,7 +444,7 @@ export default function App() {
 
       {view === 'shift' && (
         <SubstitutionPage
-          shiftGroups={state.shiftGroups}
+          shiftGroups={state.shiftGroups || defaultShiftGroups()}
           shiftPins={state.shiftPins || {}}
           substitutions={state.substitutions || []}
           today={today}

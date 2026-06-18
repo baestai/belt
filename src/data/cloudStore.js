@@ -8,6 +8,7 @@
 // 점검기록/일정은 각각 records/schedules 테이블의 행 단위로 저장한다.
 
 import { supabase } from './supabaseClient.js';
+import { defaultShiftGroups } from '../lib/shift.js';
 
 const CONFIG_KEY = 'config';
 const recordId = (r) => `${r.belt}__${r.date}`;
@@ -49,7 +50,7 @@ export async function fetchCloud() {
     quickMemos: cfg.quickMemos || [],
     beltConfigs: cfg.beltConfigs || {},
     adminPw: cfg.adminPw,
-    shiftGroups: cfg.shiftGroups,
+    shiftGroups: cfg.shiftGroups || defaultShiftGroups(),
     shiftPins: cfg.shiftPins || {},
     substitutions: cfg.substitutions || [],
     schedules,
