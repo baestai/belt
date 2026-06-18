@@ -1,12 +1,33 @@
 :root{
-  --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
-  --text:#e2e8f0; --muted:#94a3b8; --accent:#3b82f6;
+  /* 다크 (기본) */
+  --bg-deep:#0a0d12; --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --line:#2a313c;
+  --text:#e6e9ef; --muted:#9aa4b2;
+  /* 브랜드 강조: 산업용 오렌지 */
+  --accent:#f97316; --accent-strong:#ea580c; --accent-weak:rgba(249,115,22,.15);
+  /* 정보/야간: 블루 (주간 amber와 대비) */
+  --info:#3b82f6; --info-weak:rgba(59,130,246,.15);
   --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --none:#64748b;
-  --okbg:#16331f; --warnbg:#3a2e10; --badbg:#3a1717;
+  --okbg:#10241a; --warnbg:#2c2410; --badbg:#2c1414;
+  --radius:16px; --radius-sm:10px; --radius-pill:999px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
+  --shadow:0 6px 20px -6px rgba(0,0,0,.5);
+  --shadow-lg:0 16px 40px -12px rgba(0,0,0,.6);
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+:root[data-theme="light"]{
+  --bg-deep:#e9edf3; --bg:#f4f6fa; --panel:#ffffff; --panel2:#eef1f6; --line:#dce1e9;
+  --text:#1a1f29; --muted:#5d6776;
+  --accent:#ea580c; --accent-strong:#c2410c; --accent-weak:rgba(234,88,12,.10);
+  --info:#2563eb; --info-weak:rgba(37,99,235,.10);
+  --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --none:#94a3b8;
+  --okbg:#dcfce7; --warnbg:#fef3c7; --badbg:#fee2e2;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+  --shadow:0 6px 20px -8px rgba(15,23,42,.14);
+  --shadow-lg:0 16px 40px -12px rgba(15,23,42,.2);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:#0a0f1d;color:var(--text);line-height:1.5}
-.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:72px}
+body{font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg-deep);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .3s var(--ease),color .3s var(--ease)}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:72px;transition:background .3s var(--ease)}
 @media(min-width:900px){.app{max-width:1000px}}
 
 header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:10px}
@@ -321,4 +342,78 @@ button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 .sub-rank li.sub-me-row{border-color:var(--accent)}
 .sub-rank-no{width:26px;text-align:center;font-weight:700}
 .sub-rank-name{flex:1;font-weight:700}
-.sub-rank-cnt{font-weight:700;color:var(--accent)}
+.sub-rank-cnt{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+
+/* ════════════════════════════════════════════════
+   디자인 리프레시 — 그림자 · 모서리 · 애니메이션 ·
+   라이트모드 보정 · 야간(블루) 색 분리 · 상태 아이콘
+   ════════════════════════════════════════════════ */
+
+/* 숫자 정렬 (Pretendard tabular) */
+.stat .num,.lb-pts,.lb-rank,.pulley-tbl td,.result-tbl td,.sub-rank-no{font-variant-numeric:tabular-nums}
+
+/* 부드러운 입체감 — 그림자 & 둥근 모서리 */
+header{box-shadow:var(--shadow-sm);backdrop-filter:saturate(1.2)}
+.tabbar{box-shadow:0 -4px 16px -8px rgba(0,0,0,.4)}
+.card{border-radius:var(--radius);box-shadow:var(--shadow-sm)}
+.belt{border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease)}
+.belt:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat{border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:transform .15s var(--ease),border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.sub-card{border-radius:var(--radius);box-shadow:var(--shadow-sm)}
+.modal-box{border-radius:20px;box-shadow:var(--shadow-lg)}
+.search{border-radius:var(--radius)}
+.insp-item,.field-belt{border-radius:var(--radius)}
+
+/* 버튼 — 살짝 떠오르는 인터랙션 */
+.add-btn,.primary-btn,.ghost-btn,.chip,.seg button,.lb-tabs button{transition:transform .15s var(--ease),background .15s var(--ease),border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.add-btn:hover,.primary-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.add-btn:active,.primary-btn:active,.ghost-btn:active,.chip:active,.belt:active{transform:translateY(0) scale(.99)}
+.primary-btn,.add-btn{box-shadow:var(--shadow-sm)}
+
+/* 은은한 진입 애니메이션 */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.card,.belt,.sub-card,.insp-item,.lb-row,.sub-rank li{animation:fadeInUp .26s var(--ease) both}
+.modal{animation:overlayIn .16s ease}
+.modal-box{animation:modalIn .22s var(--ease)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* 강조색(오렌지) 적용 후 — 캘린더 선택/오늘 보정 */
+.cal .day.today{background:var(--accent);color:#fff;box-shadow:var(--shadow-sm)}
+.cal .day.sel{border-color:var(--accent);background:var(--accent-weak)}
+.tabbar button.active{color:var(--accent)}
+
+/* 야간 근무 · 추가근무 등은 정보색(블루)로 분리 → 주간(amber)과 대비 */
+.sub-night{color:var(--info)}
+.sub-cal-g.night{background:var(--info)}
+.sub-cell-extra-tag{background:var(--info)}
+.sub-cell-extra-nm{color:var(--info)}
+.sub-badge.sub-extra{background:var(--info);border-color:var(--info)}
+.sub-cal-mark.extra{color:var(--info);background:var(--info-weak)}
+
+/* 상태 = 색 + 아이콘 + 텍스트 (접근성) */
+.stat .lbl{display:inline-flex;align-items:center;justify-content:center;gap:3px}
+.stat.ok .lbl::before{content:'✓';font-weight:900}
+.stat.warn .lbl::before{content:'!';font-weight:900}
+.stat.bad .lbl::before{content:'✕';font-weight:900}
+.stat.none .lbl::before{content:'–';font-weight:900}
+.due::before{font-weight:900;margin-right:3px}
+.due.done::before{content:'✓'}
+.due.over::before{content:'✕'}
+.due.soon::before{content:'!'}
+.status-text.ok::before{content:'✓ '}
+.status-text.warn::before{content:'⚠ '}
+.status-text.bad::before{content:'✕ '}
+
+/* 헤더 SVG 아이콘 */
+.hdr-btn.labeled .hdr-svg{width:21px;height:21px;display:block}
+.hdr-btn.labeled svg{stroke:var(--text)}
+header .logo svg{width:22px;height:22px;display:block}
+
+/* 테마 전환 버튼 (전 화면 공통, 우하단 플로팅) */
+.theme-toggle{position:fixed;right:16px;bottom:84px;z-index:40;width:46px;height:46px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--accent);cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .3s var(--ease)}
+.theme-toggle:hover{transform:translateY(-2px) rotate(-8deg);box-shadow:var(--shadow-lg)}
+.theme-toggle svg{width:22px;height:22px}
+@media print{.theme-toggle{display:none}}

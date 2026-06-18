@@ -87,20 +87,33 @@ export default function FieldCalendar({
   return (
     <>
       <header>
-        <span className="logo">🦺</span>
+        <span className="logo" style={{ color: 'var(--accent)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 18h20" /><path d="M4 18a8 8 0 0 1 16 0" /><path d="M10.5 6.2a2 2 0 0 1 3 0V10" /><path d="M8 10V7.5" /><path d="M16 10V7.5" />
+          </svg>
+        </span>
         <h1>3선탄 통합관리</h1>
         {onOpenLeaderboard && (
           <button className="hdr-btn labeled" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">
-            <span className="hdr-ico">🏆</span><span className="hdr-lbl">Top10</span>
+            <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+            <span className="hdr-lbl">Top10</span>
           </button>
         )}
         {onOpenShift && (
           <button className="hdr-btn labeled" onClick={onOpenShift} aria-label="대근 관리">
-            <span className="hdr-ico">🔁</span><span className="hdr-lbl">대근</span>
+            <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 2v6h6" /><path d="M21 12A9 9 0 0 0 6 5.3L3 8" /><path d="M21 22v-6h-6" /><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7" />
+            </svg>
+            <span className="hdr-lbl">대근</span>
           </button>
         )}
         <a className="hdr-btn labeled" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">
-          <span className="hdr-ico">📖</span><span className="hdr-lbl">설명서</span>
+          <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          <span className="hdr-lbl">설명서</span>
         </a>
         <span className="mode-badge mode-field">점검모드</span>
       </header>
