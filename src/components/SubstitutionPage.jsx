@@ -263,6 +263,136 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
   );
 }
 
+// ── 대근 편성 월간 캘린더 ──────────────────────────────
+const CAL_WD = ['일', '월', '화', '수', '목', '금', '토'];
+function pad2(n) {
+  return n < 10 ? '0' + n : '' + n;
+}
+function ShiftCalendar({ refDate, selected, today, substitutions = [], extraWorks = [], onSelectDate, onPrevMonth, onNextMonth }) {
+  const [y, m] = refDate.split('-').map(Number); // m: 1-based
+  const startWd = new Date(y, m - 1, 1).getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startWd; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const dateStr = (d) => `${y}-${pad2(m)}-${pad2(d)}`;
+
+  const subByDate = {};
+  for (const s of substitutions) (subByDate[s.date] || (subByDate[s.date] = [])).push(s);
+  const extraByDate = {};
+  for (const e of extraWorks) (extraByDate[e.date] || (extraByDate[e.date] = [])).push(e);
+
+  return (
+    <div className="sub-cal-wrap">
+      <div className="cal-head">
+        <button onClick={onPrevMonth} aria-label="이전 달">‹</button>
+        <span className="ym">{y}년 {m}월</span>
+        <button onClick={onNextMonth} aria-label="다음 달">›</button>
+      </div>
+      <div className="cal sub-cal">
+        {CAL_WD.map((w, i) => (
+          <div key={w} className={'wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '')}>{w}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (d == null) return <div key={'e' + i} className="day empty" />;
+          const ds = dateStr(d);
+          const s = shiftsOnDate(ds);
+          const dayG = SHIFT_GROUPS.find((g) => s[g] === 'day');
+          const nightG = SHIFT_GROUPS.find((g) => s[g] === 'night');
+          const subs = subByDate[ds] || [];
+          const extras = extraByDate[ds] || [];
+          const isToday = ds === today;
+          const isSel = ds === selected;
+          return (
+            <button
+              key={ds}
+              className={'day sub-cal-day' + (isToday ? ' today' : '') + (isSel && !isToday ? ' sel' : '')}
+              onClick={() => onSelectDate(ds)}
+            >
+              <span className="sub-cal-dnum">{d}</span>
+              <span className="sub-cal-shifts">
+                <i className="sub-cal-g day" title="주간">{dayG}</i>
+                <i className="sub-cal-g night" title="야간">{nightG}</i>
+              </span>
+              {(subs.length > 0 || extras.length > 0) && (
+                <span className="sub-cal-marks">
+                  {subs.length > 0 && <i className="sub-cal-mark sub" title="대근">대{subs.length}</i>}
+                  {extras.length > 0 && <i className="sub-cal-mark extra" title="추가근무">추{extras.length}</i>}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="sub-legend">
+        <span className="sub-cal-g day">조</span>=주간 ·{' '}
+        <span className="sub-cal-g night">조</span>=야간 ·{' '}
+        <i className="sub-cal-mark sub">대</i>=대근 ·{' '}
+        <i className="sub-cal-mark extra">추</i>=추가근무
+      </p>
+    </div>
+  );
+}
+
+// ── 선택일 근무현황 상세 ───────────────────────────────
+function DayDetail({ date, substitutions = [], extraWorks = [], onEditSub, onEditExtra }) {
+  const s = shiftsOnDate(date);
+  const subs = substitutions.filter((x) => x.date === date);
+  const extras = extraWorks.filter((x) => x.date === date);
+  return (
+    <div className="card sub-day-detail">
+      <h3>📅 {fmtKDate(date)} 근무현황</h3>
+      <div className="sub-day-grid">
+        {SHIFT_GROUPS.map((g) => {
+          const subsG = subs.filter((x) => x.group === g);
+          return (
+            <div key={g} className={`sub-day-col ${SHIFT_CLASS[s[g]]}`}>
+              <div className="sub-day-ghead">{g}조 · {SHIFT_LABEL[s[g]]}</div>
+              {subsG.length === 0 ? (
+                <div className="sub-day-empty">—</div>
+              ) : (
+                subsG.map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    className="sub-day-swap"
+                    onClick={() => onEditSub && onEditSub(sub)}
+                    title="클릭하여 수정"
+                  >
+                    <span className="sub-cell-req">{sub.requester}</span>
+                    {sub.reason ? <span className="sub-day-reason"> {sub.reason}</span> : null}
+                    <span className="sub-cell-arrow"> ↓ </span>
+                    <span className="sub-cell-sub">{sub.substitute || '미정'}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="sub-day-extras">
+        <div className="sub-day-ghead">추가근무</div>
+        {extras.length === 0 ? (
+          <div className="sub-day-empty">—</div>
+        ) : (
+          extras.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              className="sub-cell-extra sub-day-extra-btn"
+              onClick={() => onEditExtra && onEditExtra(e)}
+              title="클릭하여 수정"
+            >
+              <span className="sub-cell-extra-tag">{e.reason}</span>
+              <span className="sub-cell-extra-nm">{e.person}</span>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 대근자 선택(모집중 클릭) ──────────────────────────
 function ClaimPicker({ sub, shiftGroups, substitutions = [], onClaim, onClose }) {
   // 같은 날 이미 대근을 맡은 직원은 제외 (1일 최대 1회)
@@ -668,6 +798,10 @@ export default function SubstitutionPage({
   const [pickFor, setPickFor] = useState(null); // 모집중 클릭한 대근 건
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
+  const [calRef, setCalRef] = useState(today); // 편성 캘린더가 보여줄 달
+  const [calSel, setCalSel] = useState(today); // 캘린더에서 선택한 날짜
+  const calPrev = () => { const [y, m] = calRef.split('-').map(Number); setCalRef(fmtYmd(new Date(y, m - 2, 1))); };
+  const calNext = () => { const [y, m] = calRef.split('-').map(Number); setCalRef(fmtYmd(new Date(y, m, 1))); };
 
   const isAdmin = !!adminPw;
   const myGroup = me && !isAdmin ? groupOfPerson(shiftGroups, me) : null;
@@ -777,6 +911,26 @@ export default function SubstitutionPage({
               </button>
             </div>
             <p className="sub-hint">관리자는 모든 대근 편성을 추가·수정·삭제할 수 있습니다.</p>
+
+            <ShiftCalendar
+              refDate={calRef}
+              selected={calSel}
+              today={today}
+              substitutions={substitutions}
+              extraWorks={extraWorks}
+              onSelectDate={setCalSel}
+              onPrevMonth={calPrev}
+              onNextMonth={calNext}
+            />
+            <DayDetail
+              date={calSel}
+              substitutions={substitutions}
+              extraWorks={extraWorks}
+              onEditSub={(sub) => setAdminForm({ edit: sub })}
+              onEditExtra={(ex) => setAdminExtraForm({ edit: ex })}
+            />
+
+            <p className="sub-hint" style={{ marginTop: 16 }}>전체 편성 목록</p>
             {sorted.length === 0 ? (
               <p className="sub-empty">대근 편성 내역이 없습니다.</p>
             ) : (

@@ -272,6 +272,34 @@ button.sub-cell-sub{background:var(--warnbg);border:1px solid var(--warn);border
 button.sub-cell-admin{width:100%;background:none;border:none;border-top:1px dashed var(--line);cursor:pointer;font:inherit;color:inherit}
 button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 
+/* 대근 편성 캘린더 */
+.sub-cal-wrap{margin:12px 0}
+.sub-cal .day.sub-cal-day{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:54px;padding:4px 2px}
+.sub-cal-dnum{font-size:13px;font-weight:700;line-height:1}
+.sub-cal-shifts{display:flex;gap:3px}
+.sub-cal-g{font-style:normal;font-size:10px;font-weight:700;border-radius:6px;padding:0 4px;line-height:1.4}
+.sub-cal-g.day{color:#fff;background:var(--warn)}
+.sub-cal-g.night{color:#fff;background:var(--accent)}
+.sub-cal-marks{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.sub-cal-mark{font-style:normal;font-size:9px;font-weight:700;border-radius:5px;padding:0 3px;line-height:1.4}
+.sub-cal-mark.sub{color:var(--ok);background:rgba(16,185,129,.16)}
+.sub-cal-mark.extra{color:var(--accent);background:rgba(59,130,246,.16)}
+
+/* 선택일 근무현황 상세 */
+.sub-day-detail{margin-top:12px}
+.sub-day-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.sub-day-col{border:1px solid var(--line);border-radius:10px;padding:8px}
+.sub-day-col.sub-day{border-color:var(--warn)}
+.sub-day-col.sub-night{border-color:var(--accent)}
+.sub-day-ghead{font-size:13px;font-weight:700;margin-bottom:6px}
+.sub-day-empty{font-size:12px;color:var(--muted)}
+.sub-day-swap{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;margin-bottom:5px;cursor:pointer;font:inherit;color:inherit}
+.sub-day-swap:hover{background:var(--panel)}
+.sub-day-reason{font-size:11px;color:var(--muted)}
+.sub-day-extras{margin-top:10px}
+.sub-day-extra-btn{display:inline-flex;flex-direction:row;align-items:center;gap:6px;margin:0 6px 6px 0;border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;font:inherit}
+.sub-day-extra-btn:hover{background:var(--panel2)}
+
 /* 대근 카드 */
 .sub-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
 .sub-card.filled{border-color:var(--ok)}
