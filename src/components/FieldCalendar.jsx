@@ -31,6 +31,7 @@ export default function FieldCalendar({
   filters,
   setFilters,
   onOpenLeaderboard,
+  onOpenShift,
   fixedInspector,
   onOpenDeviceInspector,
 }) {
@@ -86,6 +87,9 @@ export default function FieldCalendar({
         <h1>3선탄 벨트컨베이어 주기점검</h1>
         {onOpenLeaderboard && (
           <button className="hdr-btn" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">🏆</button>
+        )}
+        {onOpenShift && (
+          <button className="hdr-btn" onClick={onOpenShift} aria-label="대근 관리">🔁</button>
         )}
         <a className="hdr-btn" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">📖</a>
         <span className="mode-badge mode-field">점검모드</span>

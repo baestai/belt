@@ -460,6 +460,7 @@ export default function App() {
           filters={filters}
           setFilters={setFilters}
           onOpenLeaderboard={() => setModal('leaderboard')}
+          onOpenShift={() => setView('shift')}
           fixedInspector={fixedInspector}
           onOpenDeviceInspector={() => setModal('deviceInspector')}
         />
@@ -476,6 +477,7 @@ export default function App() {
           onClaimSub={handleClaimSub}
           onUnclaimSub={handleUnclaimSub}
           onCancelSub={handleCancelSub}
+          onClose={() => setView('calendar')}
         />
       )}
 
@@ -565,12 +567,6 @@ export default function App() {
           onClick={() => setView('calendar')}
         >
           <span className="ic">🦺</span>점검모드
-        </button>
-        <button
-          className={view === 'shift' ? 'active' : ''}
-          onClick={() => setView('shift')}
-        >
-          <span className="ic">🔁</span>대근
         </button>
         <button
           className={view === 'list' || view === 'detail' ? 'active' : ''}

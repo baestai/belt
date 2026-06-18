@@ -312,6 +312,7 @@ export default function SubstitutionPage({
   onClaimSub,
   onUnclaimSub,
   onCancelSub,
+  onClose,
 }) {
   const [me, setMe] = useState(null);
   const [tab, setTab] = useState('list'); // 'list' | 'board' | 'count'
@@ -337,6 +338,9 @@ export default function SubstitutionPage({
     return (
       <>
         <header>
+          {onClose && (
+            <button className="hdr-btn" onClick={onClose} aria-label="점검모드로">←</button>
+          )}
           <span className="logo">🔁</span>
           <h1>대근(代勤) 관리</h1>
         </header>
@@ -355,6 +359,9 @@ export default function SubstitutionPage({
   return (
     <>
       <header>
+        {onClose && (
+          <button className="hdr-btn" onClick={onClose} aria-label="점검모드로">←</button>
+        )}
         <span className="logo">🔁</span>
         <h1>대근 관리</h1>
         <button className="hdr-btn" title="로그아웃" onClick={() => setMe(null)}>🚪</button>
@@ -403,7 +410,7 @@ export default function SubstitutionPage({
           <>
             <div className="sub-toolbar">
               <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.start, -1))}>◀ 이전</button>
-              <button className="add-btn secondary" onClick={() => setBoardRef(today)}>이번</button>
+              <button className="add-btn secondary" onClick={() => setBoardRef(today)}>금월</button>
               <button className="add-btn secondary" onClick={() => setBoardRef(addDays(boardPeriod.end, 1))}>다음 ▶</button>
             </div>
             <p className="sub-period">{boardPeriod.start} ~ {boardPeriod.end}</p>
