@@ -335,6 +335,10 @@ export function ShiftGroupModal({ shiftGroups, pinResets = [], onAdd, onRemove, 
           A·B·C·D조 인원을 편집합니다. 대근 관리의 로그인·근무표·대근 가능자 판정에 사용됩니다.
         </div>
 
+        <label>🔒 관리자 비밀번호</label>
+        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="추가·삭제·승인 시 필요" />
+        {error && <div className="err">{error}</div>}
+
         {pinResets.length > 0 && (
           <div className="card" style={{ marginTop: 4, borderColor: 'var(--warn)' }}>
             <h3 style={{ marginBottom: 8 }}>🔑 PIN 초기화 신청 ({pinResets.length})</h3>
@@ -379,9 +383,6 @@ export function ShiftGroupModal({ shiftGroups, pinResets = [], onAdd, onRemove, 
           placeholder="예: 홍길동"
           onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
         />
-        <label>🔒 관리자 비밀번호</label>
-        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="추가/삭제 시 필요" />
-        {error && <div className="err">{error}</div>}
         <div className="modal-actions">
           <button className="ma-cancel" onClick={onClose}>닫기</button>
           <button className="ma-ok" onClick={add}>추가</button>
