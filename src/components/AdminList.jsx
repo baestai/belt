@@ -46,7 +46,7 @@ export default function AdminList({
     <>
       <header>
         <span className="logo">🏭</span>
-        <h1>3선탄 벨트컨베이어 주기점검</h1>
+        <h1>3선탄 통합관리</h1>
         <span className="mode-badge mode-admin">관리모드</span>
       </header>
       <div className="body">

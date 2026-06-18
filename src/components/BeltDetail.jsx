@@ -17,7 +17,7 @@ const CYCLES = [
   { v: 'none', t: '반복 없음' },
 ];
 
-export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, onPrint, onViewResult, groupCount = 0 }) {
+export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, onPrint, onViewResult, onEditRecord, groupCount = 0 }) {
   const history = recordsForBelt(records, belt.name);
   const latest = latestRecord(records, belt.name);
   const st = latest ? aggregateStatus(latest) : 'none';
@@ -129,6 +129,9 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
                   <div className="tl-text">{s === 'ok' ? '전체 정상' : `이상/주의 ${cnt}건`}</div>
                   {onViewResult && (
                     <button className="tl-print" onClick={() => onViewResult(r)} aria-label={`${r.date} 결과보기`}>📄 결과보기</button>
+                  )}
+                  {onEditRecord && (
+                    <button className="tl-print" onClick={() => onEditRecord(r)} aria-label={`${r.date} 수정`}>✏ 수정</button>
                   )}
                   {onPrint && (
                     <button className="tl-print" onClick={() => onPrint(r)} aria-label={`${r.date} 점검표 인쇄`}>🖨 점검표</button>

@@ -17,7 +17,7 @@ describe('App 통합 렌더', () => {
 
   it('점검모드가 기본 화면으로 열린다', () => {
     render(<App />);
-    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('3선탄 통합관리').length).toBeGreaterThan(0);
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
@@ -61,7 +61,7 @@ describe('App 통합 렌더', () => {
   it('관리모드 탭을 누르면 목록이 렌더된다', () => {
     render(<App />);
     openAdmin();
-    expect(screen.getByText('3선탄 벨트컨베이어 주기점검')).toBeInTheDocument();
+    expect(screen.getByText('3선탄 통합관리')).toBeInTheDocument();
     expect(screen.getByText('S-101')).toBeInTheDocument();
   });
 
@@ -69,7 +69,7 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     fireEvent.click(screen.getByText('점검모드'));
-    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('3선탄 통합관리').length).toBeGreaterThan(0);
     expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe('App 통합 렌더', () => {
     fireEvent.click(within(firstItem).getByText('불량'));
     fireEvent.click(screen.getByText('✅ 점검 완료 저장'));
     // 저장 후 캘린더로 이동
-    expect(screen.getAllByText('3선탄 벨트컨베이어 주기점검').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('3선탄 통합관리').length).toBeGreaterThan(0);
   });
 
   it('점검자 관리 모달이 열린다', () => {

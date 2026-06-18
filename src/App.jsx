@@ -298,6 +298,12 @@ export default function App() {
     setView('form');
   };
 
+  // 특정 점검 기록을 그 날짜로 열어 수정 (점검 이력의 ✏ 수정)
+  const handleEditRecord = (record) => {
+    setFormCtx({ belt: { name: record.belt, group: record.group || groupOf(record.belt) }, date: record.date });
+    setView('form');
+  };
+
   // 점검모드 검색/상태 목록에서 벨트 선택: 최근 점검결과가 있으면 상세(결과)로,
   // 없으면 바로 점검 입력 화면으로 이동
   const handleOpenBeltSmart = (name) => {
@@ -467,6 +473,7 @@ export default function App() {
           onCopyConfig={handleCopyConfigToGroup}
           onPrint={setPrintTarget}
           onViewResult={setResultTarget}
+          onEditRecord={handleEditRecord}
           groupCount={(groups[selectedBelt.group] || []).length}
         />
       )}
