@@ -101,11 +101,21 @@ function newId() {
   return `sub_${Date.now().toString(36)}_${_seq}`;
 }
 
+// 같은 날짜 + 같은 시간대(주간/야간)에 신청 가능한 최대 인원
+export const MAX_SUBS_PER_SHIFT = 3;
+
 // 신청: 신청자(원 근무자)가 근무하는 날의 시간대를 자동 산출
 export function createSubstitution(list, { date, group, requester, reason }) {
   const shift = shiftOfGroup(group, date);
   if (shift !== 'day' && shift !== 'night') {
     throw new Error('해당 날짜는 근무일이 아니라 대근 신청이 필요 없습니다.');
+  }
+  const sameSlot = list.filter((s) => s.date === date && s.shift === shift);
+  if (sameSlot.some((s) => s.requester === requester)) {
+    throw new Error('이미 같은 날 같은 시간대에 대근을 신청했습니다.');
+  }
+  if (sameSlot.length >= MAX_SUBS_PER_SHIFT) {
+    throw new Error(`해당 날짜의 ${SHIFT_LABEL[shift]} 대근 신청은 최대 ${MAX_SUBS_PER_SHIFT}명까지 가능합니다.`);
   }
   const sub = {
     id: newId(),

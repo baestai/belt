@@ -120,6 +120,30 @@ describe('대근 신청/확정 (불변 연산)', () => {
     expect(list[0].substitute).toBe(null);
   });
 
+  it('같은 날 같은 시간대 대근 신청은 최대 3명', () => {
+    // 6/18 A조 주간 근무: 7명 → 4명째 신청 시 에러
+    let list = [];
+    const names = ['백종호', '고영철', '이경운', '김주홍'];
+    for (let i = 0; i < 3; i++) {
+      list = createSubstitution(list, {
+        date: '2026-06-18', group: 'A', requester: names[i], reason: '휴가',
+      });
+    }
+    expect(list.length).toBe(3);
+    expect(() => createSubstitution(list, {
+      date: '2026-06-18', group: 'A', requester: names[3], reason: '휴가',
+    })).toThrow(/최대 3/);
+  });
+
+  it('동일인이 같은 날 같은 시간대 중복 신청하면 에러', () => {
+    let list = createSubstitution([], {
+      date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가',
+    });
+    expect(() => createSubstitution(list, {
+      date: '2026-06-18', group: 'A', requester: '백종호', reason: '교육',
+    })).toThrow();
+  });
+
   it('휴무일에 신청하면 에러', () => {
     expect(() => createSubstitution([], {
       date: '2026-06-18', group: 'B', requester: '김세준', reason: 'x',

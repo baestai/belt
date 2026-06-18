@@ -146,7 +146,7 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen
                               className="sub-cell-sub open"
                               onClick={() => onPickOpen && onPickOpen(sub)}
                             >
-                              모집중 ▾
+                              대근 ▾
                             </button>
                           )}
                         </div>
