@@ -303,7 +303,7 @@ function ShiftCalendar({ start, end, selected, today, substitutions = [], extraW
     <div className="sc-wrap">
       <div className="sc-head">
         <button onClick={onPrev} aria-label="이전 정산기간">‹</button>
-        <span className="sc-ym">{sp.y}년 {sp.m}월 정산<small className="sc-range">{rangeTxt}</small></span>
+        <span className="sc-ym">{sp.y}년 {sp.m}월<small className="sc-range">{rangeTxt}</small></span>
         <button onClick={onNext} aria-label="다음 정산기간">›</button>
       </div>
       <div className="sc-grid">
