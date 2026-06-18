@@ -18,6 +18,7 @@ import PrintableRecord from './components/PrintableRecord.jsx';
 import SubstitutionPage from './components/SubstitutionPage.jsx';
 import {
   defaultShiftGroups,
+  SHIFT_LABEL,
   setPin as setPinFn,
   createSubstitution,
   claimSubstitution,
@@ -29,6 +30,11 @@ import {
   cancelExtraWork,
   adminUpdateExtraWork,
   exceedsWeeklyLimit,
+  appendSubLog,
+  createSwapRequest,
+  acceptSwap,
+  rejectSwap,
+  cancelSwap,
 } from './lib/shift.js';
 import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
@@ -394,23 +400,33 @@ export default function App() {
     }
     return true;
   };
+  // 대근 변경 이력(감사 로그) 헬퍼: setState 업데이터 안에서 subLogs에 누적
+  const withLog = (s, patch, entry) => ({
+    ...s,
+    ...patch,
+    subLogs: appendSubLog(s.subLogs || [], entry),
+  });
+  const fmtSub = (sub) => `${sub.date} ${SHIFT_LABEL[sub.shift] || ''} ${sub.requester}(${sub.group}조)${sub.reason ? ` · ${sub.reason}` : ''}`;
   // 순수 함수가 throw할 수 있으므로 setState 업데이터 밖에서 먼저 계산(렌더 중 throw로 인한 빈 화면 방지)
   const handleCreateSub = (payload, opts) => {
     const next = createSubstitution(stateRef.current.substitutions || [], payload, opts);
-    setState((s) => ({ ...s, substitutions: next }));
+    const sub = next[next.length - 1];
+    setState((s) => withLog(s, { substitutions: next }, { actor: payload.requester, action: '대근 신청', detail: fmtSub(sub) }));
   };
   const handleClaimSub = (id, substitute) => {
     const sg = stateRef.current.shiftGroups || defaultShiftGroups();
     const next = claimSubstitution(stateRef.current.substitutions || [], id, substitute, sg);
     const sub = next.find((x) => x.id === id);
     if (sub && !confirmWeekly(substitute, sub.date, { substitutions: next })) return;
-    setState((s) => ({ ...s, substitutions: next }));
+    setState((s) => withLog(s, { substitutions: next }, { actor: substitute, action: '대근 확정', detail: sub ? `${sub.date} ${sub.requester} → ${substitute}` : '' }));
   };
   const handleUnclaimSub = (id) => {
-    setState((s) => ({ ...s, substitutions: unclaimSubstitution(s.substitutions || [], id) }));
+    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
+    setState((s) => withLog(s, { substitutions: unclaimSubstitution(s.substitutions || [], id) }, { actor: sub?.substitute || '대근자', action: '대근 취소', detail: sub ? `${sub.date} ${sub.requester}` : '' }));
   };
   const handleCancelSub = (id) => {
-    setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
+    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
+    setState((s) => withLog(s, { substitutions: cancelSubstitution(s.substitutions || [], id) }, { actor: sub?.requester || '신청자', action: '신청 삭제', detail: sub ? fmtSub(sub) : '' }));
   };
   // 관리자 대근 편성: 비밀번호 확인 후 입력/수정/삭제 (throw 가능 → setState 밖에서 계산)
   const verifyAdmin = (pw) => checkPassword(pw, stateRef.current.adminPw);
@@ -418,18 +434,20 @@ export default function App() {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = adminCreateSubstitution(stateRef.current.substitutions || [], payload);
     if (payload.substitute && !confirmWeekly(payload.substitute, payload.date, { substitutions: next })) return;
-    setState((s) => ({ ...s, substitutions: next }));
+    const sub = next[next.length - 1];
+    setState((s) => withLog(s, { substitutions: next }, { actor: '관리자', action: '편성 추가', detail: `${fmtSub(sub)}${sub.substitute ? ` → ${sub.substitute}` : ''}` }));
   };
   const handleAdminUpdateSub = (id, patch, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
     const next = adminUpdateSubstitution(stateRef.current.substitutions || [], id, patch);
     const sub = next.find((x) => x.id === id);
     if (sub && sub.substitute && !confirmWeekly(sub.substitute, sub.date, { substitutions: next })) return;
-    setState((s) => ({ ...s, substitutions: next }));
+    setState((s) => withLog(s, { substitutions: next }, { actor: '관리자', action: '편성 수정', detail: sub ? `${fmtSub(sub)}${sub.substitute ? ` → ${sub.substitute}` : ''}` : '' }));
   };
   const handleAdminDeleteSub = (id, pw) => {
     if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
+    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
+    setState((s) => withLog(s, { substitutions: cancelSubstitution(s.substitutions || [], id) }, { actor: '관리자', action: '편성 삭제', detail: sub ? fmtSub(sub) : '' }));
   };
   // 관리자 추가 근무 편성: 비밀번호 확인 후 입력/수정/삭제
   const handleAdminCreateExtra = (payload, pw) => {
@@ -457,6 +475,44 @@ export default function App() {
   };
   const handleCancelExtra = (id) => {
     setState((s) => ({ ...s, extraWorks: cancelExtraWork(s.extraWorks || [], id) }));
+  };
+
+  // 대근 맞교환(스왑) — throw 가능하므로 setState 밖에서 계산
+  const handleCreateSwap = (payload) => {
+    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
+    const next = createSwapRequest(stateRef.current.swaps || [], payload, sg);
+    setState((s) => withLog(s, { swaps: next }, {
+      actor: payload.requester, action: '맞교환 요청',
+      detail: `${payload.requester}(${payload.requesterDate}) ↔ ${payload.target}(${payload.targetDate})`,
+    }));
+  };
+  const handleAcceptSwap = (id) => {
+    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
+    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
+    const res = acceptSwap(stateRef.current.swaps || [], stateRef.current.substitutions || [], id, sg);
+    if (swap) {
+      if (!confirmWeekly(swap.target, swap.requesterDate, { substitutions: res.substitutions })) return;
+      if (!confirmWeekly(swap.requester, swap.targetDate, { substitutions: res.substitutions })) return;
+    }
+    setState((s) => withLog(s, { swaps: res.swaps, substitutions: res.substitutions }, {
+      actor: swap?.target || '대상자', action: '맞교환 수락',
+      detail: swap ? `${swap.requester}(${swap.requesterDate}) ↔ ${swap.target}(${swap.targetDate})` : '',
+    }));
+  };
+  const handleRejectSwap = (id) => {
+    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
+    setState((s) => withLog(s, { swaps: rejectSwap(s.swaps || [], id) }, {
+      actor: swap?.target || '대상자', action: '맞교환 거절',
+      detail: swap ? `${swap.requester} ↔ ${swap.target}` : '',
+    }));
+  };
+  const handleCancelSwap = (id) => {
+    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
+    const res = cancelSwap(stateRef.current.swaps || [], stateRef.current.substitutions || [], id);
+    setState((s) => withLog(s, res, {
+      actor: swap?.requester || '신청자', action: '맞교환 철회',
+      detail: swap ? `${swap.requester} ↔ ${swap.target}` : '',
+    }));
   };
 
   // PIN 초기화: 사용자가 신청 → 관리모드에서 승인하면 해당 PIN 삭제(재설정 가능)
@@ -610,8 +666,14 @@ export default function App() {
           pinResets={state.pinResets || []}
           substitutions={state.substitutions || []}
           extraWorks={state.extraWorks || []}
+          swaps={state.swaps || []}
+          subLogs={state.subLogs || []}
           today={today}
           onSetPin={handleSetPin}
+          onCreateSwap={handleCreateSwap}
+          onAcceptSwap={handleAcceptSwap}
+          onRejectSwap={handleRejectSwap}
+          onCancelSwap={handleCancelSwap}
           onRequestPinReset={handleRequestPinReset}
           onCreateSub={handleCreateSub}
           onClaimSub={handleClaimSub}

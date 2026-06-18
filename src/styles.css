@@ -325,6 +325,52 @@ button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 .sc-tag{font-style:normal;font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 5px;line-height:1}
 .sc-tag.day{background:var(--warn)} .sc-tag.night{background:var(--info)}
 
+/* 탭 줄바꿈 + 배지 */
+.seg{flex-wrap:wrap}
+.seg-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;vertical-align:middle}
+
+/* 알림 벨 */
+.notif-wrap{position:relative;display:inline-flex}
+.notif-btn{position:relative}
+.notif-badge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.notif-backdrop{position:fixed;inset:0;z-index:45}
+.notif-panel{position:absolute;top:34px;right:0;z-index:46;width:min(86vw,320px);background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden;animation:fadeInUp .18s var(--ease)}
+.notif-head{padding:11px 14px;font-size:13px;font-weight:800;border-bottom:1px solid var(--line);background:var(--panel2)}
+.notif-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
+.notif-item{display:flex;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;align-items:flex-start}
+.notif-item:last-child{border-bottom:none}
+.notif-ico{flex-shrink:0;font-size:15px;line-height:1.2}
+.notif-txt{flex:1;line-height:1.4}
+
+/* 대근 추천 힌트 */
+.sub-reco{font-size:13px;background:var(--accent-weak);border:1px solid var(--accent);color:var(--text);border-radius:9px;padding:8px 11px;margin:10px 0 4px}
+
+/* 맞교환 카드 */
+.sub-swap-arrow{text-align:center;color:var(--accent);font-weight:800;line-height:1}
+
+/* 변경 이력 */
+.log-list{display:flex;flex-direction:column;gap:7px}
+.log-row{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.log-meta{display:flex;align-items:center;gap:8px;font-size:12px}
+.log-action{font-weight:800;color:var(--accent)}
+.log-actor{font-weight:700}
+.log-at{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.log-detail{font-size:13px;margin-top:4px;color:var(--text)}
+
+/* 부담시간 대시보드 */
+.burden-list{display:flex;flex-direction:column;gap:12px}
+.burden-row{display:flex;flex-direction:column;gap:5px}
+.burden-row.me .burden-name{color:var(--accent)}
+.burden-head{display:flex;align-items:baseline;justify-content:space-between}
+.burden-name{font-weight:700;font-size:14px}
+.burden-total{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+.burden-bar{display:flex;height:12px;border-radius:7px;overflow:hidden;background:var(--panel2)}
+.burden-seg{display:block;height:100%}
+.burden-seg.sub{background:var(--ok)} .burden-seg.extra{background:var(--info)}
+.burden-meta{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.burden-key{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:2px}
+.burden-key.sub{background:var(--ok)} .burden-key.extra{background:var(--info)}
+
 /* 선택일 근무현황 상세 */
 .sub-day-detail{margin-top:12px}
 .sub-day-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}

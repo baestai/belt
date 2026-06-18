@@ -17,6 +17,8 @@ import {
   verifyPin,
   EXTRA_WORK_REASONS,
   extraWorkCounts,
+  recommendSubstitutes,
+  extraBurdenSummary,
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
@@ -394,15 +396,21 @@ function DayDetail({ date, substitutions = [], extraWorks = [], onEditSub, onEdi
   );
 }
 
-// ── 대근자 선택(모집중 클릭) ──────────────────────────
-function ClaimPicker({ sub, shiftGroups, substitutions = [], onClaim, onClose }) {
+// ── 대근자 선택(모집중 클릭) — 자동 추천 정렬 ──────────
+function ClaimPicker({ sub, shiftGroups, substitutions = [], extraWorks = [], onClaim, onClose }) {
   // 같은 날 이미 대근을 맡은 직원은 제외 (1일 최대 1회)
   const busy = substitutions
     .filter((s) => s.date === sub.date && s.substitute && s.id !== sub.id)
     .map((s) => s.substitute);
-  const candidates = eligibleSubstitutes(shiftGroups, sub.date, sub.shift, [sub.requester, ...busy]);
+  // 공평순(그 주 근무시간↓ → 정산기간 대근수↓) 추천 정렬
+  const candidates = recommendSubstitutes(
+    shiftGroups, sub.date, sub.shift,
+    { substitutions, extraWorks },
+    [sub.requester, ...busy]
+  );
   const [pick, setPick] = useState(candidates[0]?.name || '');
   const [err, setErr] = useState('');
+  const best = candidates[0];
 
   const submit = () => {
     setErr('');
@@ -427,10 +435,15 @@ function ClaimPicker({ sub, shiftGroups, substitutions = [], onClaim, onClose })
           </p>
         ) : (
           <>
-            <label>대근 가능자</label>
+            {best && (
+              <p className="sub-reco">⭐ 추천: <b>{best.name}</b> ({best.group}조) · 이번주 {best.weekHours}h · 기간 대근 {best.periodSubs}건</p>
+            )}
+            <label>대근 가능자 (공평순 정렬)</label>
             <select value={pick} onChange={(e) => setPick(e.target.value)}>
-              {candidates.map((c) => (
-                <option key={c.name} value={c.name}>{c.name} ({c.group}조)</option>
+              {candidates.map((c, i) => (
+                <option key={c.name} value={c.name}>
+                  {i === 0 ? '⭐ ' : ''}{c.name} ({c.group}조) · 이번주 {c.weekHours}h · 대근 {c.periodSubs}건
+                </option>
               ))}
             </select>
           </>
@@ -442,6 +455,73 @@ function ClaimPicker({ sub, shiftGroups, substitutions = [], onClaim, onClose })
         </div>
       </div>
     </div>
+  );
+}
+
+// ── 알림 벨 (개인 맞춤 알림) ───────────────────────────
+function buildNotifications(me, myGroup, { substitutions = [], swaps = [], today }) {
+  const out = [];
+  for (const s of substitutions) {
+    if (s.date < today) continue;
+    // 내가 자격되는 모집중 대근
+    if (s.status === 'open' && s.requester !== me && myGroup && eligibleShift(myGroup, s.date) === s.shift) {
+      out.push({ id: 'open_' + s.id, icon: '🙋', text: `대근 모집: ${fmtKDate(s.date)} ${SHIFT_LABEL[s.shift]} (${s.requester})`, date: s.date });
+    }
+    // 내 신청이 대근 확정됨
+    if (s.requester === me && s.status === 'filled' && s.substitute) {
+      out.push({ id: 'filled_' + s.id, icon: '✅', text: `내 대근 확정: ${fmtKDate(s.date)} → ${s.substitute}`, date: s.date });
+    }
+    // 내가 대근 맡은 예정 근무
+    if (s.substitute === me && s.status === 'filled') {
+      out.push({ id: 'mysub_' + s.id, icon: '📌', text: `대근 예정: ${fmtKDate(s.date)} ${SHIFT_LABEL[s.shift]} (${s.requester} 대신)`, date: s.date });
+    }
+  }
+  // 나에게 온 맞교환 요청 (대기중)
+  for (const w of swaps) {
+    if (w.status === 'pending' && w.target === me) {
+      out.push({ id: 'swap_' + w.id, icon: '🔄', text: `맞교환 요청: ${w.requester} (${fmtKDate(w.requesterDate)} ↔ ${fmtKDate(w.targetDate)})`, date: w.requesterDate });
+    }
+  }
+  return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
+function NotificationBell({ me, myGroup, substitutions, swaps, today }) {
+  const [open, setOpen] = useState(false);
+  const notifs = buildNotifications(me, myGroup, { substitutions, swaps, today });
+  const seenKey = `subNotifSeen_${me}`;
+  const seen = (() => { try { return new Set(JSON.parse(localStorage.getItem(seenKey) || '[]')); } catch { return new Set(); } })();
+  const unread = notifs.filter((n) => !seen.has(n.id)).length;
+  const toggle = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (nextOpen) {
+      try { localStorage.setItem(seenKey, JSON.stringify(notifs.map((n) => n.id))); } catch {}
+    }
+  };
+  return (
+    <span className="notif-wrap">
+      <button className="hdr-btn notif-btn" onClick={toggle} aria-label="알림" title="알림">
+        🔔{unread > 0 && <span className="notif-badge">{unread}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="notif-backdrop" onClick={() => setOpen(false)} />
+          <div className="notif-panel">
+            <div className="notif-head">알림 {notifs.length > 0 && `(${notifs.length})`}</div>
+            {notifs.length === 0 ? (
+              <div className="notif-empty">새 알림이 없습니다.</div>
+            ) : (
+              notifs.map((n) => (
+                <div key={n.id} className="notif-item">
+                  <span className="notif-ico">{n.icon}</span>
+                  <span className="notif-txt">{n.text}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </span>
   );
 }
 
@@ -763,6 +843,118 @@ function AdminExtraCard({ extra, onEdit, onDelete }) {
   );
 }
 
+// ── 대근 맞교환 신청 폼 ────────────────────────────────
+function SwapForm({ me, myGroup, shiftGroups, today, onCreate, onClose }) {
+  const [myDate, setMyDate] = useState(today);
+  const [target, setTarget] = useState('');
+  const [targetDate, setTargetDate] = useState(today);
+  const [err, setErr] = useState('');
+
+  const myShift = shiftOfGroup(myGroup, myDate);
+  const myWork = myShift === 'day' || myShift === 'night';
+  const targetGroup = target ? groupOfPerson(shiftGroups, target) : null;
+  const targetShift = targetGroup ? shiftOfGroup(targetGroup, targetDate) : null;
+  const targetWork = targetShift === 'day' || targetShift === 'night';
+
+  const submit = () => {
+    setErr('');
+    try {
+      onCreate({ requester: me, requesterDate: myDate, target, targetDate });
+      onClose();
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3>🔄 대근 맞교환 신청</h3>
+        <label>내 근무 날짜</label>
+        <input type="date" value={myDate} onChange={(e) => setMyDate(e.target.value)} />
+        <p className="sub-hint">
+          {myWork ? `이 날 ${myGroup}조는 ${SHIFT_LABEL[myShift]} 근무입니다.` : `⚠️ 이 날 ${myGroup}조는 휴무입니다. 근무일을 선택하세요.`}
+        </p>
+        <label>맞교환 상대</label>
+        <select value={target} onChange={(e) => setTarget(e.target.value)}>
+          <option value="">상대 선택</option>
+          {SHIFT_GROUPS.map((g) => (
+            <optgroup key={g} label={`${g}조`}>
+              {(shiftGroups[g] || []).filter((n) => n !== me).map((n) => <option key={n} value={n}>{n}</option>)}
+            </optgroup>
+          ))}
+        </select>
+        <label>상대 근무 날짜</label>
+        <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+        {target && (
+          <p className="sub-hint">
+            {targetWork ? `이 날 ${target}(${targetGroup}조)는 ${SHIFT_LABEL[targetShift]} 근무입니다.` : `⚠️ 이 날 ${target}는 휴무입니다. 근무일을 선택하세요.`}
+          </p>
+        )}
+        {err && <p className="sub-err">{err}</p>}
+        <p className="sub-hint">상대가 수락하면 양쪽 근무가 서로 대근으로 자동 반영됩니다.</p>
+        <div className="modal-actions">
+          <button className="add-btn secondary" onClick={onClose}>취소</button>
+          <button className="add-btn" disabled={!myWork || !targetWork || !target} onClick={submit}>맞교환 요청</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 맞교환 카드 1건 ────────────────────────────────────
+function SwapCard({ swap, me, isAdmin, onAccept, onReject, onCancel }) {
+  const incoming = swap.target === me && swap.status === 'pending';
+  const mine = swap.requester === me;
+  const statusLabel = { pending: '대기중', accepted: '수락됨', rejected: '거절됨' }[swap.status] || swap.status;
+  return (
+    <div className={`sub-card ${swap.status === 'accepted' ? 'filled' : ''}`}>
+      <div className="sub-card-top">
+        <span className="sub-badge">🔄 맞교환</span>
+        <span className={`sub-status ${swap.status === 'accepted' ? 'filled' : 'open'}`}>{statusLabel}</span>
+      </div>
+      <div className="sub-card-body">
+        <div><b>{swap.requester}</b> {fmtKDate(swap.requesterDate)}</div>
+        <div className="sub-swap-arrow">⇅</div>
+        <div><b>{swap.target}</b> {fmtKDate(swap.targetDate)}</div>
+      </div>
+      <div className="sub-card-actions">
+        {incoming && <button className="add-btn" onClick={() => onAccept(swap.id)}>수락</button>}
+        {incoming && <button className="add-btn secondary" onClick={() => onReject(swap.id)}>거절</button>}
+        {(mine || isAdmin) && swap.status !== 'rejected' && (
+          <button className="add-btn secondary" onClick={() => onCancel(swap.id)}>
+            {swap.status === 'accepted' ? '맞교환 해제' : '요청 철회'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 변경 이력 목록 ─────────────────────────────────────
+function LogList({ logs = [] }) {
+  if (logs.length === 0) return <p className="sub-empty">변경 이력이 없습니다.</p>;
+  const fmtAt = (iso) => {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+  return (
+    <div className="log-list">
+      {logs.map((l) => (
+        <div key={l.id} className="log-row">
+          <div className="log-meta">
+            <span className="log-action">{l.action}</span>
+            <span className="log-actor">{l.actor}</span>
+            <span className="log-at">{fmtAt(l.at)}</span>
+          </div>
+          {l.detail && <div className="log-detail">{l.detail}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── 메인 ───────────────────────────────────────────────
 export default function SubstitutionPage({
   shiftGroups,
@@ -770,9 +962,15 @@ export default function SubstitutionPage({
   pinResets = [],
   substitutions,
   extraWorks = [],
+  swaps = [],
+  subLogs = [],
   today,
   onSetPin,
   onRequestPinReset,
+  onCreateSwap,
+  onAcceptSwap,
+  onRejectSwap,
+  onCancelSwap,
   onCreateSub,
   onClaimSub,
   onUnclaimSub,
@@ -792,10 +990,11 @@ export default function SubstitutionPage({
   const [adminPw, setAdminPw] = useState(null); // 관리자 로그인 시 입력한 비밀번호
   const [adminForm, setAdminForm] = useState(null); // { edit } | { create:true }
   const [adminExtraForm, setAdminExtraForm] = useState(null); // { edit } | { create:true }
-  const [tab, setTab] = useState('list'); // 'list' | 'extra' | 'board' | 'count'
+  const [tab, setTab] = useState('list'); // 'list' | 'extra' | 'swap' | 'board' | 'count' | 'log'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
+  const [showSwap, setShowSwap] = useState(false);
   const [pickFor, setPickFor] = useState(null); // 모집중 클릭한 대근 건
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
@@ -856,6 +1055,17 @@ export default function SubstitutionPage({
   );
   const visibleExtra = onlyMine ? sortedExtra.filter((e) => e.person === me) : sortedExtra;
 
+  // (7) 시간 합산 대시보드 데이터
+  const burden = useMemo(() => extraBurdenSummary(period, { substitutions, extraWorks }), [substitutions, extraWorks, period.start, period.end]);
+  const burdenMax = burden.reduce((m, r) => Math.max(m, r.total), 0) || 1;
+  // (9) 맞교환: 관리자는 전체, 본인은 나와 관련된 것만, 최신순
+  const sortedSwaps = useMemo(
+    () => [...swaps].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    [swaps]
+  );
+  const visibleSwaps = isAdmin ? sortedSwaps : sortedSwaps.filter((w) => w.requester === me || w.target === me);
+  const incomingCount = swaps.filter((w) => w.status === 'pending' && w.target === me).length;
+
   if (!me) {
     return (
       <>
@@ -890,6 +1100,9 @@ export default function SubstitutionPage({
         )}
         <span className="logo">🔁</span>
         <h1>대근 관리</h1>
+        {!isAdmin && (
+          <NotificationBell me={me} myGroup={myGroup} substitutions={substitutions} swaps={swaps} today={today} />
+        )}
         <button className="hdr-btn" title="로그아웃" onClick={() => { setMe(null); setAdminPw(null); }}>🚪</button>
         <span className="mode-badge" style={{ background: 'var(--accent)', color: '#fff' }}>
           {isAdmin ? '🔧 관리자' : `${me} · ${myGroup}조`}
@@ -900,8 +1113,16 @@ export default function SubstitutionPage({
         <div className="seg">
           <button className={tab === 'list' ? 'active' : ''} onClick={() => setTab('list')}>대근 {isAdmin ? '편성' : '목록'}</button>
           <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무{isAdmin ? ' 편성' : ''}</button>
+          {!isAdmin && (
+            <button className={tab === 'swap' ? 'active' : ''} onClick={() => setTab('swap')}>
+              맞교환{incomingCount > 0 && <span className="seg-badge">{incomingCount}</span>}
+            </button>
+          )}
           <button className={tab === 'board' ? 'active' : ''} onClick={() => setTab('board')}>근무표</button>
           <button className={tab === 'count' ? 'active' : ''} onClick={() => setTab('count')}>집계</button>
+          {isAdmin && (
+            <button className={tab === 'log' ? 'active' : ''} onClick={() => setTab('log')}>이력</button>
+          )}
         </div>
 
         {tab === 'list' && isAdmin && (
@@ -1021,6 +1242,39 @@ export default function SubstitutionPage({
           </>
         )}
 
+        {tab === 'swap' && !isAdmin && (
+          <>
+            <div className="sub-toolbar">
+              <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setShowSwap(true)}>
+                ＋ 맞교환 신청
+              </button>
+            </div>
+            <p className="sub-hint">내 근무를 동료의 근무와 1:1로 맞바꿉니다. 상대가 수락하면 양쪽이 서로의 대근으로 자동 반영됩니다.</p>
+            {visibleSwaps.length === 0 ? (
+              <p className="sub-empty">맞교환 내역이 없습니다.</p>
+            ) : (
+              visibleSwaps.map((w) => (
+                <SwapCard
+                  key={w.id}
+                  swap={w}
+                  me={me}
+                  isAdmin={isAdmin}
+                  onAccept={onAcceptSwap}
+                  onReject={onRejectSwap}
+                  onCancel={onCancelSwap}
+                />
+              ))
+            )}
+          </>
+        )}
+
+        {tab === 'log' && isAdmin && (
+          <>
+            <p className="sub-hint">대근·맞교환 편성의 모든 변경 이력입니다. (최신순, 최대 500건)</p>
+            <LogList logs={subLogs} />
+          </>
+        )}
+
         {tab === 'board' && (
           <>
             <div className="sub-toolbar">
@@ -1047,6 +1301,35 @@ export default function SubstitutionPage({
 
         {tab === 'count' && (
           <>
+            <div className="card">
+              <h3>⏱ 부담시간 합산 <span className="count">{period.start} ~ {period.end}</span></h3>
+              {burden.length === 0 ? (
+                <p className="sub-empty">이 정산 기간 대근·추가근무가 없습니다.</p>
+              ) : (
+                <div className="burden-list">
+                  {burden.map((r) => (
+                    <div key={r.name} className={'burden-row' + (r.name === me ? ' me' : '')}>
+                      <div className="burden-head">
+                        <span className="burden-name">{r.name}</span>
+                        <span className="burden-total">{r.total}h</span>
+                      </div>
+                      <div className="burden-bar">
+                        {r.subHours > 0 && (
+                          <span className="burden-seg sub" style={{ width: `${(r.subHours / burdenMax) * 100}%` }} title={`대근 ${r.subHours}h`} />
+                        )}
+                        {r.extraHours > 0 && (
+                          <span className="burden-seg extra" style={{ width: `${(r.extraHours / burdenMax) * 100}%` }} title={`추가근무 ${r.extraHours}h`} />
+                        )}
+                      </div>
+                      <div className="burden-meta">대근 {r.subCount}건({r.subHours}h) · 추가 {r.extraCount}건({r.extraHours}h)</div>
+                    </div>
+                  ))}
+                  <p className="sub-legend" style={{ marginTop: 4 }}>
+                    <i className="burden-key sub" /> 대근 · <i className="burden-key extra" /> 추가근무
+                  </p>
+                </div>
+              )}
+            </div>
             <div className="card">
               <h3>🏅 대근 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
               {counts.length === 0 ? (
@@ -1104,11 +1387,23 @@ export default function SubstitutionPage({
         />
       )}
 
+      {showSwap && (
+        <SwapForm
+          me={me}
+          myGroup={myGroup}
+          shiftGroups={shiftGroups}
+          today={today}
+          onCreate={onCreateSwap}
+          onClose={() => setShowSwap(false)}
+        />
+      )}
+
       {pickFor && (
         <ClaimPicker
           sub={pickFor}
           shiftGroups={shiftGroups}
           substitutions={substitutions}
+          extraWorks={extraWorks}
           onClaim={onClaimSub}
           onClose={() => setPickFor(null)}
         />

@@ -25,6 +25,8 @@ export function defaultState() {
     pinResets: [], // PIN 초기화 신청자 이름 목록 (관리모드 승인 대기)
     substitutions: [], // 대근 신청/확정 기록 배열
     extraWorks: [], // 추가 근무(교육대근/GIB/PSM) 신청 기록 배열
+    swaps: [], // 대근 맞교환(스왑) 요청/수락 기록 배열
+    subLogs: [], // 대근 변경 이력(감사 로그) 배열, 최신순
   };
 }
 

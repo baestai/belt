@@ -30,6 +30,13 @@ import {
   weeklyHours,
   exceedsWeeklyLimit,
   WEEKLY_HOUR_LIMIT,
+  appendSubLog,
+  recommendSubstitutes,
+  extraBurdenSummary,
+  createSwapRequest,
+  acceptSwap,
+  rejectSwap,
+  cancelSwap,
 } from './shift.js';
 
 describe('교대 근무표 — 기준 사실 검증', () => {
@@ -439,5 +446,116 @@ describe('PIN', () => {
     const pins = setPin({}, '백종호', '1234');
     expect(verifyPin(pins, '백종호', '1234')).toBe(true);
     expect(verifyPin(pins, '백종호', '0000')).toBe(false);
+  });
+});
+
+describe('대근 변경 이력 (감사 로그)', () => {
+  it('appendSubLog: 최신순으로 앞에 추가하고 메타를 채운다', () => {
+    let logs = appendSubLog([], { actor: '관리자', action: '대근편성추가', detail: 'A 백종호' });
+    logs = appendSubLog(logs, { actor: '김영진', action: '대근확정', detail: '2026-06-18' });
+    expect(logs).toHaveLength(2);
+    expect(logs[0]).toMatchObject({ actor: '김영진', action: '대근확정' });
+    expect(logs[1]).toMatchObject({ actor: '관리자', action: '대근편성추가' });
+    expect(typeof logs[0].at).toBe('string');
+    expect(logs[0].id).toBeTruthy();
+  });
+
+  it('appendSubLog: 최대 500건만 보관', () => {
+    let logs = [];
+    for (let i = 0; i < 510; i++) logs = appendSubLog(logs, { action: 'x', detail: String(i) });
+    expect(logs).toHaveLength(500);
+    expect(logs[0].detail).toBe('509');
+  });
+});
+
+describe('대근 자동 추천', () => {
+  it('자격자를 그 주 근무시간 적은 순으로 정렬한다', () => {
+    const sg = defaultShiftGroups();
+    // 2026-06-18 주간 대근 자격: C조 (휴무 둘째날 위치2)
+    const recs = recommendSubstitutes(sg, '2026-06-18', 'day', { substitutions: [], extraWorks: [] });
+    expect(recs.length).toBeGreaterThan(0);
+    expect(recs.every((r) => r.group === 'C')).toBe(true);
+    // 근무시간 오름차순 정렬 보장
+    for (let i = 1; i < recs.length; i++) {
+      expect(recs[i].weekHours).toBeGreaterThanOrEqual(recs[i - 1].weekHours);
+    }
+  });
+
+  it('이미 대근을 많이 맡은 사람은 추천 순위가 밀린다', () => {
+    const sg = defaultShiftGroups();
+    const heavy = '김영진'; // C조
+    // 같은 주에 대근 1건(12h) 부여 → weekHours 증가
+    const subs = [{ id: 's1', date: '2026-06-16', shift: 'night', group: 'D', requester: '정영균', substitute: heavy, status: 'filled' }];
+    const recs = recommendSubstitutes(sg, '2026-06-18', 'day', { substitutions: subs });
+    expect(recs[0].name).not.toBe(heavy);
+  });
+});
+
+describe('시간 합산 대시보드', () => {
+  it('정산기간 내 대근(12h)·추가근무 시간을 인원별로 합산', () => {
+    const period = settlementPeriod('2026-06-18'); // 06-16 ~ 07-15
+    const subs = [{ id: 's1', date: '2026-06-18', shift: 'day', group: 'A', requester: '백종호', substitute: '김영진', status: 'filled' }];
+    const extras = [{ id: 'e1', date: '2026-06-20', person: '김영진', reason: 'PSM' }]; // 8h
+    const rows = extraBurdenSummary(period, { substitutions: subs, extraWorks: extras });
+    const kim = rows.find((r) => r.name === '김영진');
+    expect(kim).toMatchObject({ subHours: 12, subCount: 1, extraHours: 8, extraCount: 1, total: 20 });
+  });
+
+  it('기간 밖 항목은 제외', () => {
+    const period = settlementPeriod('2026-06-18');
+    const subs = [{ id: 's1', date: '2026-08-01', shift: 'day', group: 'A', requester: '백종호', substitute: '김영진', status: 'filled' }];
+    expect(extraBurdenSummary(period, { substitutions: subs })).toHaveLength(0);
+  });
+});
+
+describe('대근 맞교환(스왑)', () => {
+  const sg = defaultShiftGroups();
+  // 백종호(A) 2026-06-18 주간 ↔ 김세준(B) 2026-06-20 주간
+  it('createSwapRequest: pending 상태로 생성', () => {
+    const list = createSwapRequest([], {
+      requester: '백종호', requesterDate: '2026-06-18',
+      target: '김세준', targetDate: '2026-06-20',
+    }, sg);
+    expect(list[0]).toMatchObject({ requester: '백종호', target: '김세준', status: 'pending' });
+  });
+
+  it('근무일이 아닌 날짜는 거부', () => {
+    expect(() => createSwapRequest([], {
+      requester: '백종호', requesterDate: '2026-06-20', // A조 06-20은 휴무
+      target: '김세준', targetDate: '2026-06-20',
+    }, sg)).toThrow();
+  });
+
+  it('acceptSwap: 양방향 대근 2건 생성 + accepted', () => {
+    const swaps = createSwapRequest([], {
+      requester: '백종호', requesterDate: '2026-06-18',
+      target: '김세준', targetDate: '2026-06-20',
+    }, sg);
+    const res = acceptSwap(swaps, [], swaps[0].id, sg);
+    expect(res.swaps[0].status).toBe('accepted');
+    expect(res.substitutions).toHaveLength(2);
+    const a = res.substitutions.find((s) => s.date === '2026-06-18');
+    const b = res.substitutions.find((s) => s.date === '2026-06-20');
+    expect(a).toMatchObject({ requester: '백종호', substitute: '김세준', reason: '맞교환', status: 'filled' });
+    expect(b).toMatchObject({ requester: '김세준', substitute: '백종호', reason: '맞교환', status: 'filled' });
+  });
+
+  it('cancelSwap: accepted면 연결된 대근도 제거', () => {
+    const swaps = createSwapRequest([], {
+      requester: '백종호', requesterDate: '2026-06-18',
+      target: '김세준', targetDate: '2026-06-20',
+    }, sg);
+    const res = acceptSwap(swaps, [], swaps[0].id, sg);
+    const after = cancelSwap(res.swaps, res.substitutions, swaps[0].id);
+    expect(after.swaps).toHaveLength(0);
+    expect(after.substitutions).toHaveLength(0);
+  });
+
+  it('rejectSwap: 상태만 rejected', () => {
+    const swaps = createSwapRequest([], {
+      requester: '백종호', requesterDate: '2026-06-18',
+      target: '김세준', targetDate: '2026-06-20',
+    }, sg);
+    expect(rejectSwap(swaps, swaps[0].id)[0].status).toBe('rejected');
   });
 });

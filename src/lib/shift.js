@@ -96,9 +96,9 @@ export function groupOfPerson(shiftGroups, name) {
 // ── 대근 신청/기록 (불변 연산) ─────────────────────────
 // sub: { id, date, shift, group, requester, reason, substitute|null, status, createdAt }
 let _seq = 0;
-function newId() {
+function newId(prefix = 'sub') {
   _seq += 1;
-  return `sub_${Date.now().toString(36)}_${_seq}`;
+  return `${prefix}_${Date.now().toString(36)}_${_seq}`;
 }
 
 // 같은 날짜 + 같은 시간대(주간/야간)에 신청 가능한 최대 인원
@@ -382,4 +382,145 @@ export function extraWorkCounts(list, period) {
   return Object.entries(map)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+// ── (6) 대근 변경 이력 (감사 로그) ─────────────────────
+// entry: { id, at, actor, action, detail }
+export function appendSubLog(logs, { actor = '시스템', action = '', detail = '' } = {}) {
+  const e = {
+    id: newId('log'),
+    at: new Date().toISOString(),
+    actor: String(actor || '시스템'),
+    action: String(action || ''),
+    detail: String(detail || ''),
+  };
+  return [e, ...(logs || [])].slice(0, 500); // 최신순, 최대 500건 보관
+}
+
+// ── (2) 대근 자동 추천 ─────────────────────────────────
+// 자격 충족자를 공평하게: 그 주 근무시간 적은 순 → 정산기간 대근수 적은 순 → 이름순
+export function recommendSubstitutes(
+  shiftGroups,
+  date,
+  shift,
+  { substitutions = [], extraWorks = [] } = {},
+  exclude = []
+) {
+  const period = settlementPeriod(date);
+  return eligibleSubstitutes(shiftGroups, date, shift, exclude)
+    .map((c) => ({
+      ...c,
+      weekHours: weeklyHours(c.name, date, { shiftGroups, substitutions, extraWorks }),
+      periodSubs: substitutions.filter(
+        (s) => s.status === 'filled' && s.substitute === c.name && inPeriod(s.date, period)
+      ).length,
+    }))
+    .sort(
+      (a, b) =>
+        a.weekHours - b.weekHours ||
+        a.periodSubs - b.periodSubs ||
+        a.name.localeCompare(b.name)
+    );
+}
+
+// ── (7) 시간 합산 대시보드 (정산기간 대근/추가근무 부담시간) ──
+export function extraBurdenSummary(period, { substitutions = [], extraWorks = [] } = {}) {
+  const map = {};
+  const touch = (name) =>
+    map[name] || (map[name] = { name, subHours: 0, subCount: 0, extraHours: 0, extraCount: 0 });
+  for (const s of substitutions || []) {
+    if (s.status === 'filled' && s.substitute && inPeriod(s.date, period)) {
+      const m = touch(s.substitute);
+      m.subHours += SHIFT_HOURS;
+      m.subCount += 1;
+    }
+  }
+  for (const e of extraWorks || []) {
+    if (e.person && inPeriod(e.date, period)) {
+      const m = touch(e.person);
+      m.extraHours += extraHoursOf(e.reason);
+      m.extraCount += 1;
+    }
+  }
+  return Object.values(map)
+    .map((m) => ({ ...m, total: m.subHours + m.extraHours }))
+    .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+}
+
+// ── (9) 대근 맞교환(스왑) ──────────────────────────────
+// swap: { id, requester, requesterDate, target, targetDate, status, createdAt, subIds }
+export function createSwapRequest(list, { requester, requesterDate, target, targetDate }, shiftGroups = {}) {
+  if (!requester || !target) throw new Error('맞교환 상대를 선택하세요.');
+  if (requester === target) throw new Error('본인과는 맞교환할 수 없습니다.');
+  if (!requesterDate || !targetDate) throw new Error('교환할 날짜를 선택하세요.');
+  const gReq = groupOfPerson(shiftGroups, requester);
+  const gTar = groupOfPerson(shiftGroups, target);
+  if (!gReq || !gTar) throw new Error('소속 조를 찾을 수 없습니다.');
+  const shReq = shiftOfGroup(gReq, requesterDate);
+  const shTar = shiftOfGroup(gTar, targetDate);
+  if (shReq !== 'day' && shReq !== 'night') throw new Error('내 교환 날짜가 근무일이 아닙니다.');
+  if (shTar !== 'day' && shTar !== 'night') throw new Error('상대 교환 날짜가 근무일이 아닙니다.');
+  const dup = (list || []).some(
+    (w) =>
+      w.status === 'pending' &&
+      w.requester === requester &&
+      w.target === target &&
+      w.requesterDate === requesterDate &&
+      w.targetDate === targetDate
+  );
+  if (dup) throw new Error('이미 동일한 맞교환을 요청했습니다.');
+  const swap = {
+    id: newId('swap'),
+    requester,
+    requesterDate,
+    target,
+    targetDate,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    subIds: [],
+  };
+  return [...(list || []), swap];
+}
+
+export function rejectSwap(list, id) {
+  return (list || []).map((w) => (w.id === id ? { ...w, status: 'rejected' } : w));
+}
+
+// 수락: 양방향 대근 2건을 생성하고 swap을 accepted로 표시
+export function acceptSwap(swaps, substitutions, id, shiftGroups = {}) {
+  const swap = (swaps || []).find((w) => w.id === id);
+  if (!swap) throw new Error('맞교환 요청을 찾을 수 없습니다.');
+  if (swap.status !== 'pending') throw new Error('이미 처리된 맞교환입니다.');
+  const gReq = groupOfPerson(shiftGroups, swap.requester);
+  const gTar = groupOfPerson(shiftGroups, swap.target);
+  const mk = (date, group, requester, substitute) => ({
+    id: newId(),
+    date,
+    shift: deriveShift(group, date),
+    group,
+    requester,
+    reason: '맞교환',
+    substitute,
+    status: 'filled',
+    swapId: id,
+    createdAt: new Date().toISOString(),
+  });
+  const sub1 = mk(swap.requesterDate, gReq, swap.requester, swap.target);
+  const sub2 = mk(swap.targetDate, gTar, swap.target, swap.requester);
+  return {
+    swaps: (swaps || []).map((w) =>
+      w.id === id ? { ...w, status: 'accepted', subIds: [sub1.id, sub2.id] } : w
+    ),
+    substitutions: [...(substitutions || []), sub1, sub2],
+  };
+}
+
+// 철회/취소: pending이면 제거, accepted면 연결된 대근 2건도 함께 제거
+export function cancelSwap(swaps, substitutions, id) {
+  const swap = (swaps || []).find((w) => w.id === id);
+  const subIds = swap?.subIds || [];
+  return {
+    swaps: (swaps || []).filter((w) => w.id !== id),
+    substitutions: (substitutions || []).filter((s) => !subIds.includes(s.id)),
+  };
 }
