@@ -34,6 +34,17 @@ function fmtKDate(dateStr) {
   return `${m}/${d}(${wd})`;
 }
 
+// 휴무일 교육: 원 근무자의 조가 그 날 휴무인데 사유가 '교육'이면 대근이 불필요하다.
+// (이 경우 대근자 칸에 '미정' 대신 '휴무일 교육'을 표시하고 대근 모집을 막는다)
+function isOffDayTraining(sub) {
+  return !!sub && sub.reason === '교육' && shiftOfGroup(sub.group, sub.date) === 'off';
+}
+// 대근자 표시 라벨 (대근자 있으면 이름, 없으면 휴무일 교육/미정)
+function substituteLabel(sub) {
+  if (sub.substitute) return sub.substitute;
+  return isOffDayTraining(sub) ? '휴무일 교육' : '미정';
+}
+
 // ── 로그인 게이트 ──────────────────────────────────────
 function LoginGate({ shiftGroups, shiftPins, pinResets = [], onLogin, onSetPin, onRequestPinReset, onVerifyAdmin, onAdminLogin }) {
   const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
@@ -208,7 +219,7 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
                           >
                             <span className="sub-cell-req">{sub.requester}</span>
                             <span className="sub-cell-arrow">↓</span>
-                            <span className="sub-cell-sub">{sub.substitute || '미정'}</span>
+                            <span className={`sub-cell-sub${isOffDayTraining(sub) ? ' sub-cell-noneed' : ''}`}>{substituteLabel(sub)}</span>
                           </button>
                         ) : (
                           <div key={sub.id} className="sub-cell-swap">
@@ -216,6 +227,8 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks
                             <span className="sub-cell-arrow">↓</span>
                             {sub.substitute ? (
                               <span className="sub-cell-sub">{sub.substitute}</span>
+                            ) : isOffDayTraining(sub) ? (
+                              <span className="sub-cell-sub sub-cell-noneed">휴무일 교육</span>
                             ) : (
                               <button
                                 type="button"
@@ -365,7 +378,7 @@ function DayDetail({ date, substitutions = [], extraWorks = [], onEditSub, onEdi
                     <span className="sub-cell-req">{sub.requester}</span>
                     {sub.reason ? <span className="sub-day-reason"> {sub.reason}</span> : null}
                     <span className="sub-cell-arrow"> ↓ </span>
-                    <span className="sub-cell-sub">{sub.substitute || '미정'}</span>
+                    <span className={`sub-cell-sub${isOffDayTraining(sub) ? ' sub-cell-noneed' : ''}`}>{substituteLabel(sub)}</span>
                   </button>
                 ))
               )}
@@ -463,8 +476,8 @@ function buildNotifications(me, myGroup, { substitutions = [], swaps = [], today
   const out = [];
   for (const s of substitutions) {
     if (s.date < today) continue;
-    // 내가 자격되는 모집중 대근
-    if (s.status === 'open' && s.requester !== me && myGroup && eligibleShift(myGroup, s.date) === s.shift) {
+    // 내가 자격되는 모집중 대근 (휴무일 교육은 대근 불필요 → 제외)
+    if (s.status === 'open' && !isOffDayTraining(s) && s.requester !== me && myGroup && eligibleShift(myGroup, s.date) === s.shift) {
       out.push({ id: 'open_' + s.id, icon: '🙋', text: `대근 모집: ${fmtKDate(s.date)} ${SHIFT_LABEL[s.shift]} (${s.requester})`, date: s.date });
     }
     // 내 신청이 대근 확정됨
@@ -589,7 +602,8 @@ function SubCard({ sub, me, shiftGroups, substitutions = [], onClaim, onUnclaim,
   const myBusyToday = substitutions.some(
     (s) => s.id !== sub.id && s.date === sub.date && s.substitute === me
   );
-  const canClaim = eligible && !myBusyToday;
+  const noNeed = isOffDayTraining(sub);
+  const canClaim = eligible && !myBusyToday && !noNeed;
   const isMine = sub.requester === me;
   const iAmSub = sub.substitute === me;
 
@@ -599,12 +613,12 @@ function SubCard({ sub, me, shiftGroups, substitutions = [], onClaim, onUnclaim,
         <span className={`sub-badge ${SHIFT_CLASS[sub.shift]}`}>{SHIFT_LABEL[sub.shift]}</span>
         <span className="sub-card-date">{fmtKDate(sub.date)}</span>
         <span className={`sub-status ${sub.status}`}>
-          {sub.status === 'filled' ? '확정' : '모집중'}
+          {sub.status === 'filled' ? '확정' : noNeed ? '대근 불필요' : '모집중'}
         </span>
       </div>
       <div className="sub-card-body">
         <div>원 근무자: <b>{sub.requester}</b> ({sub.group}조){sub.reason ? ` · ${sub.reason}` : ''}</div>
-        <div>대근자: {sub.substitute ? <b>{sub.substitute}</b> : <span className="sub-muted">미정</span>}</div>
+        <div>대근자: {sub.substitute ? <b>{sub.substitute}</b> : <span className={noNeed ? 'sub-cell-noneed' : 'sub-muted'}>{substituteLabel(sub)}</span>}</div>
       </div>
       <div className="sub-card-actions">
         {canClaim && <button className="add-btn" onClick={() => onClaim(sub.id)}>내가 대근하기</button>}
@@ -755,18 +769,19 @@ function AdminSubForm({ shiftGroups, today, edit, onSubmit, onClose }) {
 
 // ── 관리자용 대근 카드 (수정/삭제) ─────────────────────
 function AdminSubCard({ sub, onEdit, onDelete }) {
+  const noNeed = isOffDayTraining(sub);
   return (
     <div className={`sub-card ${sub.status}`}>
       <div className="sub-card-top">
         <span className={`sub-badge ${SHIFT_CLASS[sub.shift]}`}>{SHIFT_LABEL[sub.shift]}</span>
         <span className="sub-card-date">{fmtKDate(sub.date)}</span>
         <span className={`sub-status ${sub.status}`}>
-          {sub.status === 'filled' ? '확정' : '모집중'}
+          {sub.status === 'filled' ? '확정' : noNeed ? '대근 불필요' : '모집중'}
         </span>
       </div>
       <div className="sub-card-body">
         <div>원 근무자: <b>{sub.requester}</b> ({sub.group}조){sub.reason ? ` · ${sub.reason}` : ''}</div>
-        <div>대근자: {sub.substitute ? <b>{sub.substitute}</b> : <span className="sub-muted">미정</span>}</div>
+        <div>대근자: {sub.substitute ? <b>{sub.substitute}</b> : <span className={noNeed ? 'sub-cell-noneed' : 'sub-muted'}>{substituteLabel(sub)}</span>}</div>
       </div>
       <div className="sub-card-actions">
         <button className="add-btn secondary" onClick={() => onEdit(sub)}>✏ 수정</button>
