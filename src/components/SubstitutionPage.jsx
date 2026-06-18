@@ -121,13 +121,21 @@ function daysInPeriod(start, end) {
 }
 
 // ── 정산기간 교대표 (16일~익월15일) ───────────────────
-function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen }) {
+function ShiftBoard({ start, end, today, myGroup, substitutions = [], extraWorks = [], shiftGroups = {}, onPickOpen }) {
   const days = daysInPeriod(start, end);
   // { 'date|group': [sub, ...] } 빠른 조회
   const subMap = {};
   for (const s of substitutions) {
     const k = `${s.date}|${s.group}`;
     (subMap[k] || (subMap[k] = [])).push(s);
+  }
+  // 추가근무: 신청자의 소속 조 기준으로 날짜|조 셀에 표시
+  const extraMap = {};
+  for (const e of extraWorks) {
+    const g = groupOfPerson(shiftGroups, e.person);
+    if (!g) continue;
+    const k = `${e.date}|${g}`;
+    (extraMap[k] || (extraMap[k] = [])).push(e);
   }
   return (
     <div className="sub-board">
@@ -148,6 +156,7 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen
                 <td className="sub-date">{fmtKDate(d)}</td>
                 {SHIFT_GROUPS.map((g) => {
                   const subs = subMap[`${d}|${g}`] || [];
+                  const extras = extraMap[`${d}|${g}`] || [];
                   return (
                     <td key={g} className={`${SHIFT_CLASS[s[g]]} ${g === myGroup ? 'sub-me-col' : ''}`}>
                       {SHIFT_LABEL[s[g]]}
@@ -168,6 +177,12 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen
                           )}
                         </div>
                       ))}
+                      {extras.map((e) => (
+                        <div key={e.id} className="sub-cell-extra">
+                          <span className="sub-cell-extra-tag">{e.reason}</span>
+                          <span className="sub-cell-extra-nm">{e.person}</span>
+                        </div>
+                      ))}
                     </td>
                   );
                 })}
@@ -181,7 +196,7 @@ function ShiftBoard({ start, end, today, myGroup, substitutions = [], onPickOpen
         <span className="sub-night">야간 {SHIFT_TIME.night}</span> ·{' '}
         <span className="sub-off">휴무</span>
       </p>
-      <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자</p>
+      <p className="sub-legend">셀의 <span className="sub-cell-req">윗줄</span>=원 근무자 · <span className="sub-cell-sub">아랫줄</span>=대근자 · <span className="sub-cell-extra-tag">교육/GIB/PSM</span>=추가근무</p>
     </div>
   );
 }
@@ -554,6 +569,8 @@ export default function SubstitutionPage({
               today={today}
               myGroup={myGroup}
               substitutions={substitutions}
+              extraWorks={extraWorks}
+              shiftGroups={shiftGroups}
               onPickOpen={setPickFor}
             />
           </>
