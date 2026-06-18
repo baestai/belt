@@ -23,6 +23,8 @@ import {
   claimSubstitution,
   unclaimSubstitution,
   cancelSubstitution,
+  adminCreateSubstitution,
+  adminUpdateSubstitution,
   createExtraWork,
   cancelExtraWork,
 } from './lib/shift.js';
@@ -351,6 +353,22 @@ export default function App() {
   const handleCancelSub = (id) => {
     setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
   };
+  // 관리자 대근 편성: 비밀번호 확인 후 입력/수정/삭제 (throw 가능 → setState 밖에서 계산)
+  const verifyAdmin = (pw) => checkPassword(pw, stateRef.current.adminPw);
+  const handleAdminCreateSub = (payload, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const next = adminCreateSubstitution(stateRef.current.substitutions || [], payload);
+    setState((s) => ({ ...s, substitutions: next }));
+  };
+  const handleAdminUpdateSub = (id, patch, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const next = adminUpdateSubstitution(stateRef.current.substitutions || [], id, patch);
+    setState((s) => ({ ...s, substitutions: next }));
+  };
+  const handleAdminDeleteSub = (id, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, substitutions: cancelSubstitution(s.substitutions || [], id) }));
+  };
   // 추가 근무(교육/GIB/PSM) — throw 가능하므로 setState 밖에서 계산
   const handleCreateExtra = (payload) => {
     const next = createExtraWork(stateRef.current.extraWorks || [], payload);
@@ -519,6 +537,10 @@ export default function App() {
           onCancelSub={handleCancelSub}
           onCreateExtra={handleCreateExtra}
           onCancelExtra={handleCancelExtra}
+          onVerifyAdmin={verifyAdmin}
+          onAdminCreateSub={handleAdminCreateSub}
+          onAdminUpdateSub={handleAdminUpdateSub}
+          onAdminDeleteSub={handleAdminDeleteSub}
           onClose={() => setView('calendar')}
         />
       )}

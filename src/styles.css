@@ -234,6 +234,7 @@ header h1 + .hdr-btn{margin-left:auto}
 .sub-hint{font-size:12px;color:var(--muted);margin-top:8px}
 .sub-err{font-size:13px;color:var(--bad);margin-top:8px;font-weight:600}
 .sub-empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 0}
+.sub-admin-login{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
 
 .sub-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .sub-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}

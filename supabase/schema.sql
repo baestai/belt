@@ -1,4 +1,4 @@
--- 3선탄 벨트컨베이어 주기점검 — Supabase 스키마
+-- 3선탄 통합관리 — Supabase 스키마
 -- Supabase 대시보드 → SQL Editor 에 붙여넣고 [Run] 하세요.
 -- (한 번만 실행. 다시 실행해도 안전하도록 IF NOT EXISTS 사용)
 --

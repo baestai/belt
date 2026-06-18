@@ -13,6 +13,8 @@ import {
   claimSubstitution,
   cancelSubstitution,
   unclaimSubstitution,
+  adminCreateSubstitution,
+  adminUpdateSubstitution,
   settlementPeriod,
   inPeriod,
   substituteCounts,
@@ -310,6 +312,50 @@ describe('추가 근무', () => {
       { name: '백종호', count: 2 },
       { name: '김영진', count: 1 },
     ]);
+  });
+});
+
+describe('관리자 대근 편성', () => {
+  it('adminCreateSubstitution: 근무일 group의 shift를 자동 산출하고 항목 추가', () => {
+    // 2026-06-18은 A=주간
+    const list = adminCreateSubstitution([], { date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가' });
+    expect(list.length).toBe(1);
+    expect(list[0]).toMatchObject({ date: '2026-06-18', group: 'A', requester: '백종호', shift: 'day', status: 'open', substitute: null });
+    expect(list[0].id).toBeTruthy();
+  });
+
+  it('adminCreateSubstitution: 대근자 지정 시 status=filled', () => {
+    const list = adminCreateSubstitution([], { date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가', substitute: '김영진' });
+    expect(list[0]).toMatchObject({ substitute: '김영진', status: 'filled' });
+  });
+
+  it('adminCreateSubstitution: 휴무일이면 주간으로 편성', () => {
+    // 2026-06-18은 B=휴무
+    const list = adminCreateSubstitution([], { date: '2026-06-18', group: 'B', requester: '김세준', reason: '교육' });
+    expect(list[0].shift).toBe('day');
+  });
+
+  it('adminCreateSubstitution: 날짜/조/원근무자 누락 시 에러', () => {
+    expect(() => adminCreateSubstitution([], { date: '', group: 'A', requester: '백종호' })).toThrow();
+    expect(() => adminCreateSubstitution([], { date: '2026-06-18', group: '', requester: '백종호' })).toThrow();
+    expect(() => adminCreateSubstitution([], { date: '2026-06-18', group: 'A', requester: '' })).toThrow();
+  });
+
+  it('adminUpdateSubstitution: 지정 항목만 수정하고 shift/status 재계산', () => {
+    let list = adminCreateSubstitution([], { date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가' });
+    const id = list[0].id;
+    list = adminUpdateSubstitution(list, id, { substitute: '김영진' });
+    expect(list[0]).toMatchObject({ substitute: '김영진', status: 'filled' });
+    // 대근자 제거 시 다시 open
+    list = adminUpdateSubstitution(list, id, { substitute: '' });
+    expect(list[0]).toMatchObject({ substitute: null, status: 'open' });
+  });
+
+  it('adminUpdateSubstitution: 대상이 아닌 항목은 변경되지 않음', () => {
+    let list = adminCreateSubstitution([], { date: '2026-06-18', group: 'A', requester: '백종호', reason: '휴가' });
+    list = adminCreateSubstitution(list, { date: '2026-06-20', group: 'B', requester: '김세준', reason: '교육' });
+    const updated = adminUpdateSubstitution(list, list[0].id, { reason: '경조사' });
+    expect(updated[1].reason).toBe('교육');
   });
 });
 

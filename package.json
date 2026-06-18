@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "3선탄 벨트컨베이어 주기점검 관리 웹앱",
+  "description": "3선탄 통합관리 웹앱",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

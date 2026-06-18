@@ -32,13 +32,25 @@ function fmtKDate(dateStr) {
 }
 
 // ── 로그인 게이트 ──────────────────────────────────────
-function LoginGate({ shiftGroups, shiftPins, pinResets = [], onLogin, onSetPin, onRequestPinReset }) {
+function LoginGate({ shiftGroups, shiftPins, pinResets = [], onLogin, onSetPin, onRequestPinReset, onVerifyAdmin, onAdminLogin }) {
   const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
   const [name, setName] = useState(allNames[0] || '');
   const [pin, setPin] = useState('');
   const [err, setErr] = useState('');
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminPw, setAdminPw] = useState('');
+  const [adminErr, setAdminErr] = useState('');
   const needSetup = name && !hasPin(shiftPins, name);
   const resetPending = name && pinResets.includes(name);
+
+  const adminSubmit = () => {
+    setAdminErr('');
+    if (onVerifyAdmin && onVerifyAdmin(adminPw)) {
+      onAdminLogin(adminPw);
+    } else {
+      setAdminErr('관리자 비밀번호가 올바르지 않습니다.');
+    }
+  };
 
   const submit = () => {
     setErr('');
@@ -104,6 +116,28 @@ function LoginGate({ shiftGroups, shiftPins, pinResets = [], onLogin, onSetPin, 
       </button>
       {!needSetup && (
         <button className="ghost-btn" onClick={requestReset}>PIN 분실 — 초기화 신청</button>
+      )}
+      {onAdminLogin && (
+        <div className="sub-admin-login">
+          {!adminOpen ? (
+            <button className="ghost-btn" onClick={() => setAdminOpen(true)}>🔧 관리자 모드 (대근 편성 관리)</button>
+          ) : (
+            <>
+              <label className="sub-lbl">관리자 비밀번호</label>
+              <input
+                className="sub-input"
+                type="password"
+                value={adminPw}
+                placeholder="관리자 비밀번호 입력"
+                onChange={(e) => setAdminPw(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && adminSubmit()}
+              />
+              <p className="sub-hint">관리자는 모든 대근 편성을 입력·수정·삭제할 수 있습니다.</p>
+              {adminErr && <p className="sub-err">{adminErr}</p>}
+              <button className="primary-btn" onClick={adminSubmit}>관리자로 로그인</button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
@@ -412,6 +446,96 @@ function ExtraCard({ extra, me, onCancel }) {
   );
 }
 
+// ── 관리자 대근 편성 입력/수정 폼 ──────────────────────
+function AdminSubForm({ shiftGroups, today, edit, onSubmit, onClose }) {
+  const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
+  const [date, setDate] = useState(edit?.date || today);
+  const [group, setGroup] = useState(edit?.group || SHIFT_GROUPS[0]);
+  const [requester, setRequester] = useState(edit?.requester || (shiftGroups[edit?.group || SHIFT_GROUPS[0]] || [])[0] || '');
+  const [reason, setReason] = useState(edit?.reason || '휴가');
+  const [substitute, setSubstitute] = useState(edit?.substitute || '');
+  const [err, setErr] = useState('');
+
+  const members = shiftGroups[group] || [];
+  const shift = shiftOfGroup(group, date);
+  const isWork = shift === 'day' || shift === 'night';
+
+  const changeGroup = (g) => {
+    setGroup(g);
+    const ms = shiftGroups[g] || [];
+    if (!ms.includes(requester)) setRequester(ms[0] || '');
+  };
+
+  const submit = () => {
+    setErr('');
+    try {
+      onSubmit({ date, group, requester, reason, substitute: substitute || null });
+      onClose();
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3>{edit ? '✏ 대근 편성 수정' : '➕ 대근 편성 추가'}</h3>
+        <label>날짜</label>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <p className="sub-hint">
+          {isWork
+            ? `이 날 ${group}조는 ${SHIFT_LABEL[shift]} 근무입니다.`
+            : `이 날 ${group}조는 휴무입니다. (주간으로 편성됩니다)`}
+        </p>
+        <label>조</label>
+        <select value={group} onChange={(e) => changeGroup(e.target.value)}>
+          {SHIFT_GROUPS.map((g) => <option key={g} value={g}>{g}조</option>)}
+        </select>
+        <label>원 근무자</label>
+        <select value={requester} onChange={(e) => setRequester(e.target.value)}>
+          {members.length === 0 && <option value="">(편성된 인원 없음)</option>}
+          {members.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <label>사유</label>
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="예: 휴가, 교육, 경조사" />
+        <label>대근자 (선택)</label>
+        <select value={substitute} onChange={(e) => setSubstitute(e.target.value)}>
+          <option value="">미정 (모집중)</option>
+          {allNames.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        {err && <p className="sub-err">{err}</p>}
+        <div className="modal-actions">
+          <button className="add-btn secondary" onClick={onClose}>취소</button>
+          <button className="add-btn" disabled={!requester} onClick={submit}>{edit ? '수정 저장' : '편성 추가'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 관리자용 대근 카드 (수정/삭제) ─────────────────────
+function AdminSubCard({ sub, onEdit, onDelete }) {
+  return (
+    <div className={`sub-card ${sub.status}`}>
+      <div className="sub-card-top">
+        <span className={`sub-badge ${SHIFT_CLASS[sub.shift]}`}>{SHIFT_LABEL[sub.shift]}</span>
+        <span className="sub-card-date">{fmtKDate(sub.date)}</span>
+        <span className={`sub-status ${sub.status}`}>
+          {sub.status === 'filled' ? '확정' : '모집중'}
+        </span>
+      </div>
+      <div className="sub-card-body">
+        <div>원 근무자: <b>{sub.requester}</b> ({sub.group}조){sub.reason ? ` · ${sub.reason}` : ''}</div>
+        <div>대근자: {sub.substitute ? <b>{sub.substitute}</b> : <span className="sub-muted">미정</span>}</div>
+      </div>
+      <div className="sub-card-actions">
+        <button className="add-btn secondary" onClick={() => onEdit(sub)}>✏ 수정</button>
+        <button className="add-btn secondary" onClick={() => onDelete(sub)}>🗑 삭제</button>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 ───────────────────────────────────────────────
 export default function SubstitutionPage({
   shiftGroups,
@@ -428,9 +552,15 @@ export default function SubstitutionPage({
   onCancelSub,
   onCreateExtra,
   onCancelExtra,
+  onVerifyAdmin,
+  onAdminCreateSub,
+  onAdminUpdateSub,
+  onAdminDeleteSub,
   onClose,
 }) {
   const [me, setMe] = useState(null);
+  const [adminPw, setAdminPw] = useState(null); // 관리자 로그인 시 입력한 비밀번호
+  const [adminForm, setAdminForm] = useState(null); // { edit } | { create:true }
   const [tab, setTab] = useState('list'); // 'list' | 'extra' | 'board' | 'count'
   const [onlyMine, setOnlyMine] = useState(false);
   const [showReq, setShowReq] = useState(false);
@@ -439,8 +569,25 @@ export default function SubstitutionPage({
   const [boardRef, setBoardRef] = useState(today); // 근무표가 보여줄 정산기간 기준일
   const boardPeriod = settlementPeriod(boardRef);
 
-  const myGroup = me ? groupOfPerson(shiftGroups, me) : null;
+  const isAdmin = !!adminPw;
+  const myGroup = me && !isAdmin ? groupOfPerson(shiftGroups, me) : null;
   const period = settlementPeriod(today);
+
+  const submitAdminForm = (payload) => {
+    if (adminForm && adminForm.edit) {
+      onAdminUpdateSub(adminForm.edit.id, payload, adminPw);
+    } else {
+      onAdminCreateSub(payload, adminPw);
+    }
+  };
+  const deleteAdminSub = (sub) => {
+    if (!window.confirm(`${fmtKDate(sub.date)} ${sub.requester}(${sub.group}조)의 대근 편성을 삭제할까요?`)) return;
+    try {
+      onAdminDeleteSub(sub.id, adminPw);
+    } catch (e) {
+      window.alert(e.message || String(e));
+    }
+  };
   const counts = useMemo(() => substituteCounts(substitutions, period), [substitutions, period.start, period.end]);
   const extraCounts = useMemo(() => extraWorkCounts(extraWorks, period), [extraWorks, period.start, period.end]);
 
@@ -476,6 +623,8 @@ export default function SubstitutionPage({
             onLogin={setMe}
             onSetPin={onSetPin}
             onRequestPinReset={onRequestPinReset}
+            onVerifyAdmin={onVerifyAdmin}
+            onAdminLogin={(pw) => { setAdminPw(pw); setMe('관리자'); }}
           />
         </main>
       </>
@@ -490,21 +639,46 @@ export default function SubstitutionPage({
         )}
         <span className="logo">🔁</span>
         <h1>대근 관리</h1>
-        <button className="hdr-btn" title="로그아웃" onClick={() => setMe(null)}>🚪</button>
+        <button className="hdr-btn" title="로그아웃" onClick={() => { setMe(null); setAdminPw(null); }}>🚪</button>
         <span className="mode-badge" style={{ background: 'var(--accent)', color: '#fff' }}>
-          {me} · {myGroup}조
+          {isAdmin ? '🔧 관리자' : `${me} · ${myGroup}조`}
         </span>
       </header>
 
       <main style={{ padding: 16 }}>
         <div className="seg">
-          <button className={tab === 'list' ? 'active' : ''} onClick={() => setTab('list')}>대근 목록</button>
-          <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무</button>
+          <button className={tab === 'list' ? 'active' : ''} onClick={() => setTab('list')}>대근 {isAdmin ? '편성' : '목록'}</button>
+          {!isAdmin && (
+            <button className={tab === 'extra' ? 'active' : ''} onClick={() => setTab('extra')}>추가 근무</button>
+          )}
           <button className={tab === 'board' ? 'active' : ''} onClick={() => setTab('board')}>근무표</button>
           <button className={tab === 'count' ? 'active' : ''} onClick={() => setTab('count')}>집계</button>
         </div>
 
-        {tab === 'list' && (
+        {tab === 'list' && isAdmin && (
+          <>
+            <div className="sub-toolbar">
+              <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setAdminForm({ create: true })}>
+                ＋ 대근 편성 추가
+              </button>
+            </div>
+            <p className="sub-hint">관리자는 모든 대근 편성을 추가·수정·삭제할 수 있습니다.</p>
+            {sorted.length === 0 ? (
+              <p className="sub-empty">대근 편성 내역이 없습니다.</p>
+            ) : (
+              sorted.map((s) => (
+                <AdminSubCard
+                  key={s.id}
+                  sub={s}
+                  onEdit={(sub) => setAdminForm({ edit: sub })}
+                  onDelete={deleteAdminSub}
+                />
+              ))
+            )}
+          </>
+        )}
+
+        {tab === 'list' && !isAdmin && (
           <>
             <div className="sub-toolbar">
               <button className="primary-btn" style={{ marginTop: 0 }} onClick={() => setShowReq(true)}>
@@ -642,6 +816,16 @@ export default function SubstitutionPage({
           substitutions={substitutions}
           onClaim={onClaimSub}
           onClose={() => setPickFor(null)}
+        />
+      )}
+
+      {adminForm && (
+        <AdminSubForm
+          shiftGroups={shiftGroups}
+          today={today}
+          edit={adminForm.edit}
+          onSubmit={submitAdminForm}
+          onClose={() => setAdminForm(null)}
         />
       )}
     </>

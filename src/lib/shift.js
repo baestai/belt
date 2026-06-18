@@ -160,6 +160,47 @@ export function cancelSubstitution(list, id) {
   return list.filter((s) => s.id !== id);
 }
 
+// ── 관리자 전용 대근 편성 (비밀번호 인증 후) ───────────
+// 정원/근무일 제약을 완화하고 원 근무자·대근자를 직접 지정해 편성한다.
+function deriveShift(group, date, fallback) {
+  const sh = shiftOfGroup(group, date);
+  if (sh === 'day' || sh === 'night') return sh;
+  return fallback === 'night' ? 'night' : 'day';
+}
+
+export function adminCreateSubstitution(list, { date, group, requester, reason, substitute, shift }) {
+  if (!date) throw new Error('날짜를 선택하세요.');
+  if (!group) throw new Error('조를 선택하세요.');
+  if (!requester) throw new Error('원 근무자를 선택하세요.');
+  const sub = {
+    id: newId(),
+    date,
+    shift: deriveShift(group, date, shift),
+    group,
+    requester,
+    reason: String(reason || '').trim(),
+    substitute: substitute || null,
+    status: substitute ? 'filled' : 'open',
+    createdAt: new Date().toISOString(),
+  };
+  return [...list, sub];
+}
+
+export function adminUpdateSubstitution(list, id, patch = {}) {
+  return list.map((s) => {
+    if (s.id !== id) return s;
+    const next = { ...s, ...patch };
+    if (!next.date) throw new Error('날짜를 선택하세요.');
+    if (!next.group) throw new Error('조를 선택하세요.');
+    if (!next.requester) throw new Error('원 근무자를 선택하세요.');
+    next.shift = deriveShift(next.group, next.date, next.shift);
+    next.reason = String(next.reason || '').trim();
+    next.substitute = next.substitute || null;
+    next.status = next.substitute ? 'filled' : 'open';
+    return next;
+  });
+}
+
 // 대근자 확정 취소(다시 모집중으로)
 export function unclaimSubstitution(list, id) {
   return list.map((s) => (s.id === id ? { ...s, substitute: null, status: 'open' } : s));
