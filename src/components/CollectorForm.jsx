@@ -107,19 +107,20 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
   return (
     <>
       <header>
-        <button className="hdr-btn" onClick={onCancel} aria-label="목록으로">←</button>
+        <button className="hdr-back" onClick={onCancel} aria-label="점검 목록으로 돌아가기">← 목록</button>
         <span className="logo">🌀</span>
         <h1>집진기 점검</h1>
         <span className="mode-badge mode-field" style={{ marginLeft: 'auto' }}>점검모드</span>
       </header>
       <div className="body">
+        <button className="exit-list-btn" onClick={onCancel}>← 점검 목록으로 돌아가기</button>
         <div className="field-belt">
           <span className="dot none" />
           <div>
             <div className="name">{collector.name}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>집진기</div>
           </div>
-          <button className="change" onClick={onCancel}>변경</button>
+          <button className="change" onClick={onCancel}>다른 집진기</button>
         </div>
 
         <div className="num-row">

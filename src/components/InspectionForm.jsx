@@ -188,18 +188,20 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
   return (
     <>
       <header>
+        <button className="hdr-back" onClick={onCancel} aria-label="점검 목록으로 돌아가기">← 목록</button>
         <span className="logo">🦺</span>
         <h1>3선탄 통합관리</h1>
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">
+        <button className="exit-list-btn" onClick={onCancel}>← 점검 목록으로 돌아가기</button>
         <div className="field-belt">
           <span className="dot none" />
           <div>
             <div className="name">{belt.name}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>{belt.group}</div>
           </div>
-          <button className="change" onClick={onCancel}>변경</button>
+          <button className="change" onClick={onCancel}>다른 벨트</button>
         </div>
 
         <div className="num-row">
