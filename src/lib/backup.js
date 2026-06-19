@@ -16,6 +16,8 @@ function pickState(state) {
     adminPw: state.adminPw,
     schedules: state.schedules,
     records: state.records,
+    collectors: state.collectors,
+    collectorRecords: state.collectorRecords,
   };
 }
 
@@ -54,6 +56,8 @@ export function parseBackup(text) {
     adminPw: st.adminPw,
     schedules: st.schedules && typeof st.schedules === 'object' ? st.schedules : {},
     records: st.records,
+    collectors: Array.isArray(st.collectors) ? st.collectors : undefined,
+    collectorRecords: Array.isArray(st.collectorRecords) ? st.collectorRecords : [],
   };
 }
 

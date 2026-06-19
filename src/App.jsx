@@ -14,6 +14,9 @@ import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
+import CollectorCalendar from './components/CollectorCalendar.jsx';
+import CollectorForm from './components/CollectorForm.jsx';
+import { defaultCollectors, updateCollector } from './lib/collectors.js';
 import PrintableRecord from './components/PrintableRecord.jsx';
 import SubstitutionPage from './components/SubstitutionPage.jsx';
 import {
@@ -95,7 +98,9 @@ function effectiveItemList(state, beltName, key) {
 
 export default function App() {
   const [state, setState] = useState(() => loadState());
-  const [view, setView] = useState('calendar'); // list | detail | calendar | form
+  const [view, setView] = useState('calendar'); // list | detail | calendar | form | collectorForm
+  const [fieldTab, setFieldTab] = useState('belt'); // 점검모드: 'belt' | 'collector'
+  const [collectorCtx, setCollectorCtx] = useState(null); // { name, date }
   const [selectedBelt, setSelectedBelt] = useState(null);
   const [detailFrom, setDetailFrom] = useState('list'); // 상세 진입 출처(뒤로가기 대상)
   const [formCtx, setFormCtx] = useState(null); // { belt, date }
@@ -382,6 +387,27 @@ export default function App() {
     setView('calendar');
   };
 
+  // ── 집진기 점검 핸들러 ──
+  const handlePickCollector = (name, date) => {
+    setCollectorCtx({ name, date });
+    setView('collectorForm');
+  };
+  const handleSaveCollectorRecord = (record, origDate) => {
+    setState((s) => {
+      const others = (s.collectorRecords || []).filter(
+        (r) => !(r.collector === record.collector && (r.date === record.date || (origDate && r.date === origDate)))
+      );
+      return { ...s, collectorRecords: [...others, record] };
+    });
+    setView('calendar');
+  };
+  const handleSetCollectorExterior = (name, subs) => {
+    setState((s) => ({
+      ...s,
+      collectors: updateCollector(s.collectors || defaultCollectors(), name, { exterior: subs }),
+    }));
+  };
+
   // ===== 대근(代勤) 핸들러 =====
   const handleSetPin = (name, pin) => {
     // setPinFn이 형식(숫자 4자리+) 검증 후 throw → 컴포넌트에서 처리
@@ -635,7 +661,7 @@ export default function App() {
         />
       )}
 
-      {view === 'calendar' && (
+      {view === 'calendar' && fieldTab === 'belt' && (
         <FieldCalendar
           year={cal.year}
           month={cal.month}
@@ -658,6 +684,42 @@ export default function App() {
           onOpenShift={() => setView('shift')}
           fixedInspector={fixedInspector}
           onOpenDeviceInspector={() => setModal('deviceInspector')}
+          fieldTab={fieldTab}
+          onFieldTab={setFieldTab}
+        />
+      )}
+
+      {view === 'calendar' && fieldTab === 'collector' && (
+        <CollectorCalendar
+          year={cal.year}
+          month={cal.month}
+          today={today}
+          selectedDate={selDate}
+          onSelectDate={setSelDate}
+          onPrev={() => navMonth(-1)}
+          onNext={() => navMonth(1)}
+          collectors={state.collectors || defaultCollectors()}
+          collectorRecords={state.collectorRecords || []}
+          onPickCollector={handlePickCollector}
+          fieldTab={fieldTab}
+          onFieldTab={setFieldTab}
+          onOpenLeaderboard={() => setModal('leaderboard')}
+          onOpenShift={() => setView('shift')}
+        />
+      )}
+
+      {view === 'collectorForm' && collectorCtx && (
+        <CollectorForm
+          collector={(state.collectors || defaultCollectors()).find((c) => c.name === collectorCtx.name) || { name: collectorCtx.name, days: [] }}
+          date={collectorCtx.date}
+          inspectors={inspectors}
+          quickMemos={quickMemos}
+          defaultInspector={fixedInspector && inspectors.includes(fixedInspector) ? fixedInspector : (inspectors[0] || '')}
+          initialRecord={(state.collectorRecords || []).find((r) => r.collector === collectorCtx.name && r.date === collectorCtx.date)}
+          records={state.collectorRecords || []}
+          onSetExterior={handleSetCollectorExterior}
+          onCancel={() => setView('calendar')}
+          onSave={handleSaveCollectorRecord}
         />
       )}
 
@@ -788,7 +850,7 @@ export default function App() {
 
       <div className="tabbar">
         <button
-          className={view === 'calendar' || view === 'form' ? 'active' : ''}
+          className={view === 'calendar' || view === 'form' || view === 'collectorForm' ? 'active' : ''}
           onClick={() => setView('calendar')}
         >
           <span className="ic">🦺</span>점검모드

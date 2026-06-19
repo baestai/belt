@@ -36,6 +36,8 @@ export default function FieldCalendar({
   onOpenShift,
   fixedInspector,
   onOpenDeviceInspector,
+  fieldTab,
+  onFieldTab,
 }) {
   const first = new Date(year, month - 1, 1);
   const startWd = first.getDay();
@@ -118,6 +120,12 @@ export default function FieldCalendar({
         <span className="mode-badge mode-field">점검모드</span>
       </header>
       <div className="body">
+        {onFieldTab && (
+          <div className="seg" style={{ marginBottom: 14 }}>
+            <button className={fieldTab === 'belt' ? 'active' : ''} onClick={() => onFieldTab('belt')}>🦺 벨트</button>
+            <button className={fieldTab === 'collector' ? 'active' : ''} onClick={() => onFieldTab('collector')}>🌀 집진기</button>
+          </div>
+        )}
         {onOpenDeviceInspector && (
           <button className="device-insp" onClick={onOpenDeviceInspector}>
             <span>👤 점검자: {fixedInspector ? <b>{fixedInspector}</b> : <span className="none">미고정 (이 기기)</span>}</span>

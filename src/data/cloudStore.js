@@ -9,6 +9,7 @@
 
 import { supabase } from './supabaseClient.js';
 import { defaultShiftGroups } from '../lib/shift.js';
+import { defaultCollectors } from '../lib/collectors.js';
 
 const CONFIG_KEY = 'config';
 const recordId = (r) => `${r.belt}__${r.date}`;
@@ -55,6 +56,10 @@ export async function fetchCloud() {
     pinResets: cfg.pinResets || [],
     substitutions: cfg.substitutions || [],
     extraWorks: cfg.extraWorks || [],
+    swaps: cfg.swaps || [],
+    subLogs: cfg.subLogs || [],
+    collectors: cfg.collectors || defaultCollectors(),
+    collectorRecords: cfg.collectorRecords || [],
     schedules,
     records,
   };
@@ -143,7 +148,7 @@ function toRecordRow(r) {
 
 function configChanged(prev, next) {
   const pick = (s) =>
-    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw, shiftGroups: s?.shiftGroups, shiftPins: s?.shiftPins, pinResets: s?.pinResets, substitutions: s?.substitutions, extraWorks: s?.extraWorks });
+    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw, shiftGroups: s?.shiftGroups, shiftPins: s?.shiftPins, pinResets: s?.pinResets, substitutions: s?.substitutions, extraWorks: s?.extraWorks, swaps: s?.swaps, subLogs: s?.subLogs, collectors: s?.collectors, collectorRecords: s?.collectorRecords });
   return pick(prev) !== pick(next);
 }
 
@@ -160,6 +165,10 @@ async function upsertConfig(state) {
     pinResets: state.pinResets,
     substitutions: state.substitutions,
     extraWorks: state.extraWorks,
+    swaps: state.swaps,
+    subLogs: state.subLogs,
+    collectors: state.collectors,
+    collectorRecords: state.collectorRecords,
   };
   const { error } = await supabase.from('settings').upsert({ key: CONFIG_KEY, value });
   if (error) throw error;

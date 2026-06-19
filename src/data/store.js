@@ -6,6 +6,7 @@ import { defaultGroups } from '../lib/belts.js';
 import { defaultInspectors, DEFAULT_ADMIN_PW } from '../lib/auth.js';
 import { DEFAULT_PULLEYS } from '../lib/inspectionItems.js';
 import { defaultShiftGroups } from '../lib/shift.js';
+import { defaultCollectors } from '../lib/collectors.js';
 
 export const STORAGE_KEY = 'belt-inspection-state-v1';
 
@@ -18,6 +19,9 @@ export function defaultState() {
     beltConfigs: {}, // { beltName: { pulley: [...], electric: [...] } } 벨트별 설치 구성
     records: [], // 점검 기록 배열
     schedules: {}, // { beltName: { nextDate, cycle } }
+    // ── 집진기(Dust Collector) 점검 ──
+    collectors: defaultCollectors(), // [{ name, days:[일자] }]
+    collectorRecords: [], // 집진기 점검 기록 배열 (record.collector)
     adminPw: DEFAULT_ADMIN_PW,
     // ── 대근(代勤) 관리 ──
     shiftGroups: defaultShiftGroups(), // { A:[...], B:[...], C:[...], D:[...] }
