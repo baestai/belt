@@ -12,7 +12,16 @@ export const COLLECTOR_ITEMS = [
   { key: 'dp', no: 1, title: '차압', type: 'num', noStatus: true, fields: [{ key: 'dp', label: '차압', unit: '㎜Aq' }] },
   { key: 'pulse', no: 2, title: '탈진 (펄스)', type: 'yn' },
   { key: 'fan', no: 3, title: 'Main Fan — Impeller / Damper', type: 'subs', subs: ['Impeller', 'Damper'] },
-  { key: 'fanmotor', no: 4, title: 'Main Fan — Motor', type: 'num', fields: [{ key: 'temp', label: '베어링 온도', unit: '℃' }] },
+  {
+    key: 'fanmotor',
+    no: 4,
+    title: 'Main Fan — Motor',
+    type: 'num',
+    fields: [
+      { key: 'load', label: '부하측 베어링', unit: '℃' },
+      { key: 'antiload', label: '반부하측 베어링', unit: '℃' },
+    ],
+  },
   {
     key: 'exterior',
     no: 5,
