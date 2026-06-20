@@ -51,7 +51,7 @@ function todayStr() {
 // 다크/라이트 테마 전환 (전 화면 공통, 우하단 플로팅 버튼)
 function ThemeToggle() {
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('theme') || 'dark'; } catch { return 'dark'; }
+    try { return localStorage.getItem('theme') || 'light'; } catch { return 'light'; }
   });
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
