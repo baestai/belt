@@ -196,7 +196,7 @@ export default function Dashboard({
     <div>
       <header>
         <span className="logo">🏭</span>
-        <h1>3선탄 현황판</h1>
+        <h1>3선탄 통합관리</h1>
         <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)' }}>
           {todayFmt} ({todayDow})
         </span>
