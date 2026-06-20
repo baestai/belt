@@ -1,5 +1,6 @@
 import { INSPECTION_ITEMS, normalizeTemp } from '../lib/inspectionItems.js';
 import { aggregateStatus, statusLabel } from '../lib/belts.js';
+import { COLLECTOR_ITEMS, aggregateCollectorStatus } from '../lib/collectors.js';
 
 const KO = { ok: '양호', bad: '불량', warn: '주의' };
 
@@ -27,6 +28,7 @@ export function itemText(def, it) {
   }
   if (def.type === 'num') {
     const parts = (def.fields || []).map((f) => `${f.label} ${(it.values && it.values[f.key]) || '-'}${f.unit}`);
+    if (def.noStatus) return parts.join(', ') || '-';
     return `${KO[it.status] || '-'}${parts.length ? ` (${parts.join(', ')})` : ''}`;
   }
   return KO[it.status] || '-';
@@ -35,14 +37,16 @@ export function itemText(def, it) {
 // 점검 기록을 인쇄용(PDF) 점검표로 렌더. window.print()로 출력/저장.
 export default function PrintableRecord({ record }) {
   if (!record) return null;
-  const overall = statusLabel(aggregateStatus(record));
+  const isCol = !!record.collector;
+  const defs = isCol ? COLLECTOR_ITEMS : INSPECTION_ITEMS;
+  const overall = statusLabel(isCol ? aggregateCollectorStatus(record) : aggregateStatus(record));
   return (
     <div className="print-area">
       <div className="pr-sheet">
-        <h1>벨트컨베이어 점검표</h1>
+        <h1>{isCol ? '집진기 점검표' : '벨트컨베이어 점검표'}</h1>
         <div className="pr-meta">
-          <span><b>벨트</b> {record.belt}</span>
-          <span><b>구분</b> {record.group}</span>
+          <span><b>{isCol ? '집진기' : '벨트'}</b> {isCol ? record.collector : record.belt}</span>
+          {!isCol && <span><b>구분</b> {record.group}</span>}
           <span><b>점검일</b> {record.date}</span>
           <span><b>점검자</b> {record.inspector}</span>
           <span><b>종합</b> {overall}</span>
@@ -52,7 +56,7 @@ export default function PrintableRecord({ record }) {
             <tr><th style={{ width: 40 }}>No</th><th style={{ width: 160 }}>점검 항목</th><th>점검 결과</th><th style={{ width: 180 }}>메모</th></tr>
           </thead>
           <tbody>
-            {INSPECTION_ITEMS.map((def) => {
+            {defs.map((def) => {
               const it = record.items?.[def.key];
               const txt = itemText(def, it);
               const bad = /불량/.test(txt);

@@ -25,6 +25,7 @@ export default function AdminList({
   onOpenBackup,
   onOpenLeaderboard,
   onOpenShiftGroups,
+  onOpenCollectors,
   cloud,
 }) {
   const all = flattenBelts(groups);
@@ -97,6 +98,9 @@ export default function AdminList({
             </button>
             <button className="add-btn secondary" onClick={onOpenShiftGroups}>
               🔁 교대조 편성
+            </button>
+            <button className="add-btn secondary" onClick={onOpenCollectors}>
+              🌀 집진기 관리
             </button>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

@@ -16,7 +16,7 @@ import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import CollectorCalendar from './components/CollectorCalendar.jsx';
 import CollectorForm from './components/CollectorForm.jsx';
-import { defaultCollectors, updateCollector } from './lib/collectors.js';
+import { defaultCollectors, updateCollector, addCollector, removeCollector } from './lib/collectors.js';
 import PrintableRecord from './components/PrintableRecord.jsx';
 import SubstitutionPage from './components/SubstitutionPage.jsx';
 import {
@@ -39,7 +39,7 @@ import {
   rejectSwap,
   cancelSwap,
 } from './lib/shift.js';
-import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal, CollectorManageModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup } from './lib/backup.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
@@ -407,6 +407,20 @@ export default function App() {
       collectors: updateCollector(s.collectors || defaultCollectors(), name, { exterior: subs }),
     }));
   };
+  // 관리모드: 집진기 목록/점검일 추가·수정·삭제 (비밀번호 확인)
+  const handleAddCollector = (name, days, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const next = addCollector(stateRef.current.collectors || defaultCollectors(), name, days);
+    setState((s) => ({ ...s, collectors: next }));
+  };
+  const handleUpdateCollector = (name, patch, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, collectors: updateCollector(s.collectors || defaultCollectors(), name, patch) }));
+  };
+  const handleRemoveCollector = (name, pw) => {
+    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    setState((s) => ({ ...s, collectors: removeCollector(s.collectors || defaultCollectors(), name) }));
+  };
 
   // ===== 대근(代勤) 핸들러 =====
   const handleSetPin = (name, pin) => {
@@ -639,6 +653,7 @@ export default function App() {
           onOpenBackup={() => setModal('backup')}
           onOpenLeaderboard={() => setModal('leaderboard')}
           onOpenShiftGroups={() => setModal('shiftGroups')}
+          onOpenCollectors={() => setModal('collectorManage')}
           cloud={isCloudConfigured}
         />
       )}
@@ -720,6 +735,8 @@ export default function App() {
           onSetExterior={handleSetCollectorExterior}
           onCancel={() => setView('calendar')}
           onSave={handleSaveCollectorRecord}
+          onPrint={setPrintTarget}
+          onViewResult={setResultTarget}
         />
       )}
 
@@ -795,7 +812,7 @@ export default function App() {
         />
       )}
       {modal === 'report' && (
-        <ReportModal records={records} onClose={() => setModal(null)} />
+        <ReportModal records={records} collectorRecords={state.collectorRecords || []} onClose={() => setModal(null)} />
       )}
       {modal === 'backup' && (
         <BackupModal
@@ -806,7 +823,7 @@ export default function App() {
         />
       )}
       {modal === 'leaderboard' && (
-        <LeaderboardModal records={records} onClose={() => setModal(null)} />
+        <LeaderboardModal records={records} collectorRecords={state.collectorRecords || []} onClose={() => setModal(null)} />
       )}
       {modal === 'quickMemos' && (
         <QuickMemoModal
@@ -832,6 +849,15 @@ export default function App() {
           current={fixedInspector}
           onSave={handleFixInspector}
           onClear={handleClearFixInspector}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'collectorManage' && (
+        <CollectorManageModal
+          collectors={state.collectors || defaultCollectors()}
+          onAdd={handleAddCollector}
+          onUpdate={handleUpdateCollector}
+          onRemove={handleRemoveCollector}
           onClose={() => setModal(null)}
         />
       )}

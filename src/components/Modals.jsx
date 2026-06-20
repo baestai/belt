@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { GROUP_ORDER, aggregateStatus, statusLabel } from '../lib/belts.js';
-import { monthlyReport, recordsToTable, downloadCSV } from '../lib/report.js';
-import { leaderboard, POINTS } from '../lib/points.js';
+import { monthlyReport, recordsToTable, downloadCSV, collectorMonthlyReport, collectorRecordsToTable } from '../lib/report.js';
+import { leaderboardCombined, POINTS } from '../lib/points.js';
 import { INSPECTION_ITEMS } from '../lib/inspectionItems.js';
+import { COLLECTOR_ITEMS, aggregateCollectorStatus, normalizeDays } from '../lib/collectors.js';
 import { itemText } from './PrintableRecord.jsx';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
@@ -10,20 +11,23 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 // 점검 결과 읽기전용 보기 — 점검모드/관리모드 공통
 export function ResultModal({ record, onClose, onPrint }) {
   if (!record) return null;
-  const overall = statusLabel(aggregateStatus(record));
+  const isCol = !!record.collector;
+  const defs = isCol ? COLLECTOR_ITEMS : INSPECTION_ITEMS;
+  const name = isCol ? record.collector : record.belt;
+  const overall = statusLabel(isCol ? aggregateCollectorStatus(record) : aggregateStatus(record));
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
-        <h3>📄 점검 결과 — {record.belt}</h3>
+        <h3>📄 점검 결과 — {name}</h3>
         <div className="note" style={{ padding: '0 0 8px' }}>
-          {record.group} · 점검일 {record.date} · 점검자 {record.inspector} · 종합 {overall}
+          {isCol ? '집진기' : record.group} · 점검일 {record.date} · 점검자 {record.inspector} · 종합 {overall}
         </div>
         <table className="result-tbl">
           <thead>
             <tr><th style={{ width: 32 }}>No</th><th>점검 항목</th><th>결과</th></tr>
           </thead>
           <tbody>
-            {INSPECTION_ITEMS.map((def) => {
+            {defs.map((def) => {
               const it = record.items?.[def.key];
               const txt = itemText(def, it);
               const bad = /불량/.test(txt);
@@ -49,11 +53,17 @@ export function ResultModal({ record, onClose, onPrint }) {
   );
 }
 
-export function LeaderboardModal({ records, onClose }) {
+export function LeaderboardModal({ records, collectorRecords = [], onClose }) {
   const now = new Date();
   const thisYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [scope, setScope] = useState('all'); // 'all' | 'month'
-  const top = leaderboard(records, { ym: scope === 'month' ? thisYm : undefined, limit: 10 });
+  const top = leaderboardCombined(
+    [
+      { records, itemDefs: INSPECTION_ITEMS },
+      { records: collectorRecords, itemDefs: COLLECTOR_ITEMS },
+    ],
+    { ym: scope === 'month' ? thisYm : undefined, limit: 10 }
+  );
 
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -436,15 +446,20 @@ export function ShiftGroupModal({ shiftGroups, pinResets = [], onAdd, onRemove, 
   );
 }
 
-export function ReportModal({ records, onClose }) {
+export function ReportModal({ records, collectorRecords = [], onClose }) {
   const now = new Date();
   const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [ym, setYm] = useState(defaultYm);
   const rep = monthlyReport(records, ym);
+  const crep = collectorMonthlyReport(collectorRecords, ym);
 
-  const exportExcel = () => {
+  const exportBelt = () => {
     const inMonth = records.filter((r) => String(r.date).slice(0, 7) === ym);
-    downloadCSV(`점검보고서_${ym}.csv`, recordsToTable(inMonth));
+    downloadCSV(`벨트점검보고서_${ym}.csv`, recordsToTable(inMonth));
+  };
+  const exportCollector = () => {
+    const inMonth = collectorRecords.filter((r) => String(r.date).slice(0, 7) === ym);
+    downloadCSV(`집진기점검보고서_${ym}.csv`, collectorRecordsToTable(inMonth));
   };
 
   return (
@@ -453,15 +468,98 @@ export function ReportModal({ records, onClose }) {
         <h3>📄 월간 점검 보고서</h3>
         <label>대상 월</label>
         <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} />
+
         <div className="card" style={{ marginTop: 14 }}>
-          <div className="kv"><span className="k">점검 건수</span><span>{rep.total}건</span></div>
+          <h3 style={{ fontSize: 14 }}>🦺 벨트 <span className="count">{rep.total}건</span></h3>
           <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{rep.counts.ok}</span></div>
           <div className="kv"><span className="k">주의</span><span style={{ color: 'var(--warn)' }}>{rep.counts.warn}</span></div>
           <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{rep.counts.bad}</span></div>
+          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportBelt} disabled={rep.total === 0}>벨트 엑셀 다운로드</button>
         </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: 14 }}>🌀 집진기 <span className="count">{crep.total}건</span></h3>
+          <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{crep.counts.ok}</span></div>
+          <div className="kv"><span className="k">주의</span><span style={{ color: 'var(--warn)' }}>{crep.counts.warn}</span></div>
+          <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{crep.counts.bad}</span></div>
+          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportCollector} disabled={crep.total === 0}>집진기 엑셀 다운로드</button>
+        </div>
+
         <div className="modal-actions">
-          <button className="ma-cancel" onClick={onClose}>닫기</button>
-          <button className="ma-ok" onClick={exportExcel} disabled={rep.total === 0}>엑셀 다운로드</button>
+          <button className="ma-ok" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 관리모드: 집진기 목록/점검일 추가·수정·삭제
+export function CollectorManageModal({ collectors = [], onAdd, onUpdate, onRemove, onClose }) {
+  const [name, setName] = useState('');
+  const [days, setDays] = useState('');
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [editing, setEditing] = useState(null); // name being edited
+  const [editDays, setEditDays] = useState('');
+
+  const submitAdd = () => {
+    setError('');
+    try { onAdd(name, days, pw); setName(''); setDays(''); }
+    catch (e) { setError(e.message); }
+  };
+  const saveEdit = (cName) => {
+    setError('');
+    try { onUpdate(cName, { days: editDays }, pw); setEditing(null); }
+    catch (e) { setError(e.message); }
+  };
+  const del = (cName) => {
+    setError('');
+    if (!window.confirm(`"${cName}"를 삭제할까요?`)) return;
+    try { onRemove(cName, pw); }
+    catch (e) { setError(e.message); }
+  };
+
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>🌀 집진기 관리 <span className="count">{collectors.length}대</span></h3>
+        <label>🔒 관리자 비밀번호 (추가·수정·삭제 공통)</label>
+        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호 입력" />
+
+        <div className="card" style={{ marginTop: 12 }}>
+          <h3 style={{ fontSize: 14 }}>➕ 새 집진기 추가</h3>
+          <label>이름</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: K-700 집진기" />
+          <label>점검일 (1~31, 쉼표로 여러 날: 예 10,20,30)</label>
+          <input value={days} onChange={(e) => setDays(e.target.value)} placeholder="예: 17" />
+          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={submitAdd}>추가</button>
+        </div>
+
+        {error && <div className="err">{error}</div>}
+
+        <div className="insp-list" style={{ marginTop: 12 }}>
+          {collectors.map((c) => (
+            <div key={c.name} className="insp-row" style={{ flexWrap: 'wrap' }}>
+              <span className="nm">{c.name}</span>
+              {editing === c.name ? (
+                <>
+                  <input style={{ width: 110 }} value={editDays} onChange={(e) => setEditDays(e.target.value)} placeholder="점검일" />
+                  <button className="add-btn" onClick={() => saveEdit(c.name)}>저장</button>
+                  <button className="add-btn secondary" onClick={() => setEditing(null)}>취소</button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>매월 {normalizeDays(c.days).join('·')}일</span>
+                  <button className="add-btn secondary" onClick={() => { setEditing(c.name); setEditDays((c.days || []).join(',')); }}>✏</button>
+                  <button className="x" onClick={() => del(c.name)}>🗑</button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="modal-actions">
+          <button className="ma-ok" onClick={onClose}>닫기</button>
         </div>
       </div>
     </div>

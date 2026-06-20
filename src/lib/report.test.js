@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ymKey, monthlyReport, recordsToTable, toCSV } from './report.js';
+import { ymKey, monthlyReport, recordsToTable, toCSV, collectorMonthlyReport, collectorRecordsToTable } from './report.js';
 import { emptyRecord } from './inspectionItems.js';
+import { emptyCollectorRecord } from './collectors.js';
 
 function mkRecord(belt, date, mutate) {
   const r = emptyRecord(belt, 'SILO', date, '김현장');
@@ -59,5 +60,30 @@ describe('엑셀(표/CSV) 변환', () => {
   it('CSV에 한글 메모가 포함된다', () => {
     const csv = toCSV(recordsToTable(records));
     expect(csv).toContain('벨트 사행');
+  });
+});
+
+describe('집진기 보고서', () => {
+  it('collectorMonthlyReport: 해당 월 집계', () => {
+    const a = emptyCollectorRecord('K-655 집진기', '2026-06-17', '홍길동');
+    const b = emptyCollectorRecord('Bunker 집진기', '2026-06-11', '김집진');
+    b.items.fan.subs.Impeller = 'bad';
+    const c = emptyCollectorRecord('K-10 집진기', '2026-07-06', '홍길동');
+    const rep = collectorMonthlyReport([a, b, c], '2026-06');
+    expect(rep.total).toBe(2);
+    expect(rep.counts.ok).toBe(1);
+    expect(rep.counts.bad).toBe(1);
+  });
+
+  it('collectorRecordsToTable: 차압은 수치만, 헤더에 항목 포함', () => {
+    const r = emptyCollectorRecord('K-655 집진기', '2026-06-17', '홍길동');
+    r.items.dp.values.dp = '120';
+    r.items.fanmotor.values.load = '55';
+    const table = collectorRecordsToTable([r]);
+    expect(table[0]).toContain('집진기');
+    expect(table[0]).toContain('차압');
+    const row = table[1];
+    expect(row.join('|')).toContain('120㎜Aq');
+    expect(row.join('|')).toContain('부하측 베어링 55℃');
   });
 });

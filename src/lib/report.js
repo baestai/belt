@@ -2,6 +2,7 @@
 
 import { INSPECTION_ITEMS } from './inspectionItems.js';
 import { aggregateStatus, statusLabel } from './belts.js';
+import { COLLECTOR_ITEMS, aggregateCollectorStatus } from './collectors.js';
 
 export function ymKey(dateStr) {
   // 'YYYY-MM-DD' -> 'YYYY-MM'
@@ -59,6 +60,50 @@ export function recordsToTable(records) {
     return row;
   });
 
+  return [header, ...rows];
+}
+
+// ── 집진기 보고서 ──────────────────────────────────────
+export function collectorMonthlyReport(records, ym) {
+  const inMonth = (records || []).filter((r) => ymKey(r.date) === ym);
+  let ok = 0, warn = 0, bad = 0;
+  const rows = inMonth.map((r) => {
+    const st = aggregateCollectorStatus(r);
+    if (st === 'ok') ok++;
+    else if (st === 'warn') warn++;
+    else bad++;
+    return { collector: r.collector, date: r.date, inspector: r.inspector, status: st };
+  });
+  return { ym, total: inMonth.length, counts: { ok, warn, bad }, rows };
+}
+
+// 집진기 점검 기록 → 표(2차원 배열)
+export function collectorRecordsToTable(records) {
+  const header = ['집진기', '점검일', '점검자', '종합상태'];
+  for (const def of COLLECTOR_ITEMS) header.push(def.title);
+  header.push('메모');
+
+  const rows = (records || []).map((r) => {
+    const row = [r.collector, r.date, r.inspector, statusLabel(aggregateCollectorStatus(r))];
+    const memos = [];
+    for (const def of COLLECTOR_ITEMS) {
+      const it = (r.items && r.items[def.key]) || {};
+      let cell;
+      if (def.type === 'subs') {
+        const bad = Object.keys(it.subs || {}).filter((k) => it.subs[k] !== 'ok');
+        cell = bad.length ? `불량: ${bad.join(', ')}` : '양호';
+      } else if (def.type === 'num') {
+        const parts = def.fields.map((f) => `${f.label} ${(it.values && it.values[f.key]) || '-'}${f.unit}`);
+        cell = def.noStatus ? parts.join(', ') : `${statusLabel(it.status || 'ok')} (${parts.join(', ')})`;
+      } else {
+        cell = statusLabel(it.status || 'ok');
+      }
+      row.push(cell);
+      if (it.memo) memos.push(`${def.title}: ${it.memo}`);
+    }
+    row.push(memos.join(' / '));
+    return row;
+  });
   return [header, ...rows];
 }
 

@@ -35,7 +35,7 @@ function Trend({ cur, prev }) {
   );
 }
 
-export default function CollectorForm({ collector, date, inspectors, quickMemos = [], defaultInspector, initialRecord, records = [], onSetExterior, onCancel, onSave }) {
+export default function CollectorForm({ collector, date, inspectors, quickMemos = [], defaultInspector, initialRecord, records = [], onSetExterior, onCancel, onSave, onPrint, onViewResult }) {
   const defs = itemDefsFor(collector);
   const [record, setRecord] = useState(() =>
     initialRecord
@@ -114,6 +114,12 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
       </header>
       <div className="body">
         <button className="exit-list-btn" onClick={onCancel}>← 점검 목록으로 돌아가기</button>
+        {initialRecord && (onViewResult || onPrint) && (
+          <div className="addbar">
+            {onViewResult && <button className="add-btn secondary" onClick={() => onViewResult(initialRecord)}>📄 결과보기</button>}
+            {onPrint && <button className="add-btn secondary" onClick={() => onPrint(initialRecord)}>🖨 점검표 인쇄</button>}
+          </div>
+        )}
         <div className="field-belt">
           <span className="dot none" />
           <div>
