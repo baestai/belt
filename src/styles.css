@@ -544,4 +544,6 @@ header .logo svg{width:22px;height:22px;display:block}
 .dash-sub-memo{color:var(--muted);font-size:12px}
 .dash-copy-btn{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
 .dash-copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.dash-resolve-btn{margin-left:auto;flex-shrink:0;background:var(--okbg);border:1px solid var(--ok);color:var(--ok);font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.dash-resolve-btn:hover{background:var(--ok);color:#fff}
 

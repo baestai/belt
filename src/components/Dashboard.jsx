@@ -14,7 +14,7 @@ import { shiftsOnDate, SHIFT_LABEL, SHIFT_GROUPS } from '../lib/shift.js';
 const STATUS_KO = { ok: '정상', warn: '주의', bad: '이상' };
 const STATUS_COLOR = { ok: 'ok', warn: 'warn', bad: 'bad', none: 'none' };
 
-// 벨트 최신 기록에서 이상/주의 항목 추출
+// 벨트 최신 기록에서 이상/주의 항목 추출 (itemKey 포함 — 조치완료 핸들러에서 사용)
 function extractBeltIssues(record) {
   if (!record?.items) return [];
   const out = [];
@@ -22,18 +22,18 @@ function extractBeltIssues(record) {
     const it = record.items[def.key];
     if (!it) continue;
     if (it.status && it.status !== 'ok') {
-      out.push({ title: def.title, sub: null, status: it.status, memo: it.memo || '' });
+      out.push({ itemKey: def.key, title: def.title, sub: null, status: it.status, memo: it.memo || '' });
     }
     if (it.subs) {
       for (const [k, s] of Object.entries(it.subs)) {
-        if (s !== 'ok') out.push({ title: def.title, sub: k, status: s, memo: it.memo || '' });
+        if (s !== 'ok') out.push({ itemKey: def.key, title: def.title, sub: k, status: s, memo: it.memo || '' });
       }
     }
   }
   return out;
 }
 
-// 집진기 최신 기록에서 이상/주의 항목 추출
+// 집진기 최신 기록에서 이상/주의 항목 추출 (itemKey 포함)
 function extractCollectorIssues(record) {
   if (!record?.items) return [];
   const noStatus = new Set(COLLECTOR_ITEMS.filter((d) => d.noStatus).map((d) => d.key));
@@ -42,19 +42,21 @@ function extractCollectorIssues(record) {
     if (noStatus.has(def.key)) continue;
     const it = record.items[def.key];
     if (!it) continue;
+    // group이 있으면 group 이름을 title로 표시
+    const displayTitle = def.group ? `${def.group} › ${def.title}` : def.title;
     if (it.status && it.status !== 'ok') {
-      out.push({ title: def.title, sub: null, status: it.status, memo: it.memo || '' });
+      out.push({ itemKey: def.key, title: displayTitle, sub: null, status: it.status, memo: it.memo || '' });
     }
     if (it.subs) {
       for (const [k, s] of Object.entries(it.subs)) {
-        if (s !== 'ok') out.push({ title: def.title, sub: k, status: s });
+        if (s !== 'ok') out.push({ itemKey: def.key, title: displayTitle, sub: k, status: s });
       }
     }
   }
   return out;
 }
 
-function IssueItem({ entry, type }) {
+function IssueItem({ entry, type, onResolve }) {
   const [open, setOpen] = useState(false);
   const worst = entry.items.some((i) => i.status === 'bad') ? 'bad' : 'warn';
   return (
@@ -74,6 +76,13 @@ function IssueItem({ entry, type }) {
               <span className={`ibadge ${it.status}`}>{it.status === 'bad' ? '불량' : '주의'}</span>
               <span>{it.title}{it.sub ? ` › ${it.sub}` : ''}</span>
               {it.memo && <span className="dash-sub-memo"> ({it.memo})</span>}
+              <button
+                className="dash-resolve-btn"
+                onClick={() => onResolve(entry, it)}
+                title="조치 완료 — 양호로 변경"
+              >
+                ✓ 조치완료
+              </button>
             </div>
           ))}
         </div>
@@ -93,6 +102,8 @@ export default function Dashboard({
   shiftGroups,
   onGoField,
   onGoAdmin,
+  onResolveBeltIssue,
+  onResolveCollectorIssue,
 }) {
   // ── 오늘 벨트 점검 현황 ──────────────────────────────────
   const beltStats = useMemo(() => {
@@ -301,7 +312,7 @@ export default function Dashboard({
                   <span className="count">{beltIssues.length}건</span>
                 </h3>
                 {beltIssues.map((entry) => (
-                  <IssueItem key={entry.name} entry={entry} type="belt" />
+                  <IssueItem key={entry.name} entry={entry} type="belt" onResolve={onResolveBeltIssue} />
                 ))}
               </div>
             )}
@@ -313,7 +324,7 @@ export default function Dashboard({
                   <span className="count">{collectorIssues.length}건</span>
                 </h3>
                 {collectorIssues.map((entry) => (
-                  <IssueItem key={entry.name} entry={entry} type="collector" />
+                  <IssueItem key={entry.name} entry={entry} type="collector" onResolve={onResolveCollectorIssue} />
                 ))}
               </div>
             )}

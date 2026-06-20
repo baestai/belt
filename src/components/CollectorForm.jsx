@@ -146,77 +146,147 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
 
         <div className="progress"><div style={{ width: progress + '%' }} /></div>
 
-        {defs.map((def) => {
-          const it = record.items[def.key];
-          return (
-            <div className="insp-item" key={def.key}>
-              <div className="title">{def.no}. {def.title}</div>
-
-              {def.type === 'yn' && (
-                <div className="ynbtns">
-                  <button className={it.status === 'ok' ? 'sel-ok' : ''} onClick={() => setStatus(def.key, 'ok')}>양호</button>
-                  <button className={it.status === 'bad' ? 'sel-bad' : ''} onClick={() => setStatus(def.key, 'bad')}>불량</button>
+        {(() => {
+          // group 속성이 같은 연속 항목들을 하나의 카드로 묶어 렌더링
+          const rendered = [];
+          let i = 0;
+          while (i < defs.length) {
+            const def = defs[i];
+            if (def.group) {
+              // 같은 group의 연속 항목 수집
+              const groupDefs = [];
+              while (i < defs.length && defs[i].group === def.group) groupDefs.push(defs[i++]);
+              const groupNo = groupDefs[0].no;
+              rendered.push(
+                <div className="insp-item" key={def.group}>
+                  <div className="title">{groupNo}–{groupDefs[groupDefs.length - 1].no}. {def.group}</div>
+                  {groupDefs.map((gdef) => {
+                    const it = record.items[gdef.key];
+                    return (
+                      <div key={gdef.key} style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 6 }}>{gdef.title}</div>
+                        {gdef.type === 'subs' && (
+                          <table className="pulley-tbl">
+                            <thead><tr><th>구분</th><th>상태</th></tr></thead>
+                            <tbody>
+                              {gdef.subs.map((s) => (
+                                <tr key={s}>
+                                  <td className="nm">{s}</td>
+                                  <td>
+                                    <span className="mini-yn">
+                                      <button className={it.subs[s] === 'ok' ? 'on-ok' : ''} onClick={() => setSub(gdef.key, s, 'ok')}>양호</button>
+                                      <button className={it.subs[s] === 'bad' ? 'on-bad' : ''} onClick={() => setSub(gdef.key, s, 'bad')}>불량</button>
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                        {gdef.type === 'num' && (
+                          <>
+                            {!gdef.noStatus && (
+                              <div className="ynbtns">
+                                <button className={it.status === 'ok' ? 'sel-ok' : ''} onClick={() => setStatus(gdef.key, 'ok')}>양호</button>
+                                <button className={it.status === 'bad' ? 'sel-bad' : ''} onClick={() => setStatus(gdef.key, 'bad')}>불량</button>
+                              </div>
+                            )}
+                            {gdef.fields.map((f) => {
+                              const pv = prevItem(gdef.key)?.values?.[f.key];
+                              return (
+                                <div className="num-row" key={f.key}>
+                                  <label>{f.label}</label>
+                                  <span className="temp-cell">
+                                    <input inputMode="decimal" value={it.values[f.key]} onChange={(e) => setValue(gdef.key, f.key, e.target.value)} />
+                                    <Trend cur={it.values[f.key]} prev={pv} />
+                                  </span>
+                                  <span className="unit">{f.unit}</span>
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                        <MemoInput value={it.memo} placeholder="특이사항 메모..." quickMemos={quickMemos} onChange={(v) => setMemo(gdef.key, v)} />
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              );
+            } else {
+              const it = record.items[def.key];
+              rendered.push(
+                <div className="insp-item" key={def.key}>
+                  <div className="title">{def.no}. {def.title}</div>
 
-              {def.type === 'subs' && (
-                <>
-                  <table className="pulley-tbl">
-                    <thead><tr><th>구분</th><th>상태</th>{def.editable && <th></th>}</tr></thead>
-                    <tbody>
-                      {(def.editable ? Object.keys(it.subs) : def.subs).map((s) => (
-                        <tr key={s}>
-                          <td className="nm">{s}</td>
-                          <td>
-                            <span className="mini-yn">
-                              <button className={it.subs[s] === 'ok' ? 'on-ok' : ''} onClick={() => setSub(def.key, s, 'ok')}>양호</button>
-                              <button className={it.subs[s] === 'bad' ? 'on-bad' : ''} onClick={() => setSub(def.key, s, 'bad')}>불량</button>
-                            </span>
-                          </td>
-                          {def.editable && (
-                            <td><button className="x" aria-label={`${s} 삭제`} onClick={() => removeRow(s)}>🗑</button></td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {def.editable && (
-                    <div className="num-row" style={{ marginTop: 8 }}>
-                      <input value={newRow} onChange={(e) => setNewRow(e.target.value)} placeholder="구분 추가 (예: 댐퍼2)" onKeyDown={(e) => { if (e.key === 'Enter') addRow(); }} />
-                      <button className="change" onClick={addRow}>➕ 추가</button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {def.type === 'num' && (
-                <>
-                  {!def.noStatus && (
+                  {def.type === 'yn' && (
                     <div className="ynbtns">
                       <button className={it.status === 'ok' ? 'sel-ok' : ''} onClick={() => setStatus(def.key, 'ok')}>양호</button>
                       <button className={it.status === 'bad' ? 'sel-bad' : ''} onClick={() => setStatus(def.key, 'bad')}>불량</button>
                     </div>
                   )}
-                  {def.fields.map((f) => {
-                    const pv = prevItem(def.key)?.values?.[f.key];
-                    return (
-                      <div className="num-row" key={f.key}>
-                        <label>{f.label}</label>
-                        <span className="temp-cell">
-                          <input inputMode="decimal" value={it.values[f.key]} onChange={(e) => setValue(def.key, f.key, e.target.value)} />
-                          <Trend cur={it.values[f.key]} prev={pv} />
-                        </span>
-                        <span className="unit">{f.unit}</span>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
 
-              <MemoInput value={it.memo} placeholder="특이사항 메모..." quickMemos={quickMemos} onChange={(v) => setMemo(def.key, v)} />
-            </div>
-          );
-        })}
+                  {def.type === 'subs' && (
+                    <>
+                      <table className="pulley-tbl">
+                        <thead><tr><th>구분</th><th>상태</th>{def.editable && <th></th>}</tr></thead>
+                        <tbody>
+                          {(def.editable ? Object.keys(it.subs) : def.subs).map((s) => (
+                            <tr key={s}>
+                              <td className="nm">{s}</td>
+                              <td>
+                                <span className="mini-yn">
+                                  <button className={it.subs[s] === 'ok' ? 'on-ok' : ''} onClick={() => setSub(def.key, s, 'ok')}>양호</button>
+                                  <button className={it.subs[s] === 'bad' ? 'on-bad' : ''} onClick={() => setSub(def.key, s, 'bad')}>불량</button>
+                                </span>
+                              </td>
+                              {def.editable && (
+                                <td><button className="x" aria-label={`${s} 삭제`} onClick={() => removeRow(s)}>🗑</button></td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {def.editable && (
+                        <div className="num-row" style={{ marginTop: 8 }}>
+                          <input value={newRow} onChange={(e) => setNewRow(e.target.value)} placeholder="구분 추가 (예: 댐퍼2)" onKeyDown={(e) => { if (e.key === 'Enter') addRow(); }} />
+                          <button className="change" onClick={addRow}>➕ 추가</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {def.type === 'num' && (
+                    <>
+                      {!def.noStatus && (
+                        <div className="ynbtns">
+                          <button className={it.status === 'ok' ? 'sel-ok' : ''} onClick={() => setStatus(def.key, 'ok')}>양호</button>
+                          <button className={it.status === 'bad' ? 'sel-bad' : ''} onClick={() => setStatus(def.key, 'bad')}>불량</button>
+                        </div>
+                      )}
+                      {def.fields.map((f) => {
+                        const pv = prevItem(def.key)?.values?.[f.key];
+                        return (
+                          <div className="num-row" key={f.key}>
+                            <label>{f.label}</label>
+                            <span className="temp-cell">
+                              <input inputMode="decimal" value={it.values[f.key]} onChange={(e) => setValue(def.key, f.key, e.target.value)} />
+                              <Trend cur={it.values[f.key]} prev={pv} />
+                            </span>
+                            <span className="unit">{f.unit}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  <MemoInput value={it.memo} placeholder="특이사항 메모..." quickMemos={quickMemos} onChange={(v) => setMemo(def.key, v)} />
+                </div>
+              );
+              i++;
+            }
+          }
+          return rendered;
+        })()}
 
         {error && <p className="err">{error}</p>}
         <button className="primary-btn" onClick={handleSave}>✅ 점검 완료 저장</button>

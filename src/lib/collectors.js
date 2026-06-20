@@ -11,11 +11,12 @@
 export const COLLECTOR_ITEMS = [
   { key: 'dp', no: 1, title: '차압', type: 'num', noStatus: true, fields: [{ key: 'dp', label: '차압', unit: '㎜Aq' }] },
   { key: 'pulse', no: 2, title: '탈진 (펄스)', type: 'yn' },
-  { key: 'fan', no: 3, title: 'Main Fan — Impeller / Damper', type: 'subs', subs: ['Impeller', 'Damper'] },
+  { key: 'fan', no: 3, group: 'Main Fan', title: 'Impeller / Damper', type: 'subs', subs: ['Impeller', 'Damper'] },
   {
     key: 'fanmotor',
     no: 4,
-    title: 'Main Fan — Ampere / 진동',
+    group: 'Main Fan',
+    title: 'Ampere / 진동',
     type: 'num',
     fields: [
       { key: 'ampere', label: 'Fan Motor Ampere', unit: 'A' },
@@ -26,7 +27,7 @@ export const COLLECTOR_ITEMS = [
   {
     key: 'exterior',
     no: 5,
-    title: 'Chamber·Duct·Hood·후처리·외관',
+    title: '주요 장치',
     type: 'subs',
     editable: true,
     subs: ['Chamber', 'Duct', 'Hood', '후처리장치', '외관상태'],

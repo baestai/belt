@@ -388,6 +388,46 @@ export default function App() {
     setView('calendar');
   };
 
+  // ── 대시보드 이상 항목 조치 완료 핸들러 ──
+  // entry: { name, date, ... }, it: { title, sub, status, ... }
+  const handleResolveBeltIssue = (entry, it) => {
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''}을(를) 양호로 변경할까요?`)) return;
+    setState((s) => {
+      const records = s.records.map((r) => {
+        if (r.belt !== entry.name || r.date !== entry.date) return r;
+        const items = { ...r.items };
+        const item = { ...(items[it.itemKey] || {}) };
+        if (it.sub) {
+          item.subs = { ...item.subs, [it.sub]: 'ok' };
+        } else {
+          item.status = 'ok';
+        }
+        items[it.itemKey] = item;
+        return { ...r, items };
+      });
+      return { ...s, records };
+    });
+  };
+
+  const handleResolveCollectorIssue = (entry, it) => {
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''}을(를) 양호로 변경할까요?`)) return;
+    setState((s) => {
+      const collectorRecords = (s.collectorRecords || []).map((r) => {
+        if (r.collector !== entry.name || r.date !== entry.date) return r;
+        const items = { ...r.items };
+        const item = { ...(items[it.itemKey] || {}) };
+        if (it.sub) {
+          item.subs = { ...item.subs, [it.sub]: 'ok' };
+        } else {
+          item.status = 'ok';
+        }
+        items[it.itemKey] = item;
+        return { ...r, items };
+      });
+      return { ...s, collectorRecords };
+    });
+  };
+
   // ── 집진기 점검 핸들러 ──
   const handlePickCollector = (name, date) => {
     setCollectorCtx({ name, date });
@@ -648,6 +688,8 @@ export default function App() {
           shiftGroups={state.shiftGroups || defaultShiftGroups()}
           onGoField={() => setView('calendar')}
           onGoAdmin={goAdmin}
+          onResolveBeltIssue={handleResolveBeltIssue}
+          onResolveCollectorIssue={handleResolveCollectorIssue}
         />
       )}
 
