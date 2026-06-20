@@ -10,6 +10,7 @@ import {
 } from './lib/auth.js';
 import { DEFAULT_PULLEYS, INSPECTION_ITEMS } from './lib/inspectionItems.js';
 import { statusOf as statusOfFn, latestRecord, nextDateFrom } from './lib/selectors.js';
+import Dashboard from './components/Dashboard.jsx';
 import AdminList from './components/AdminList.jsx';
 import BeltDetail from './components/BeltDetail.jsx';
 import FieldCalendar from './components/FieldCalendar.jsx';
@@ -98,7 +99,7 @@ function effectiveItemList(state, beltName, key) {
 
 export default function App() {
   const [state, setState] = useState(() => loadState());
-  const [view, setView] = useState('calendar'); // list | detail | calendar | form | collectorForm
+  const [view, setView] = useState('dashboard'); // dashboard | list | detail | calendar | form | collectorForm
   const [fieldTab, setFieldTab] = useState('belt'); // 점검모드: 'belt' | 'collector'
   const [collectorCtx, setCollectorCtx] = useState(null); // { name, date }
   const [selectedBelt, setSelectedBelt] = useState(null);
@@ -635,6 +636,21 @@ export default function App() {
   // ===== 렌더 =====
   return (
     <div className="app">
+      {view === 'dashboard' && (
+        <Dashboard
+          today={today}
+          groups={groups}
+          records={records}
+          schedules={schedules}
+          collectors={state.collectors || defaultCollectors()}
+          collectorRecords={state.collectorRecords || []}
+          substitutions={state.substitutions || []}
+          shiftGroups={state.shiftGroups || defaultShiftGroups()}
+          onGoField={() => setView('calendar')}
+          onGoAdmin={goAdmin}
+        />
+      )}
+
       {view === 'list' && (
         <AdminList
           groups={groups}
@@ -875,6 +891,12 @@ export default function App() {
       <ThemeToggle />
 
       <div className="tabbar">
+        <button
+          className={view === 'dashboard' ? 'active' : ''}
+          onClick={() => setView('dashboard')}
+        >
+          <span className="ic">🏠</span>홈
+        </button>
         <button
           className={view === 'calendar' || view === 'form' || view === 'collectorForm' ? 'active' : ''}
           onClick={() => setView('calendar')}

@@ -493,3 +493,55 @@ header .logo svg{width:22px;height:22px;display:block}
 .theme-toggle:hover{transform:translateY(-2px) rotate(-8deg);box-shadow:var(--shadow-lg)}
 .theme-toggle svg{width:22px;height:22px}
 @media print{.theme-toggle{display:none}}
+
+/* ── 대시보드 (홈 현황판) ── */
+.dash-section-title{font-size:13px;font-weight:700;color:var(--muted);margin:18px 0 8px;display:flex;align-items:center;gap:6px}
+.dash-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.dash-stat-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:5px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:.15s var(--ease);width:100%}
+.dash-stat-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+.dash-stat-icon{font-size:22px;line-height:1}
+.dash-stat-label{font-size:12px;color:var(--muted);font-weight:600}
+.dash-stat-main{display:flex;align-items:baseline;gap:0;margin-top:2px}
+.dash-stat-done{font-size:28px;font-weight:800;color:var(--accent)}
+.dash-stat-sep{font-size:18px;color:var(--muted);margin:0 2px}
+.dash-stat-total{font-size:18px;font-weight:700;color:var(--text)}
+.dash-stat-unit{font-size:12px;color:var(--muted);margin-left:4px}
+.dash-stat-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;min-height:20px}
+.dash-pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px}
+.dash-pill.bad{background:var(--badbg);color:var(--bad)}
+.dash-pill.warn{background:var(--warnbg);color:var(--warn)}
+.dash-pill.ok{background:var(--okbg);color:var(--ok)}
+.dash-pill.info{background:var(--info-weak);color:var(--info)}
+
+/* 대근 현황 그리드 */
+.dash-shift-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dash-shift-cell{border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:3px}
+.dash-shift-cell.dash-shift-day{background:color-mix(in srgb,var(--warn) 8%,transparent);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.dash-shift-cell.dash-shift-night{background:var(--info-weak);border-color:color-mix(in srgb,var(--info) 35%,transparent)}
+.dash-shift-cell.dash-shift-off{background:var(--panel2)}
+.dash-shift-group{font-size:15px;font-weight:800}
+.dash-shift-type{font-size:11px;font-weight:700}
+.dash-shift-cell.dash-shift-day .dash-shift-type{color:var(--warn)}
+.dash-shift-cell.dash-shift-night .dash-shift-type{color:var(--info)}
+.dash-shift-cell.dash-shift-off .dash-shift-type{color:var(--muted)}
+.dash-shift-sub{font-size:10px;background:var(--okbg);border-radius:5px;padding:2px 4px;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap}
+.dash-shift-req{color:var(--muted);text-decoration:line-through}
+.dash-shift-arrow{color:var(--ok);font-weight:700}
+.dash-shift-fill{font-weight:700}
+.dash-shift-fill.filled{color:var(--ok)}
+.dash-shift-fill.open{color:var(--warn)}
+
+/* 누적 이상 아코디언 */
+.dash-issue-entry{border-bottom:1px solid var(--line)}
+.dash-issue-entry:last-child{border-bottom:none}
+.dash-issue-head{width:100%;display:flex;align-items:center;gap:8px;padding:11px 0;background:none;border:none;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.dash-issue-head .dot{flex-shrink:0;width:11px;height:11px}
+.dash-issue-name{flex:1;font-size:14px;font-weight:600;min-width:0}
+.dash-issue-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.dash-issue-arrow{font-size:11px;color:var(--muted);margin-left:4px}
+.dash-issue-body{padding:0 0 10px 20px;display:flex;flex-direction:column;gap:5px}
+.dash-sub-issue{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
+.dash-sub-memo{color:var(--muted);font-size:12px}
+.dash-copy-btn{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.dash-copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+
