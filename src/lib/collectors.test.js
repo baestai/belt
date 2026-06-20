@@ -33,8 +33,9 @@ describe('집진기 점검 기록', () => {
     expect(r.items.dp.values.dp).toBe('');
     expect(r.items.pulse.status).toBe('ok');
     expect(r.items.fan.subs).toEqual({ Impeller: 'ok', Damper: 'ok' });
-    expect(r.items.fanmotor.values.load).toBe('');
-    expect(r.items.fanmotor.values.antiload).toBe('');
+    expect(r.items.fanmotor.values.ampere).toBe('');
+    expect(r.items.fanmotor.values.fanvib).toBe('');
+    expect(r.items.fanmotor.values.motorvib).toBe('');
     expect(Object.keys(r.items.exterior.subs)).toContain('후처리장치');
   });
 

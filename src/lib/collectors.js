@@ -15,11 +15,12 @@ export const COLLECTOR_ITEMS = [
   {
     key: 'fanmotor',
     no: 4,
-    title: 'Main Fan — Motor',
+    title: 'Main Fan — Ampere / 진동',
     type: 'num',
     fields: [
-      { key: 'load', label: '부하측 베어링', unit: '℃' },
-      { key: 'antiload', label: '반부하측 베어링', unit: '℃' },
+      { key: 'ampere', label: 'Fan Motor Ampere', unit: 'A' },
+      { key: 'fanvib', label: 'Fan 부하측 진동', unit: 'mm' },
+      { key: 'motorvib', label: 'Fan Motor 부하측 진동', unit: 'mm' },
     ],
   },
   {

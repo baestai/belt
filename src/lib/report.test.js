@@ -78,12 +78,12 @@ describe('집진기 보고서', () => {
   it('collectorRecordsToTable: 차압은 수치만, 헤더에 항목 포함', () => {
     const r = emptyCollectorRecord('K-655 집진기', '2026-06-17', '홍길동');
     r.items.dp.values.dp = '120';
-    r.items.fanmotor.values.load = '55';
+    r.items.fanmotor.values.ampere = '55';
     const table = collectorRecordsToTable([r]);
     expect(table[0]).toContain('집진기');
     expect(table[0]).toContain('차압');
     const row = table[1];
     expect(row.join('|')).toContain('120㎜Aq');
-    expect(row.join('|')).toContain('부하측 베어링 55℃');
+    expect(row.join('|')).toContain('Fan Motor Ampere 55A');
   });
 });

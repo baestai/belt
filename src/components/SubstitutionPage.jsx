@@ -1080,6 +1080,14 @@ export default function SubstitutionPage({
     [extraWorks]
   );
   const visibleExtra = onlyMine ? sortedExtra.filter((e) => e.person === me) : sortedExtra;
+  // 관리자 추가근무 편성 목록: 오늘 이후만, 가까운 날짜가 위로(오름차순)
+  const upcomingExtra = useMemo(
+    () =>
+      extraWorks
+        .filter((e) => e.date >= today)
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    [extraWorks, today]
+  );
 
   // (7) 시간 합산 대시보드 데이터
   const burden = useMemo(() => extraBurdenSummary(period, { substitutions, extraWorks }), [substitutions, extraWorks, period.start, period.end]);
@@ -1242,11 +1250,11 @@ export default function SubstitutionPage({
                 ＋ 추가 근무 편성 추가
               </button>
             </div>
-            <p className="sub-hint">관리자는 모든 추가 근무 편성을 추가·수정·삭제할 수 있습니다.</p>
-            {sortedExtra.length === 0 ? (
-              <p className="sub-empty">추가 근무 편성 내역이 없습니다.</p>
+            <p className="sub-hint">다가오는 추가 근무 편성 (오늘 이후)</p>
+            {upcomingExtra.length === 0 ? (
+              <p className="sub-empty">예정된 추가 근무 편성이 없습니다.</p>
             ) : (
-              sortedExtra.map((e) => (
+              upcomingExtra.map((e) => (
                 <AdminExtraCard
                   key={e.id}
                   extra={e}
