@@ -159,7 +159,7 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
               const groupNo = groupDefs[0].no;
               rendered.push(
                 <div className="insp-item" key={def.group}>
-                  <div className="title">{groupNo}–{groupDefs[groupDefs.length - 1].no}. {def.group}</div>
+                  <div className="title">{groupNo}. {def.group}</div>
                   {groupDefs.map((gdef) => {
                     const it = record.items[gdef.key];
                     return (

@@ -26,7 +26,7 @@ export const COLLECTOR_ITEMS = [
   },
   {
     key: 'exterior',
-    no: 5,
+    no: 4,
     title: '주요 장치',
     type: 'subs',
     editable: true,

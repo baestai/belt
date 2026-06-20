@@ -216,7 +216,7 @@ export default function Dashboard({
       <div className="body">
 
         {/* ── 오늘 점검 현황 ── */}
-        <div className="dash-section-title">오늘 점검 현황</div>
+        <div className="dash-section-title">금일 점검현황</div>
 
         <div className="dash-2col">
           {/* 벨트 */}
@@ -255,7 +255,7 @@ export default function Dashboard({
         </div>
 
         {/* ── 오늘 대근 현황 ── */}
-        <div className="dash-section-title">오늘 교대 / 대근</div>
+        <div className="dash-section-title">금일 근무현황</div>
         <div className="card" style={{ marginBottom: 14 }}>
           {/* 조별 근무 */}
           <div className="dash-shift-grid">
