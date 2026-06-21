@@ -91,6 +91,68 @@ function IssueItem({ entry, type, onResolve }) {
   );
 }
 
+// 점검 결과 분포 도넛 차트 (정상/주의/이상). 순수 SVG, 외부 라이브러리 없음.
+function DonutChart({ ok, warn, bad, size = 120, strokeW = 16 }) {
+  const total = ok + warn + bad;
+  const r = (size - strokeW) / 2;
+  const c = 2 * Math.PI * r;
+  const cx = size / 2;
+  const cy = size / 2;
+  const segs = [
+    { v: ok, color: 'var(--ok)' },
+    { v: warn, color: 'var(--warn)' },
+    { v: bad, color: 'var(--bad)' },
+  ].filter((s) => s.v > 0);
+  let offset = 0;
+  const badRate = total > 0 ? Math.round(((warn + bad) / total) * 100) : 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
+      aria-label={`점검 ${total}건 중 이상 ${warn + bad}건`}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--panel2)" strokeWidth={strokeW} />
+      {total > 0 && segs.map((s, i) => {
+        const len = (s.v / total) * c;
+        const el = (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={strokeW}
+            strokeDasharray={`${len} ${c - len}`}
+            strokeDashoffset={-offset}
+            transform={`rotate(-90 ${cx} ${cy})`}
+          />
+        );
+        offset += len;
+        return el;
+      })}
+      <text x={cx} y={cy - 2} textAnchor="middle" fontSize="26" fontWeight="800" fill="var(--text)">{total}</text>
+      <text x={cx} y={cy + 16} textAnchor="middle" fontSize="11" fill="var(--muted)">
+        {total > 0 ? `이상 ${badRate}%` : '기록 없음'}
+      </text>
+    </svg>
+  );
+}
+
+// 도넛 + 라벨/범례를 묶은 카드
+function ChartCard({ icon, label, ok, warn, bad }) {
+  const total = ok + warn + bad;
+  return (
+    <div className="dash-chart-card">
+      <div className="dash-chart-label"><span>{icon}</span> {label}</div>
+      <DonutChart ok={ok} warn={warn} bad={bad} />
+      <div className="dash-chart-legend">
+        <span className="dash-legend-item"><i className="dot ok" />정상 {ok}</span>
+        <span className="dash-legend-item"><i className="dot warn" />주의 {warn}</span>
+        <span className="dash-legend-item"><i className="dot bad" />이상 {bad}</span>
+      </div>
+      <div className="dash-chart-sub">점검 {total}건</div>
+    </div>
+  );
+}
+
 export default function Dashboard({
   today,
   groups,
@@ -171,6 +233,33 @@ export default function Dashboard({
   }, [collectors, collectorRecords]);
 
   const totalIssues = beltIssues.length + collectorIssues.length;
+
+  // ── 누적 점검 통계 (최신 기록 기준 정상/주의/이상 분포) ──
+  const beltChart = useMemo(() => {
+    let ok = 0, warn = 0, bad = 0;
+    for (const { name } of flattenBelts(groups)) {
+      const rec = latestRecord(records, name);
+      if (!rec) continue;
+      const s = aggregateStatus(rec);
+      if (s === 'ok') ok++;
+      else if (s === 'warn') warn++;
+      else bad++;
+    }
+    return { ok, warn, bad };
+  }, [groups, records]);
+
+  const collectorChart = useMemo(() => {
+    let ok = 0, warn = 0, bad = 0;
+    for (const { name } of collectors) {
+      const rec = latestCollectorRecord(collectorRecords, name);
+      if (!rec) continue;
+      const s = aggregateCollectorStatus(rec);
+      if (s === 'ok') ok++;
+      else if (s === 'warn') warn++;
+      else bad++;
+    }
+    return { ok, warn, bad };
+  }, [collectors, collectorRecords]);
 
   // ── 클립보드 복사 ─────────────────────────────────────────
   const handleCopyIssues = () => {
@@ -282,6 +371,13 @@ export default function Dashboard({
           {subsToday.length === 0 && (
             <p className="note" style={{ paddingTop: 8 }}>오늘 대근 없음</p>
           )}
+        </div>
+
+        {/* ── 누적 점검 통계 (도넛 차트) ── */}
+        <div className="dash-section-title">누적 점검 통계</div>
+        <div className="dash-2col" style={{ marginBottom: 14 }}>
+          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} warn={beltChart.warn} bad={beltChart.bad} />
+          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} warn={collectorChart.warn} bad={collectorChart.bad} />
         </div>
 
         {/* ── 누적 이상 목록 ── */}
