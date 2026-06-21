@@ -91,23 +91,22 @@ function IssueItem({ entry, type, onResolve }) {
   );
 }
 
-// 점검 결과 분포 도넛 차트 (정상/주의/이상). 순수 SVG, 외부 라이브러리 없음.
-function DonutChart({ ok, warn, bad, size = 120, strokeW = 16 }) {
-  const total = ok + warn + bad;
+// 점검 결과 분포 도넛 차트 (정상/이상 2분류). 순수 SVG, 외부 라이브러리 없음.
+function DonutChart({ ok, bad, size = 120, strokeW = 16 }) {
+  const total = ok + bad;
   const r = (size - strokeW) / 2;
   const c = 2 * Math.PI * r;
   const cx = size / 2;
   const cy = size / 2;
   const segs = [
     { v: ok, color: 'var(--ok)' },
-    { v: warn, color: 'var(--warn)' },
     { v: bad, color: 'var(--bad)' },
   ].filter((s) => s.v > 0);
   let offset = 0;
-  const badRate = total > 0 ? Math.round(((warn + bad) / total) * 100) : 0;
+  const badRate = total > 0 ? Math.round((bad / total) * 100) : 0;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
-      aria-label={`점검 ${total}건 중 이상 ${warn + bad}건`}>
+      aria-label={`점검 ${total}건 중 이상 ${bad}건`}>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--panel2)" strokeWidth={strokeW} />
       {total > 0 && segs.map((s, i) => {
         const len = (s.v / total) * c;
@@ -137,15 +136,14 @@ function DonutChart({ ok, warn, bad, size = 120, strokeW = 16 }) {
 }
 
 // 도넛 + 라벨/범례를 묶은 카드
-function ChartCard({ icon, label, ok, warn, bad }) {
-  const total = ok + warn + bad;
+function ChartCard({ icon, label, ok, bad }) {
+  const total = ok + bad;
   return (
     <div className="dash-chart-card">
       <div className="dash-chart-label"><span>{icon}</span> {label}</div>
-      <DonutChart ok={ok} warn={warn} bad={bad} />
+      <DonutChart ok={ok} bad={bad} />
       <div className="dash-chart-legend">
         <span className="dash-legend-item"><i className="dot ok" />정상 {ok}</span>
-        <span className="dash-legend-item"><i className="dot warn" />주의 {warn}</span>
         <span className="dash-legend-item"><i className="dot bad" />이상 {bad}</span>
       </div>
       <div className="dash-chart-sub">점검 {total}건</div>
@@ -234,31 +232,27 @@ export default function Dashboard({
 
   const totalIssues = beltIssues.length + collectorIssues.length;
 
-  // ── 누적 점검 통계 (최신 기록 기준 정상/주의/이상 분포) ──
+  // ── 누적 점검 통계 (최신 기록 기준 정상/이상 분포. 주의는 이상으로 합산) ──
   const beltChart = useMemo(() => {
-    let ok = 0, warn = 0, bad = 0;
+    let ok = 0, bad = 0;
     for (const { name } of flattenBelts(groups)) {
       const rec = latestRecord(records, name);
       if (!rec) continue;
-      const s = aggregateStatus(rec);
-      if (s === 'ok') ok++;
-      else if (s === 'warn') warn++;
+      if (aggregateStatus(rec) === 'ok') ok++;
       else bad++;
     }
-    return { ok, warn, bad };
+    return { ok, bad };
   }, [groups, records]);
 
   const collectorChart = useMemo(() => {
-    let ok = 0, warn = 0, bad = 0;
+    let ok = 0, bad = 0;
     for (const { name } of collectors) {
       const rec = latestCollectorRecord(collectorRecords, name);
       if (!rec) continue;
-      const s = aggregateCollectorStatus(rec);
-      if (s === 'ok') ok++;
-      else if (s === 'warn') warn++;
+      if (aggregateCollectorStatus(rec) === 'ok') ok++;
       else bad++;
     }
-    return { ok, warn, bad };
+    return { ok, bad };
   }, [collectors, collectorRecords]);
 
   // ── 클립보드 복사 ─────────────────────────────────────────
@@ -376,8 +370,8 @@ export default function Dashboard({
         {/* ── 누적 점검 통계 (도넛 차트) ── */}
         <div className="dash-section-title">누적 점검 통계</div>
         <div className="dash-2col" style={{ marginBottom: 14 }}>
-          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} warn={beltChart.warn} bad={beltChart.bad} />
-          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} warn={collectorChart.warn} bad={collectorChart.bad} />
+          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} bad={beltChart.bad} />
+          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} bad={collectorChart.bad} />
         </div>
 
         {/* ── 누적 이상 목록 ── */}
