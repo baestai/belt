@@ -11,12 +11,9 @@ import {
   groupOfPerson,
   isSlotFull,
   settlementPeriod,
-  inPeriod,
-  substituteCounts,
   hasPin,
   verifyPin,
   EXTRA_WORK_REASONS,
-  extraWorkCounts,
   recommendSubstitutes,
   extraBurdenSummary,
   weeklyHours,
@@ -993,8 +990,9 @@ function rangeFor(mode, today) {
 const RANGE_LABELS = { settlement: '정산기간', quarter: '분기', year: '연간', all: '전체' };
 
 // 기간 내 각 주의 최대 주간 근무시간을 사람별로 계산 (52시간 점검용)
+// 휴가/교육/청원/검진 신청은 해당 주 근무시간에서 1건당 8시간 차감한다.
 function weeklyMaxByPerson(period, ctx) {
-  const { shiftGroups = {} } = ctx;
+  const { shiftGroups = {}, substitutions = [] } = ctx;
   const weeks = [];
   let ws = weekRange(period.start).start;
   const endW = weekRange(period.end).start;
@@ -1007,7 +1005,14 @@ function weeklyMaxByPerson(period, ctx) {
   const out = {};
   for (const n of names) {
     let mx = 0;
-    for (const w of weeks) mx = Math.max(mx, weeklyHours(n, w, ctx));
+    for (const w of weeks) {
+      const wEnd = addDays(w, 6);
+      const leaveCnt = substitutions.filter(
+        (s) => s.requester === n && SUB_REASONS.includes(s.reason) && s.date >= w && s.date <= wEnd
+      ).length;
+      const hours = Math.max(0, weeklyHours(n, w, ctx) - leaveCnt * 8);
+      mx = Math.max(mx, hours);
+    }
     out[n] = mx;
   }
   return out;
@@ -1187,8 +1192,6 @@ export default function SubstitutionPage({
       window.alert(e.message || String(e));
     }
   };
-  const counts = useMemo(() => substituteCounts(substitutions, statPeriod), [substitutions, statPeriod.start, statPeriod.end]);
-  const extraCounts = useMemo(() => extraWorkCounts(extraWorks, statPeriod), [extraWorks, statPeriod.start, statPeriod.end]);
   // 주 52시간 점검: 항상 현재 정산기간 기준(근태 준법 모니터링)
   const weeklyMax = useMemo(
     () => weeklyMaxByPerson(period, { shiftGroups, substitutions, extraWorks }),
@@ -1491,8 +1494,8 @@ export default function SubstitutionPage({
                 </button>
               ))}
             </div>
-            <WeeklyLimitMonitor weeklyMax={weeklyMax} shiftGroups={shiftGroups} me={me} period={period} />
             <GroupSubChart shiftGroups={shiftGroups} burden={burden} me={me} period={statPeriod} atRisk={atRisk} />
+            <WeeklyLimitMonitor weeklyMax={weeklyMax} shiftGroups={shiftGroups} me={me} period={period} />
             <div className="card">
               <h3>⏱ 부담시간 합산 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
               {burden.length === 0 ? (
@@ -1520,38 +1523,6 @@ export default function SubstitutionPage({
                     <i className="burden-key sub" /> 대근 · <i className="burden-key extra" /> 추가근무
                   </p>
                 </div>
-              )}
-            </div>
-            <div className="card">
-              <h3>🏅 대근 집계 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
-              {counts.length === 0 ? (
-                <p className="sub-empty">이 정산 기간 확정된 대근이 없습니다.</p>
-              ) : (
-                <ol className="sub-rank">
-                  {counts.map((c, i) => (
-                    <li key={c.name} className={c.name === me ? 'sub-me-row' : ''}>
-                      <span className="sub-rank-no">{i + 1}</span>
-                      <span className="sub-rank-name">{c.name}</span>
-                      <span className="sub-rank-cnt">{c.count}건</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-            <div className="card">
-              <h3>➕ 추가 근무 집계 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
-              {extraCounts.length === 0 ? (
-                <p className="sub-empty">이 정산 기간 추가 근무가 없습니다.</p>
-              ) : (
-                <ol className="sub-rank">
-                  {extraCounts.map((c, i) => (
-                    <li key={c.name} className={c.name === me ? 'sub-me-row' : ''}>
-                      <span className="sub-rank-no">{i + 1}</span>
-                      <span className="sub-rank-name">{c.name}</span>
-                      <span className="sub-rank-cnt">{c.count}건</span>
-                    </li>
-                  ))}
-                </ol>
               )}
             </div>
           </>

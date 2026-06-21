@@ -56,20 +56,19 @@ function extractCollectorIssues(record) {
   return out;
 }
 
-const REPAIR_LABEL = { requested: '요청됨', working: '작업중' };
+const REPAIR_LABEL = { requested: '정비의뢰' };
 
-// 한 이상 항목의 수리 진행 컨트롤 (요청됨 → 작업중 → 완료)
+// 한 이상 항목의 수리 진행 컨트롤 (정비의뢰 → 수리완료)
 function RepairControl({ repair, onSet, onDone }) {
   const status = repair?.status || 'none';
   const [assignee, setAssignee] = useState(repair?.assignee || '');
   const [due, setDue] = useState(repair?.dueDate || '');
-  const active = status === 'requested' || status === 'working';
+  const active = status === 'requested';
   return (
     <div className="dash-repair">
       <div className="dash-repair-stages">
-        <button className={status === 'requested' ? 'on' : ''} onClick={() => onSet({ status: 'requested' })}>요청됨</button>
-        <button className={status === 'working' ? 'on' : ''} onClick={() => onSet({ status: 'working' })}>작업중</button>
-        <button className="done" onClick={onDone} title="수리 완료 — 양호로 변경">완료</button>
+        <button className={status === 'requested' ? 'on' : ''} onClick={() => onSet({ status: 'requested' })}>정비의뢰</button>
+        <button className="done" onClick={onDone} title="수리 완료 — 양호로 변경">수리완료</button>
       </div>
       {active && (
         <div className="dash-repair-fields">
@@ -99,7 +98,7 @@ function IssueItem({ entry, type, repairs, onSetRepair, onResolve }) {
   const keyOf = (it) => `${type}|${entry.name}|${entry.date}|${it.itemKey}|${it.sub || ''}`;
   // 헤더 칩: 항목 중 가장 진행된 수리 상태
   const stages = entry.items.map((it) => repairs[keyOf(it)]?.status).filter(Boolean);
-  const headStatus = stages.includes('working') ? 'working' : stages.includes('requested') ? 'requested' : null;
+  const headStatus = stages.includes('requested') ? 'requested' : null;
   return (
     <div className="dash-issue-entry">
       <button className="dash-issue-head" onClick={() => setOpen((v) => !v)}>
