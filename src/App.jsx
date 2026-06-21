@@ -388,10 +388,33 @@ export default function App() {
     setView('calendar');
   };
 
-  // ── 대시보드 이상 항목 조치 완료 핸들러 ──
-  // entry: { name, date, ... }, it: { title, sub, status, ... }
+  // ── 대시보드 이상 항목 수리요청 워크플로 ──
+  // entry: { name, date, ... }, it: { title, sub, itemKey, status, ... }
+  const repairKeyFor = (kind, entry, it) =>
+    `${kind}|${entry.name}|${entry.date}|${it.itemKey}|${it.sub || ''}`;
+
+  // 수리 상태/담당자/예상일 갱신 (요청됨·작업중 단계). 완료는 onResolve가 처리.
+  const handleSetRepair = (kind, entry, it, patch) => {
+    const key = repairKeyFor(kind, entry, it);
+    setState((s) => {
+      const repairs = { ...(s.repairs || {}) };
+      const prev = repairs[key] || {
+        kind,
+        equip: entry.name,
+        date: entry.date,
+        itemKey: it.itemKey,
+        sub: it.sub || null,
+        title: it.title,
+        status: 'requested',
+      };
+      repairs[key] = { ...prev, ...patch, updatedAt: new Date().toISOString() };
+      return { ...s, repairs };
+    });
+  };
+
   const handleResolveBeltIssue = (entry, it) => {
-    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''}을(를) 양호로 변경할까요?`)) return;
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경됩니다)`)) return;
+    const key = repairKeyFor('belt', entry, it);
     setState((s) => {
       const records = s.records.map((r) => {
         if (r.belt !== entry.name || r.date !== entry.date) return r;
@@ -405,12 +428,15 @@ export default function App() {
         items[it.itemKey] = item;
         return { ...r, items };
       });
-      return { ...s, records };
+      const repairs = { ...(s.repairs || {}) };
+      delete repairs[key];
+      return { ...s, records, repairs };
     });
   };
 
   const handleResolveCollectorIssue = (entry, it) => {
-    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''}을(를) 양호로 변경할까요?`)) return;
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경됩니다)`)) return;
+    const key = repairKeyFor('collector', entry, it);
     setState((s) => {
       const collectorRecords = (s.collectorRecords || []).map((r) => {
         if (r.collector !== entry.name || r.date !== entry.date) return r;
@@ -424,7 +450,9 @@ export default function App() {
         items[it.itemKey] = item;
         return { ...r, items };
       });
-      return { ...s, collectorRecords };
+      const repairs = { ...(s.repairs || {}) };
+      delete repairs[key];
+      return { ...s, collectorRecords, repairs };
     });
   };
 
@@ -690,6 +718,8 @@ export default function App() {
           onGoAdmin={goAdmin}
           onOpenLeaderboard={() => setModal('leaderboard')}
           onOpenShift={() => setView('shift')}
+          repairs={state.repairs || {}}
+          onSetRepair={handleSetRepair}
           onResolveBeltIssue={handleResolveBeltIssue}
           onResolveCollectorIssue={handleResolveCollectorIssue}
         />

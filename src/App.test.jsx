@@ -10,25 +10,32 @@ function openAdmin() {
   fireEvent.click(screen.getByText('관리모드'));
 }
 
+// 기본 화면이 홈 대시보드이므로, 점검모드(캘린더)를 보려면 탭으로 진입한다.
+function openField() {
+  fireEvent.click(screen.getByText('점검모드'));
+}
+
 describe('App 통합 렌더', () => {
   beforeEach(() => {
     clearState();
   });
 
-  it('점검모드가 기본 화면으로 열린다', () => {
+  it('홈 대시보드가 기본 화면으로 열린다', () => {
     render(<App />);
     expect(screen.getAllByText('3선탄 통합관리').length).toBeGreaterThan(0);
-    expect(screen.getByText(/점검 예정/)).toBeInTheDocument();
+    expect(screen.getByText('금일 점검현황')).toBeInTheDocument();
   });
 
   it('점검모드에 검색창과 상태 통계가 보인다 (구역 칩 없음)', () => {
     render(<App />);
+    openField();
     expect(screen.getByPlaceholderText(/벨트명 검색/)).toBeInTheDocument();
     expect(screen.getByText('미점검')).toBeInTheDocument();
   });
 
   it('점검모드 상태 통계 클릭 시 해당 상태 벨트 목록이 표시된다', () => {
     render(<App />);
+    openField();
     fireEvent.click(screen.getByText('미점검'));
     expect(screen.getByText(/미점검 벨트/)).toBeInTheDocument();
     // 시드 데이터의 미점검 벨트가 목록에 나타난다
@@ -37,6 +44,7 @@ describe('App 통합 렌더', () => {
 
   it('점검모드: 점검결과 없는 벨트 검색 후 Enter 시 점검 입력화면으로 이동', () => {
     render(<App />);
+    openField();
     const box = screen.getByPlaceholderText(/벨트명 검색/);
     fireEvent.change(box, { target: { value: 'S-101' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -135,6 +143,6 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     fireEvent.click(screen.getByText('📄 보고서'));
-    expect(screen.getByText(/월간 점검 보고서/)).toBeInTheDocument();
+    expect(screen.getByText(/점검 보고서/)).toBeInTheDocument();
   });
 });

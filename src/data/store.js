@@ -22,6 +22,9 @@ export function defaultState() {
     // ── 집진기(Dust Collector) 점검 ──
     collectors: defaultCollectors(), // [{ name, days:[일자] }]
     collectorRecords: [], // 집진기 점검 기록 배열 (record.collector)
+    // 수리요청 워크플로: { [repairKey]: { kind, equip, date, itemKey, sub, title, status, assignee, dueDate, updatedAt } }
+    // status: 'requested' | 'working' (완료 시 항목을 양호로 되돌리고 키 삭제)
+    repairs: {},
     adminPw: DEFAULT_ADMIN_PW,
     // ── 대근(代勤) 관리 ──
     shiftGroups: defaultShiftGroups(), // { A:[...], B:[...], C:[...], D:[...] }

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { GROUP_ORDER, aggregateStatus, statusLabel } from '../lib/belts.js';
-import { monthlyReport, recordsToTable, downloadCSV, collectorMonthlyReport, collectorRecordsToTable } from '../lib/report.js';
+import { recordsToTable, downloadCSV, collectorRecordsToTable, ymKey } from '../lib/report.js';
 import { leaderboardCombined, POINTS } from '../lib/points.js';
 import { INSPECTION_ITEMS } from '../lib/inspectionItems.js';
 import { COLLECTOR_ITEMS, aggregateCollectorStatus, normalizeDays } from '../lib/collectors.js';
@@ -449,40 +449,78 @@ export function ShiftGroupModal({ shiftGroups, pinResets = [], onAdd, onRemove, 
 export function ReportModal({ records, collectorRecords = [], onClose }) {
   const now = new Date();
   const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const [ym, setYm] = useState(defaultYm);
-  const rep = monthlyReport(records, ym);
-  const crep = collectorMonthlyReport(collectorRecords, ym);
+  const [startYm, setStartYm] = useState(defaultYm);
+  const [endYm, setEndYm] = useState(defaultYm);
+  const [inspector, setInspector] = useState('전체');
+  const [onlyBad, setOnlyBad] = useState(false);
 
-  const exportBelt = () => {
-    const inMonth = records.filter((r) => String(r.date).slice(0, 7) === ym);
-    downloadCSV(`벨트점검보고서_${ym}.csv`, recordsToTable(inMonth));
+  // 시작월 > 종료월이면 자동 보정
+  const lo = startYm <= endYm ? startYm : endYm;
+  const hi = startYm <= endYm ? endYm : startYm;
+
+  // 점검자 후보 목록 (벨트·집진기 통합, 가나다순)
+  const inspectorOptions = (() => {
+    const set = new Set();
+    for (const r of records) if (r.inspector) set.add(r.inspector);
+    for (const r of collectorRecords) if (r.inspector) set.add(r.inspector);
+    return ['전체', ...[...set].sort((a, b) => a.localeCompare(b))];
+  })();
+
+  const inRange = (r) => {
+    const k = ymKey(r.date);
+    if (k < lo || k > hi) return false;
+    if (inspector !== '전체' && r.inspector !== inspector) return false;
+    return true;
   };
-  const exportCollector = () => {
-    const inMonth = collectorRecords.filter((r) => String(r.date).slice(0, 7) === ym);
-    downloadCSV(`집진기점검보고서_${ym}.csv`, collectorRecordsToTable(inMonth));
+  const beltFiltered = records.filter((r) => inRange(r) && (!onlyBad || aggregateStatus(r) !== 'ok'));
+  const colFiltered = collectorRecords.filter((r) => inRange(r) && (!onlyBad || aggregateCollectorStatus(r) !== 'ok'));
+
+  const countOf = (list, statusFn) => {
+    let ok = 0, bad = 0;
+    for (const r of list) (statusFn(r) === 'ok' ? ok++ : bad++);
+    return { ok, bad };
   };
+  const bc = countOf(beltFiltered, aggregateStatus);
+  const cc = countOf(colFiltered, aggregateCollectorStatus);
+
+  const rangeTag = lo === hi ? lo : `${lo}_${hi}`;
+  const exportBelt = () => downloadCSV(`벨트점검보고서_${rangeTag}.csv`, recordsToTable(beltFiltered));
+  const exportCollector = () => downloadCSV(`집진기점검보고서_${rangeTag}.csv`, collectorRecordsToTable(colFiltered));
 
   return (
     <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
-        <h3>📄 월간 점검 보고서</h3>
-        <label>대상 월</label>
-        <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} />
+        <h3>📄 점검 보고서 · 데이터 조회</h3>
+
+        <label>기간 (시작월 ~ 종료월)</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input type="month" value={startYm} onChange={(e) => setStartYm(e.target.value)} />
+          <span style={{ color: 'var(--muted)' }}>~</span>
+          <input type="month" value={endYm} onChange={(e) => setEndYm(e.target.value)} />
+        </div>
+
+        <label>점검자</label>
+        <select value={inspector} onChange={(e) => setInspector(e.target.value)}>
+          {inspectorOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+
+        <label className="sub-check" style={{ marginTop: 12 }}>
+          <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
+          이상(불량) 기록만 보기
+        </label>
 
         <div className="card" style={{ marginTop: 14 }}>
-          <h3 style={{ fontSize: 14 }}>🦺 벨트 <span className="count">{rep.total}건</span></h3>
-          <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{rep.counts.ok}</span></div>
-          <div className="kv"><span className="k">주의</span><span style={{ color: 'var(--warn)' }}>{rep.counts.warn}</span></div>
-          <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{rep.counts.bad}</span></div>
-          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportBelt} disabled={rep.total === 0}>벨트 엑셀 다운로드</button>
+          <h3 style={{ fontSize: 14 }}>🦺 벨트 <span className="count">{beltFiltered.length}건</span></h3>
+          <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{bc.ok}</span></div>
+          <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{bc.bad}</span></div>
+          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportBelt} disabled={beltFiltered.length === 0}>벨트 엑셀 다운로드</button>
         </div>
 
         <div className="card">
-          <h3 style={{ fontSize: 14 }}>🌀 집진기 <span className="count">{crep.total}건</span></h3>
-          <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{crep.counts.ok}</span></div>
-          <div className="kv"><span className="k">주의</span><span style={{ color: 'var(--warn)' }}>{crep.counts.warn}</span></div>
-          <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{crep.counts.bad}</span></div>
-          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportCollector} disabled={crep.total === 0}>집진기 엑셀 다운로드</button>
+          <h3 style={{ fontSize: 14 }}>🌀 집진기 <span className="count">{colFiltered.length}건</span></h3>
+          <div className="kv"><span className="k">정상</span><span style={{ color: 'var(--ok)' }}>{cc.ok}</span></div>
+          <div className="kv"><span className="k">이상</span><span style={{ color: 'var(--bad)' }}>{cc.bad}</span></div>
+          <button className="ghost-btn" style={{ marginTop: 10 }} onClick={exportCollector} disabled={colFiltered.length === 0}>집진기 엑셀 다운로드</button>
         </div>
 
         <div className="modal-actions">

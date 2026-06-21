@@ -56,9 +56,50 @@ function extractCollectorIssues(record) {
   return out;
 }
 
-function IssueItem({ entry, type, onResolve }) {
+const REPAIR_LABEL = { requested: '요청됨', working: '작업중' };
+
+// 한 이상 항목의 수리 진행 컨트롤 (요청됨 → 작업중 → 완료)
+function RepairControl({ repair, onSet, onDone }) {
+  const status = repair?.status || 'none';
+  const [assignee, setAssignee] = useState(repair?.assignee || '');
+  const [due, setDue] = useState(repair?.dueDate || '');
+  const active = status === 'requested' || status === 'working';
+  return (
+    <div className="dash-repair">
+      <div className="dash-repair-stages">
+        <button className={status === 'requested' ? 'on' : ''} onClick={() => onSet({ status: 'requested' })}>요청됨</button>
+        <button className={status === 'working' ? 'on' : ''} onClick={() => onSet({ status: 'working' })}>작업중</button>
+        <button className="done" onClick={onDone} title="수리 완료 — 양호로 변경">완료</button>
+      </div>
+      {active && (
+        <div className="dash-repair-fields">
+          <input
+            className="dash-repair-in"
+            placeholder="담당자"
+            value={assignee}
+            onChange={(e) => setAssignee(e.target.value)}
+            onBlur={() => assignee !== (repair?.assignee || '') && onSet({ assignee })}
+          />
+          <input
+            className="dash-repair-in"
+            type="date"
+            value={due}
+            onChange={(e) => { setDue(e.target.value); onSet({ dueDate: e.target.value }); }}
+            title="예상 완료일"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IssueItem({ entry, type, repairs, onSetRepair, onResolve }) {
   const [open, setOpen] = useState(false);
   const worst = entry.items.some((i) => i.status === 'bad') ? 'bad' : 'warn';
+  const keyOf = (it) => `${type}|${entry.name}|${entry.date}|${it.itemKey}|${it.sub || ''}`;
+  // 헤더 칩: 항목 중 가장 진행된 수리 상태
+  const stages = entry.items.map((it) => repairs[keyOf(it)]?.status).filter(Boolean);
+  const headStatus = stages.includes('working') ? 'working' : stages.includes('requested') ? 'requested' : null;
   return (
     <div className="dash-issue-entry">
       <button className="dash-issue-head" onClick={() => setOpen((v) => !v)}>
@@ -66,6 +107,7 @@ function IssueItem({ entry, type, onResolve }) {
         <span className="dash-issue-name">
           {type === 'belt' ? `${entry.name} [${entry.group}]` : entry.name}
         </span>
+        {headStatus && <span className={`dash-repair-chip ${headStatus}`}>{REPAIR_LABEL[headStatus]}</span>}
         <span className="dash-issue-date">{entry.date}</span>
         <span className="dash-issue-arrow">{open ? '▲' : '▼'}</span>
       </button>
@@ -73,16 +115,16 @@ function IssueItem({ entry, type, onResolve }) {
         <div className="dash-issue-body">
           {entry.items.map((it, i) => (
             <div key={i} className="dash-sub-issue">
-              <span className={`ibadge ${it.status}`}>{it.status === 'bad' ? '불량' : '주의'}</span>
-              <span>{it.title}{it.sub ? ` › ${it.sub}` : ''}</span>
-              {it.memo && <span className="dash-sub-memo"> ({it.memo})</span>}
-              <button
-                className="dash-resolve-btn"
-                onClick={() => onResolve(entry, it)}
-                title="조치 완료 — 양호로 변경"
-              >
-                ✓ 조치완료
-              </button>
+              <div className="dash-sub-line">
+                <span className={`ibadge ${it.status}`}>{it.status === 'bad' ? '불량' : '주의'}</span>
+                <span>{it.title}{it.sub ? ` › ${it.sub}` : ''}</span>
+                {it.memo && <span className="dash-sub-memo"> ({it.memo})</span>}
+              </div>
+              <RepairControl
+                repair={repairs[keyOf(it)]}
+                onSet={(patch) => onSetRepair(type, entry, it, patch)}
+                onDone={() => onResolve(entry, it)}
+              />
             </div>
           ))}
         </div>
@@ -164,6 +206,8 @@ export default function Dashboard({
   onGoAdmin,
   onOpenLeaderboard,
   onOpenShift,
+  repairs = {},
+  onSetRepair,
   onResolveBeltIssue,
   onResolveCollectorIssue,
 }) {
@@ -418,7 +462,7 @@ export default function Dashboard({
                   <span className="count">{beltIssues.length}건</span>
                 </h3>
                 {beltIssues.map((entry) => (
-                  <IssueItem key={entry.name} entry={entry} type="belt" onResolve={onResolveBeltIssue} />
+                  <IssueItem key={entry.name} entry={entry} type="belt" repairs={repairs} onSetRepair={onSetRepair} onResolve={onResolveBeltIssue} />
                 ))}
               </div>
             )}
@@ -430,7 +474,7 @@ export default function Dashboard({
                   <span className="count">{collectorIssues.length}건</span>
                 </h3>
                 {collectorIssues.map((entry) => (
-                  <IssueItem key={entry.name} entry={entry} type="collector" onResolve={onResolveCollectorIssue} />
+                  <IssueItem key={entry.name} entry={entry} type="collector" repairs={repairs} onSetRepair={onSetRepair} onResolve={onResolveCollectorIssue} />
                 ))}
               </div>
             )}

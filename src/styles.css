@@ -397,6 +397,21 @@ header h1 + .notif-wrap{margin-left:auto}
 .gsc-fill{display:block;height:100%;background:var(--accent);border-radius:7px;transition:width .3s var(--ease)}
 .gsc-row.me .gsc-fill{background:var(--accent-strong)}
 .gsc-val{width:38px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.gsc-warn{color:var(--bad);margin-right:3px;font-size:12px}
+
+/* 주 52시간 점검 모니터 */
+.wl-list{display:flex;flex-direction:column;gap:6px}
+.wl-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
+.wl-row.me{border-color:var(--accent)}
+.wl-badge{flex-shrink:0;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px}
+.wl-badge.over{background:var(--badbg);color:var(--bad)}
+.wl-badge.near{background:var(--warnbg);color:var(--warn)}
+.wl-name{flex:1;font-size:14px;font-weight:600}
+.wl-name small{color:var(--muted);font-weight:400;font-size:12px}
+.wl-hours{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.wl-hours.over{color:var(--bad)} .wl-hours.near{color:var(--warn)}
+.wl-key{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:2px}
+.wl-key.over{background:var(--bad)} .wl-key.near{background:var(--warn)}
 
 /* 선택일 근무현황 상세 */
 .sub-day-detail{margin-top:12px}
@@ -560,6 +575,21 @@ header .logo svg{width:22px;height:22px;display:block}
 .dash-copy-btn:hover{border-color:var(--accent);color:var(--accent)}
 .dash-resolve-btn{margin-left:auto;flex-shrink:0;background:var(--okbg);border:1px solid var(--ok);color:var(--ok);font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .dash-resolve-btn:hover{background:var(--ok);color:#fff}
+
+/* 수리요청 워크플로 */
+.dash-sub-issue{flex-direction:column;align-items:stretch;gap:6px}
+.dash-sub-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dash-repair-chip{flex-shrink:0;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:4px}
+.dash-repair-chip.requested{background:var(--warnbg);color:var(--warn)}
+.dash-repair-chip.working{background:var(--info-weak);color:var(--info)}
+.dash-repair{display:flex;flex-direction:column;gap:6px;padding:6px 0 2px}
+.dash-repair-stages{display:flex;gap:6px}
+.dash-repair-stages button{flex:1;font-size:12px;font-weight:700;padding:6px 4px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer}
+.dash-repair-stages button.on{background:var(--info-weak);color:var(--info);border-color:var(--info)}
+.dash-repair-stages button.done{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.dash-repair-stages button.done:hover{background:var(--ok);color:#fff}
+.dash-repair-fields{display:flex;gap:6px}
+.dash-repair-in{flex:1;min-width:0;padding:6px 9px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--text);font-size:13px}
 
 /* 누적 점검 통계 도넛 차트 */
 .dash-chart-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:8px}

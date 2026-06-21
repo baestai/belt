@@ -19,6 +19,9 @@ import {
   extraWorkCounts,
   recommendSubstitutes,
   extraBurdenSummary,
+  weeklyHours,
+  weekRange,
+  WEEKLY_HOUR_LIMIT,
 } from '../lib/shift.js';
 
 const SHIFT_CLASS = { day: 'sub-day', night: 'sub-night', off: 'sub-off' };
@@ -971,10 +974,83 @@ function LogList({ logs = [] }) {
   );
 }
 
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+// 누적 통계 기간 모드 → {start, end}
+function rangeFor(mode, today) {
+  const [y, m] = today.split('-').map(Number);
+  if (mode === 'year') return { start: `${y}-01-01`, end: `${y}-12-31` };
+  if (mode === 'quarter') {
+    const q = Math.floor((m - 1) / 3);
+    const sm = q * 3 + 1;
+    const em = sm + 2;
+    const lastDay = new Date(y, em, 0).getDate();
+    return { start: `${y}-${pad2(sm)}-01`, end: `${y}-${pad2(em)}-${pad2(lastDay)}` };
+  }
+  if (mode === 'all') return { start: '2000-01-01', end: '2999-12-31' };
+  return settlementPeriod(today);
+}
+const RANGE_LABELS = { settlement: '정산기간', quarter: '분기', year: '연간', all: '전체' };
+
+// 기간 내 각 주의 최대 주간 근무시간을 사람별로 계산 (52시간 점검용)
+function weeklyMaxByPerson(period, ctx) {
+  const { shiftGroups = {} } = ctx;
+  const weeks = [];
+  let ws = weekRange(period.start).start;
+  const endW = weekRange(period.end).start;
+  let guard = 0;
+  while (ws <= endW && guard++ < 120) {
+    weeks.push(ws);
+    ws = addDays(ws, 7);
+  }
+  const names = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
+  const out = {};
+  for (const n of names) {
+    let mx = 0;
+    for (const w of weeks) mx = Math.max(mx, weeklyHours(n, w, ctx));
+    out[n] = mx;
+  }
+  return out;
+}
+
+// ── 주 52시간 점검 모니터 ──────────────────────────────
+function WeeklyLimitMonitor({ weeklyMax, shiftGroups, me, period }) {
+  const NEAR = 48; // 근접 기준(h)
+  const groupOf = (n) => SHIFT_GROUPS.find((g) => (shiftGroups[g] || []).includes(n)) || '';
+  const rows = Object.entries(weeklyMax)
+    .map(([name, h]) => ({ name, h, group: groupOf(name) }))
+    .filter((r) => r.h >= NEAR)
+    .sort((a, b) => b.h - a.h || a.name.localeCompare(b.name));
+  return (
+    <div className="card">
+      <h3>⏰ 주 52시간 점검 <span className="count">{period.start} ~ {period.end}</span></h3>
+      {rows.length === 0 ? (
+        <p className="sub-empty">이 기간 주 48시간 이상 근무자가 없습니다.</p>
+      ) : (
+        <div className="wl-list">
+          {rows.map((r) => {
+            const over = r.h > WEEKLY_HOUR_LIMIT;
+            return (
+              <div key={r.name} className={'wl-row' + (r.name === me ? ' me' : '')}>
+                <span className={'wl-badge ' + (over ? 'over' : 'near')}>{over ? '초과' : '근접'}</span>
+                <span className="wl-name">{r.name} <small>{r.group}조</small></span>
+                <span className={'wl-hours ' + (over ? 'over' : 'near')}>주 최대 {r.h}h</span>
+              </div>
+            );
+          })}
+          <p className="sub-legend" style={{ marginTop: 4 }}>
+            <i className="wl-key over" /> 초과(&gt;52h) · <i className="wl-key near" /> 근접(48~52h) · 한 주라도 해당되면 표시
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 조별 대근시간 비교 차트 ────────────────────────────
 // 조(A/B/C/D)별로 소속 직원들의 정산기간 대근시간을 가로 막대로 비교.
 // 막대 길이는 전체 인원 중 최댓값 기준으로 정규화해 조 간 비교가 가능하다.
-function GroupSubChart({ shiftGroups, burden, me, period }) {
+function GroupSubChart({ shiftGroups, burden, me, period, atRisk }) {
   const hoursByName = {};
   for (const b of burden) hoursByName[b.name] = b.subHours;
   let max = 0;
@@ -1005,7 +1081,10 @@ function GroupSubChart({ shiftGroups, burden, me, period }) {
                 </div>
                 {rows.map((r) => (
                   <div key={r.name} className={'gsc-row' + (r.name === me ? ' me' : '')}>
-                    <span className="gsc-name">{r.name}</span>
+                    <span className="gsc-name">
+                      {atRisk && atRisk.has(r.name) && <span className="gsc-warn" title="주 52시간 근접/초과">⚠</span>}
+                      {r.name}
+                    </span>
                     <span className="gsc-track">
                       <span className="gsc-fill" style={{ width: `${(r.h / max) * 100}%` }} />
                     </span>
@@ -1073,6 +1152,9 @@ export default function SubstitutionPage({
   const isAdmin = !!adminPw;
   const myGroup = me && !isAdmin ? groupOfPerson(shiftGroups, me) : null;
   const period = settlementPeriod(today);
+  // 집계 탭: 누적 통계 기간 모드 (정산기간/분기/연간/전체)
+  const [rangeMode, setRangeMode] = useState('settlement');
+  const statPeriod = useMemo(() => rangeFor(rangeMode, today), [rangeMode, today]);
 
   const submitAdminForm = (payload) => {
     if (adminForm && adminForm.edit) {
@@ -1105,8 +1187,14 @@ export default function SubstitutionPage({
       window.alert(e.message || String(e));
     }
   };
-  const counts = useMemo(() => substituteCounts(substitutions, period), [substitutions, period.start, period.end]);
-  const extraCounts = useMemo(() => extraWorkCounts(extraWorks, period), [extraWorks, period.start, period.end]);
+  const counts = useMemo(() => substituteCounts(substitutions, statPeriod), [substitutions, statPeriod.start, statPeriod.end]);
+  const extraCounts = useMemo(() => extraWorkCounts(extraWorks, statPeriod), [extraWorks, statPeriod.start, statPeriod.end]);
+  // 주 52시간 점검: 항상 현재 정산기간 기준(근태 준법 모니터링)
+  const weeklyMax = useMemo(
+    () => weeklyMaxByPerson(period, { shiftGroups, substitutions, extraWorks }),
+    [period.start, period.end, shiftGroups, substitutions, extraWorks]
+  );
+  const atRisk = useMemo(() => new Set(Object.keys(weeklyMax).filter((n) => weeklyMax[n] >= 48)), [weeklyMax]);
 
   const sorted = useMemo(
     () => [...substitutions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
@@ -1139,8 +1227,8 @@ export default function SubstitutionPage({
     [extraWorks, today]
   );
 
-  // (7) 시간 합산 대시보드 데이터
-  const burden = useMemo(() => extraBurdenSummary(period, { substitutions, extraWorks }), [substitutions, extraWorks, period.start, period.end]);
+  // (7) 시간 합산 대시보드 데이터 (선택한 통계 기간)
+  const burden = useMemo(() => extraBurdenSummary(statPeriod, { substitutions, extraWorks }), [substitutions, extraWorks, statPeriod.start, statPeriod.end]);
   const burdenMax = burden.reduce((m, r) => Math.max(m, r.total), 0) || 1;
   // (9) 맞교환: 관리자는 전체, 본인은 나와 관련된 것만, 최신순
   const sortedSwaps = useMemo(
@@ -1396,9 +1484,17 @@ export default function SubstitutionPage({
 
         {tab === 'count' && (
           <>
-            <GroupSubChart shiftGroups={shiftGroups} burden={burden} me={me} period={period} />
+            <div className="seg" style={{ marginBottom: 12 }}>
+              {Object.keys(RANGE_LABELS).map((k) => (
+                <button key={k} className={rangeMode === k ? 'active' : ''} onClick={() => setRangeMode(k)}>
+                  {RANGE_LABELS[k]}
+                </button>
+              ))}
+            </div>
+            <WeeklyLimitMonitor weeklyMax={weeklyMax} shiftGroups={shiftGroups} me={me} period={period} />
+            <GroupSubChart shiftGroups={shiftGroups} burden={burden} me={me} period={statPeriod} atRisk={atRisk} />
             <div className="card">
-              <h3>⏱ 부담시간 합산 <span className="count">{period.start} ~ {period.end}</span></h3>
+              <h3>⏱ 부담시간 합산 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
               {burden.length === 0 ? (
                 <p className="sub-empty">이 정산 기간 대근·추가근무가 없습니다.</p>
               ) : (
@@ -1427,7 +1523,7 @@ export default function SubstitutionPage({
               )}
             </div>
             <div className="card">
-              <h3>🏅 대근 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
+              <h3>🏅 대근 집계 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
               {counts.length === 0 ? (
                 <p className="sub-empty">이 정산 기간 확정된 대근이 없습니다.</p>
               ) : (
@@ -1443,7 +1539,7 @@ export default function SubstitutionPage({
               )}
             </div>
             <div className="card">
-              <h3>➕ 추가 근무 집계 <span className="count">{period.start} ~ {period.end}</span></h3>
+              <h3>➕ 추가 근무 집계 <span className="count">{statPeriod.start} ~ {statPeriod.end}</span></h3>
               {extraCounts.length === 0 ? (
                 <p className="sub-empty">이 정산 기간 추가 근무가 없습니다.</p>
               ) : (
