@@ -971,6 +971,56 @@ function LogList({ logs = [] }) {
   );
 }
 
+// ── 조별 대근시간 비교 차트 ────────────────────────────
+// 조(A/B/C/D)별로 소속 직원들의 정산기간 대근시간을 가로 막대로 비교.
+// 막대 길이는 전체 인원 중 최댓값 기준으로 정규화해 조 간 비교가 가능하다.
+function GroupSubChart({ shiftGroups, burden, me, period }) {
+  const hoursByName = {};
+  for (const b of burden) hoursByName[b.name] = b.subHours;
+  let max = 0;
+  for (const g of SHIFT_GROUPS) {
+    for (const n of shiftGroups[g] || []) max = Math.max(max, hoursByName[n] || 0);
+  }
+  max = max || 1;
+  const anyHours = SHIFT_GROUPS.some((g) => (shiftGroups[g] || []).some((n) => (hoursByName[n] || 0) > 0));
+
+  return (
+    <div className="card">
+      <h3>📊 조별 대근시간 비교 <span className="count">{period.start} ~ {period.end}</span></h3>
+      {!anyHours ? (
+        <p className="sub-empty">이 정산 기간 확정된 대근이 없습니다.</p>
+      ) : (
+        <div className="gsc">
+          {SHIFT_GROUPS.map((g) => {
+            const members = shiftGroups[g] || [];
+            const total = members.reduce((s, n) => s + (hoursByName[n] || 0), 0);
+            const rows = members
+              .map((n) => ({ name: n, h: hoursByName[n] || 0 }))
+              .sort((a, b) => b.h - a.h || a.name.localeCompare(b.name));
+            return (
+              <div key={g} className="gsc-group">
+                <div className="gsc-ghead">
+                  <span className="gsc-gname">{g}조</span>
+                  <span className="gsc-gtotal">{total}h</span>
+                </div>
+                {rows.map((r) => (
+                  <div key={r.name} className={'gsc-row' + (r.name === me ? ' me' : '')}>
+                    <span className="gsc-name">{r.name}</span>
+                    <span className="gsc-track">
+                      <span className="gsc-fill" style={{ width: `${(r.h / max) * 100}%` }} />
+                    </span>
+                    <span className="gsc-val">{r.h}h</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 메인 ───────────────────────────────────────────────
 export default function SubstitutionPage({
   shiftGroups,
@@ -1346,6 +1396,7 @@ export default function SubstitutionPage({
 
         {tab === 'count' && (
           <>
+            <GroupSubChart shiftGroups={shiftGroups} burden={burden} me={me} period={period} />
             <div className="card">
               <h3>⏱ 부담시간 합산 <span className="count">{period.start} ~ {period.end}</span></h3>
               {burden.length === 0 ? (

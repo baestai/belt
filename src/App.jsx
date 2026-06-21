@@ -688,6 +688,8 @@ export default function App() {
           shiftGroups={state.shiftGroups || defaultShiftGroups()}
           onGoField={() => setView('calendar')}
           onGoAdmin={goAdmin}
+          onOpenLeaderboard={() => setModal('leaderboard')}
+          onOpenShift={() => setView('shift')}
           onResolveBeltIssue={handleResolveBeltIssue}
           onResolveCollectorIssue={handleResolveCollectorIssue}
         />

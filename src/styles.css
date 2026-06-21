@@ -384,6 +384,20 @@ header h1 + .notif-wrap{margin-left:auto}
 .burden-key{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:2px}
 .burden-key.sub{background:var(--ok)} .burden-key.extra{background:var(--info)}
 
+/* 조별 대근시간 비교 차트 */
+.gsc{display:flex;flex-direction:column;gap:14px}
+.gsc-group{display:flex;flex-direction:column;gap:5px}
+.gsc-ghead{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:3px;border-bottom:1px solid var(--line)}
+.gsc-gname{font-weight:800;font-size:14px;color:var(--accent)}
+.gsc-gtotal{font-weight:700;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gsc-row{display:flex;align-items:center;gap:8px}
+.gsc-row.me .gsc-name{color:var(--accent);font-weight:700}
+.gsc-name{width:60px;flex-shrink:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsc-track{flex:1;height:14px;border-radius:7px;background:var(--panel2);overflow:hidden}
+.gsc-fill{display:block;height:100%;background:var(--accent);border-radius:7px;transition:width .3s var(--ease)}
+.gsc-row.me .gsc-fill{background:var(--accent-strong)}
+.gsc-val{width:38px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+
 /* 선택일 근무현황 상세 */
 .sub-day-detail{margin-top:12px}
 .sub-day-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
