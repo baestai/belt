@@ -298,46 +298,7 @@ export default function Dashboard({
 
       <div className="body">
 
-        {/* ── 오늘 점검 현황 ── */}
-        <div className="dash-section-title">금일 점검현황</div>
-
-        <div className="dash-2col">
-          {/* 벨트 */}
-          <button className="dash-stat-card" onClick={onGoField}>
-            <div className="dash-stat-icon">🔧</div>
-            <div className="dash-stat-label">벨트 점검</div>
-            <div className="dash-stat-main">
-              <span className="dash-stat-done">{beltStats.done}</span>
-              <span className="dash-stat-sep"> / </span>
-              <span className="dash-stat-total">{beltStats.scheduled}</span>
-              <span className="dash-stat-unit"> 완료</span>
-            </div>
-            <div className="dash-stat-pills">
-              {beltStats.bad > 0 && <span className="dash-pill bad">{beltStats.bad}이상</span>}
-              {beltStats.warn > 0 && <span className="dash-pill warn">{beltStats.warn}주의</span>}
-              {beltStats.ok > 0 && <span className="dash-pill ok">{beltStats.ok}정상</span>}
-            </div>
-          </button>
-
-          {/* 집진기 */}
-          <button className="dash-stat-card" onClick={onGoField}>
-            <div className="dash-stat-icon">💨</div>
-            <div className="dash-stat-label">집진기 점검</div>
-            <div className="dash-stat-main">
-              <span className="dash-stat-done">{collectorStats.done}</span>
-              <span className="dash-stat-sep"> / </span>
-              <span className="dash-stat-total">{collectorStats.scheduled}</span>
-              <span className="dash-stat-unit"> 완료</span>
-            </div>
-            <div className="dash-stat-pills">
-              {collectorStats.bad > 0 && <span className="dash-pill bad">{collectorStats.bad}이상</span>}
-              {collectorStats.warn > 0 && <span className="dash-pill warn">{collectorStats.warn}주의</span>}
-              {collectorStats.ok > 0 && <span className="dash-pill ok">{collectorStats.ok}정상</span>}
-            </div>
-          </button>
-        </div>
-
-        {/* ── 오늘 대근 현황 ── */}
+        {/* ── 금일 근무현황 ── */}
         <div className="dash-section-title">금일 근무현황</div>
         <div className="card" style={{ marginBottom: 14 }}>
           {/* 조별 근무 */}
@@ -365,6 +326,43 @@ export default function Dashboard({
           {subsToday.length === 0 && (
             <p className="note" style={{ paddingTop: 8 }}>오늘 대근 없음</p>
           )}
+        </div>
+
+        {/* ── 금일 점검현황 ── */}
+        <div className="dash-section-title">금일 점검현황</div>
+
+        <div className="dash-2col">
+          {/* 벨트 */}
+          <button className="dash-stat-card" onClick={onGoField}>
+            <div className="dash-stat-icon">🔧</div>
+            <div className="dash-stat-label">벨트 점검</div>
+            <div className="dash-stat-main">
+              <span className="dash-stat-done">{beltStats.done}</span>
+              <span className="dash-stat-sep"> / </span>
+              <span className="dash-stat-total">{beltStats.scheduled}</span>
+              <span className="dash-stat-unit"> 완료</span>
+            </div>
+            <div className="dash-stat-pills">
+              {beltStats.bad + beltStats.warn > 0 && <span className="dash-pill bad">{beltStats.bad + beltStats.warn}이상</span>}
+              {beltStats.ok > 0 && <span className="dash-pill ok">{beltStats.ok}정상</span>}
+            </div>
+          </button>
+
+          {/* 집진기 */}
+          <button className="dash-stat-card" onClick={onGoField}>
+            <div className="dash-stat-icon">💨</div>
+            <div className="dash-stat-label">집진기 점검</div>
+            <div className="dash-stat-main">
+              <span className="dash-stat-done">{collectorStats.done}</span>
+              <span className="dash-stat-sep"> / </span>
+              <span className="dash-stat-total">{collectorStats.scheduled}</span>
+              <span className="dash-stat-unit"> 완료</span>
+            </div>
+            <div className="dash-stat-pills">
+              {collectorStats.bad + collectorStats.warn > 0 && <span className="dash-pill bad">{collectorStats.bad + collectorStats.warn}이상</span>}
+              {collectorStats.ok > 0 && <span className="dash-pill ok">{collectorStats.ok}정상</span>}
+            </div>
+          </button>
         </div>
 
         {/* ── 누적 점검 통계 (도넛 차트) ── */}

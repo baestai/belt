@@ -9,7 +9,6 @@ import {
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 const STAT_DEFS = [
   { key: 'ok', label: '정상', cls: 'ok' },
-  { key: 'warn', label: '주의', cls: 'warn' },
   { key: 'bad', label: '이상', cls: 'bad' },
   { key: 'none', label: '미점검', cls: 'none' },
 ];
