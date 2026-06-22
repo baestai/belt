@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { INSPECTION_ITEMS } from '../lib/inspectionItems.js';
 import { statusLabel, aggregateStatus } from '../lib/belts.js';
 import { recordsForBelt, latestRecord, openIssues, dueInfo } from '../lib/selectors.js';
+import { beltTempSeries } from '../lib/trends.js';
+import TrendChart from './TrendChart.jsx';
 
 const SIGNAL = { ok: '🟢', warn: '🟡', bad: '🔴', none: '⚪' };
 const STATUS_TEXT = {
@@ -19,6 +21,7 @@ const CYCLES = [
 
 export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, onPrint, onViewResult, onEditRecord, groupCount = 0 }) {
   const history = recordsForBelt(records, belt.name);
+  const tempSeries = beltTempSeries(records, belt.name);
   const latest = latestRecord(records, belt.name);
   const st = latest ? aggregateStatus(latest) : 'none';
   const issues = openIssues(latest, INSPECTION_ITEMS);
@@ -115,6 +118,13 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
             </div>
           ))}
         </div>
+
+        {tempSeries.length > 0 && (
+          <div className="card">
+            <h3>📈 Pulley 최고온도 추이 <span className="count">℃</span></h3>
+            <TrendChart series={tempSeries} unit="℃" color="var(--accent)" />
+          </div>
+        )}
 
         <div className="card">
           <h3>🕒 점검 이력</h3>

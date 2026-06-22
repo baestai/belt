@@ -61,6 +61,8 @@ export async function fetchCloud() {
     collectors: cfg.collectors || defaultCollectors(),
     collectorRecords: cfg.collectorRecords || [],
     repairs: cfg.repairs || {},
+    repairHistory: cfg.repairHistory || [],
+    logs: cfg.logs || [],
     schedules,
     records,
   };
@@ -149,7 +151,7 @@ function toRecordRow(r) {
 
 function configChanged(prev, next) {
   const pick = (s) =>
-    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw, shiftGroups: s?.shiftGroups, shiftPins: s?.shiftPins, pinResets: s?.pinResets, substitutions: s?.substitutions, extraWorks: s?.extraWorks, swaps: s?.swaps, subLogs: s?.subLogs, collectors: s?.collectors, collectorRecords: s?.collectorRecords, repairs: s?.repairs });
+    JSON.stringify({ groups: s?.groups, inspectors: s?.inspectors, pulleys: s?.pulleys, quickMemos: s?.quickMemos, beltConfigs: s?.beltConfigs, adminPw: s?.adminPw, shiftGroups: s?.shiftGroups, shiftPins: s?.shiftPins, pinResets: s?.pinResets, substitutions: s?.substitutions, extraWorks: s?.extraWorks, swaps: s?.swaps, subLogs: s?.subLogs, collectors: s?.collectors, collectorRecords: s?.collectorRecords, repairs: s?.repairs, repairHistory: s?.repairHistory, logs: s?.logs });
   return pick(prev) !== pick(next);
 }
 
@@ -171,6 +173,8 @@ async function upsertConfig(state) {
     collectors: state.collectors,
     collectorRecords: state.collectorRecords,
     repairs: state.repairs,
+    repairHistory: state.repairHistory,
+    logs: state.logs,
   };
   const { error } = await supabase.from('settings').upsert({ key: CONFIG_KEY, value });
   if (error) throw error;

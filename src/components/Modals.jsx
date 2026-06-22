@@ -186,11 +186,24 @@ export function InspectorModal({ inspectors, onAdd, onRemove, onClose }) {
   );
 }
 
-export function BackupModal({ state, onExport, onImport, onClose }) {
+export function BackupModal({ state, onExport, onImport, snapshots = [], onRestoreSnapshot, onClose }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const fileRef = useRef(null);
+
+  const restoreSnap = (id) => {
+    setError('');
+    if (!pw) { setError('스냅샷 복원에는 관리자 비밀번호가 필요합니다.'); return; }
+    if (!window.confirm('이 스냅샷 시점으로 전체 데이터를 되돌립니다. 현재 데이터는 덮어쓰여집니다. 진행할까요?')) return;
+    try {
+      onRestoreSnapshot(id, pw);
+      setInfo('스냅샷 복원이 완료되었습니다.');
+    } catch (err) {
+      setError(err.message);
+      setInfo('');
+    }
+  };
 
   const beltCount = Object.values(state.groups || {}).reduce((a, b) => a + b.length, 0);
 
@@ -251,10 +264,108 @@ export function BackupModal({ state, onExport, onImport, onClose }) {
           onChange={onFile}
         />
 
+        {snapshots && snapshots.length > 0 && (
+          <>
+            <div className="note" style={{ marginTop: 14 }}>
+              🕒 자동 스냅샷: 12시간마다 이 기기에 자동 저장된 백업입니다 (최근 {snapshots.length}개). 비밀번호 입력 후 복원하세요.
+            </div>
+            <div className="snap-list">
+              {snapshots.map((sn) => (
+                <div key={sn.id} className="snap-row">
+                  <div className="snap-meta">
+                    <span className="snap-at">{fmtSnapAt(sn.at)}</span>
+                    <span className="snap-sub">벨트 {sn.beltCount}대 · 기록 {sn.recordCount}건</span>
+                  </div>
+                  <button className="add-btn secondary" onClick={() => restoreSnap(sn.id)}>복원</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {error && <div className="err">{error}</div>}
         {info && <div className="note" style={{ color: 'var(--ok)' }}>{info}</div>}
         <div className="modal-actions">
           <button className="ma-cancel" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 감사 로그/정비 이력 공통: ISO → 'M/D HH:mm'
+function fmtAtShort(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso || '-';
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function fmtSnapAt(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso || '-';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// 정비 이력 대장 (완료된 수리 기록)
+export function RepairHistoryModal({ history = [], onClose }) {
+  const [q, setQ] = useState('');
+  const qq = q.trim().toLowerCase();
+  const rows = (history || []).filter((h) => !qq || String(h.equip).toLowerCase().includes(qq));
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>🔧 정비 이력 대장 <span className="count">{history.length}건</span></h3>
+        <input className="search" style={{ marginBottom: 10 }} placeholder="🔍 설비명 검색" value={q} onChange={(e) => setQ(e.target.value)} />
+        {rows.length === 0 ? (
+          <p className="sub-empty">완료된 정비 이력이 없습니다.</p>
+        ) : (
+          <div className="rh-list">
+            {rows.map((h) => (
+              <div key={h.id} className="rh-row">
+                <div className="rh-top">
+                  <span className={'rh-kind ' + h.kind}>{h.kind === 'belt' ? '벨트' : '집진기'}</span>
+                  <span className="rh-equip">{h.equip}{h.group ? ` [${h.group}]` : ''}</span>
+                  <span className="rh-done">✓ {fmtAtShort(h.completedAt)}</span>
+                </div>
+                <div className="rh-item">{h.title}{h.sub ? ` › ${h.sub}` : ''}</div>
+                <div className="rh-meta">
+                  점검일 {h.date}{h.assignee ? ` · 담당 ${h.assignee}` : ''}{h.dueDate ? ` · 예정 ${h.dueDate}` : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="modal-actions">
+          <button className="ma-ok" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 변경 이력(감사 로그)
+export function AuditLogModal({ logs = [], onClose }) {
+  return (
+    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <h3>📋 변경 이력 <span className="count">최근 {logs.length}건</span></h3>
+        {logs.length === 0 ? (
+          <p className="sub-empty">기록된 변경 이력이 없습니다.</p>
+        ) : (
+          <div className="log-list">
+            {logs.map((l) => (
+              <div key={l.id} className="log-row">
+                <div className="log-meta">
+                  <span className="log-action">{l.action}</span>
+                  <span className="log-actor">{l.actor}</span>
+                  <span className="log-at">{fmtAtShort(l.at)}</span>
+                </div>
+                {l.detail && <div className="log-detail">{l.detail}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="modal-actions">
+          <button className="ma-ok" onClick={onClose}>닫기</button>
         </div>
       </div>
     </div>

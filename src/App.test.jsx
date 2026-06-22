@@ -54,8 +54,9 @@ describe('App 통합 렌더', () => {
 
   it('점검모드: 점검결과 있는 벨트 검색 후 Enter 시 최근 결과(상세)로 이동', () => {
     render(<App />);
-    // 먼저 S-101 점검을 한 건 저장 (관리모드 → 상세 → 점검 → 저장)
+    // 먼저 S-101 점검을 한 건 저장 (관리모드 → SILO 구역 → 상세 → 점검 → 저장)
     openAdmin();
+    fireEvent.click(screen.getByText('SILO 21'));
     fireEvent.click(screen.getByText('S-101'));
     fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
     fireEvent.click(screen.getByText('✅ 점검 완료 저장'));
@@ -70,6 +71,8 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     expect(screen.getByText('3선탄 통합관리')).toBeInTheDocument();
+    // 카테고리(SILO)를 선택해야 설비 목록이 표시됨
+    fireEvent.click(screen.getByText('SILO 21'));
     expect(screen.getByText('S-101')).toBeInTheDocument();
   });
 
@@ -112,6 +115,7 @@ describe('App 통합 렌더', () => {
   it('벨트 상세로 진입하고 점검 폼까지 이동', () => {
     render(<App />);
     openAdmin();
+    fireEvent.click(screen.getByText('SILO 21'));
     fireEvent.click(screen.getByText('S-101'));
     expect(screen.getByText('벨트 상세')).toBeInTheDocument();
     fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
@@ -121,6 +125,7 @@ describe('App 통합 렌더', () => {
   it('점검 폼 저장 후 상태가 반영된다', () => {
     render(<App />);
     openAdmin();
+    fireEvent.click(screen.getByText('SILO 21'));
     fireEvent.click(screen.getByText('S-101'));
     fireEvent.click(screen.getByText('📋 이 벨트 점검하기'));
     // 첫 항목(벨트 상태) 불량 선택

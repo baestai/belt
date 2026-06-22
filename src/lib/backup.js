@@ -18,6 +18,9 @@ function pickState(state) {
     records: state.records,
     collectors: state.collectors,
     collectorRecords: state.collectorRecords,
+    repairs: state.repairs,
+    repairHistory: state.repairHistory,
+    logs: state.logs,
   };
 }
 
@@ -58,7 +61,55 @@ export function parseBackup(text) {
     records: st.records,
     collectors: Array.isArray(st.collectors) ? st.collectors : undefined,
     collectorRecords: Array.isArray(st.collectorRecords) ? st.collectorRecords : [],
+    repairs: st.repairs && typeof st.repairs === 'object' ? st.repairs : {},
+    repairHistory: Array.isArray(st.repairHistory) ? st.repairHistory : [],
+    logs: Array.isArray(st.logs) ? st.logs : [],
   };
+}
+
+// ── 자동 스냅샷(로컬 회전 백업) ─────────────────────────
+// 브라우저 localStorage에 최근 N개의 상태 스냅샷을 보관한다(기기 단위).
+const SNAP_KEY = 'belt-inspection-snapshots-v1';
+const SNAP_MAX = 10;
+const SNAP_MIN_GAP_MS = 12 * 60 * 60 * 1000; // 12시간
+
+function snapStorage() {
+  try { if (typeof localStorage !== 'undefined') return localStorage; } catch { /* noop */ }
+  return null;
+}
+
+export function readSnapshots(storage = snapStorage()) {
+  if (!storage) return [];
+  try {
+    const raw = storage.getItem(SNAP_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+// 메타데이터만(목록 표시용) — 무거운 state 제외
+export function listSnapshots(storage = snapStorage()) {
+  return readSnapshots(storage).map((s) => ({
+    id: s.id,
+    at: s.at,
+    beltCount: Object.values(s.state?.groups || {}).reduce((a, b) => a + b.length, 0),
+    recordCount: (s.state?.records || []).length,
+  }));
+}
+
+export function getSnapshot(id, storage = snapStorage()) {
+  return readSnapshots(storage).find((s) => s.id === id) || null;
+}
+
+// 마지막 스냅샷이 12시간 넘게 지났으면 현재 상태를 스냅샷으로 저장. 저장했으면 true.
+export function maybeSnapshot(state, storage = snapStorage(), now = Date.now()) {
+  if (!storage) return false;
+  const list = readSnapshots(storage);
+  const last = list[0];
+  if (last && now - new Date(last.at).getTime() < SNAP_MIN_GAP_MS) return false;
+  const snap = { id: `snap_${now.toString(36)}`, at: new Date(now).toISOString(), state: pickState(state) };
+  const next = [snap, ...list].slice(0, SNAP_MAX);
+  try { storage.setItem(SNAP_KEY, JSON.stringify(next)); return true; } catch { return false; }
 }
 
 // 브라우저 다운로드 트리거 (테스트에서는 호출되지 않음)

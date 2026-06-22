@@ -17,7 +17,7 @@ import FieldCalendar from './components/FieldCalendar.jsx';
 import InspectionForm from './components/InspectionForm.jsx';
 import CollectorCalendar from './components/CollectorCalendar.jsx';
 import CollectorForm from './components/CollectorForm.jsx';
-import { defaultCollectors, updateCollector, addCollector, removeCollector } from './lib/collectors.js';
+import { defaultCollectors, updateCollector, addCollector, removeCollector, latestCollectorRecord, aggregateCollectorStatus } from './lib/collectors.js';
 import PrintableRecord from './components/PrintableRecord.jsx';
 import SubstitutionPage from './components/SubstitutionPage.jsx';
 import {
@@ -40,8 +40,10 @@ import {
   rejectSwap,
   cancelSwap,
 } from './lib/shift.js';
-import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal, CollectorManageModal } from './components/Modals.jsx';
-import { exportBackup, parseBackup } from './lib/backup.js';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal, CollectorManageModal, RepairHistoryModal, AuditLogModal } from './components/Modals.jsx';
+import { exportBackup, parseBackup, buildBackup, maybeSnapshot, listSnapshots, getSnapshot } from './lib/backup.js';
+import { appendLog } from './lib/auditlog.js';
+import { aggregateStatus } from './lib/belts.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
 function todayStr() {
@@ -171,6 +173,15 @@ export default function App() {
     syncToCloud(prev, state).catch((e) => console.warn('[cloud] 동기화 실패:', e?.message || e));
   }, [state]);
 
+  // 자동 백업 스냅샷: 최초 로드 후(클라우드 화해 반영 시간 확보) 12시간 경과 시 1회 저장
+  const [snapshots, setSnapshots] = useState(() => listSnapshots());
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (maybeSnapshot(stateRef.current)) setSnapshots(listSnapshots());
+    }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+
   const { groups, inspectors, records, schedules } = state;
   const quickMemos = state.quickMemos || [];
 
@@ -194,9 +205,12 @@ export default function App() {
     setView('detail');
   };
 
+  // 감사 로그 헬퍼: setState 업데이터 안에서 logs에 누적
+  const withAudit = (s, entry) => ({ ...s, logs: appendLog(s.logs || [], entry) });
+
   const handleAddBelt = (group, name, pw) => {
     if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => ({ ...s, groups: addBeltFn(s.groups, group, name) }));
+    setState((s) => withAudit({ ...s, groups: addBeltFn(s.groups, group, name) }, { actor: '관리자', action: '벨트 추가', detail: `${group} · ${name}` }));
     setFilters((f) => ({ ...f, group, status: null }));
     setModal(null);
   };
@@ -211,12 +225,12 @@ export default function App() {
     setState((s) => {
       const sched = { ...s.schedules };
       delete sched[name];
-      return {
+      return withAudit({
         ...s,
         groups: removeBeltFn(s.groups, name),
         records: s.records.filter((r) => r.belt !== name),
         schedules: sched,
-      };
+      }, { actor: '관리자', action: '벨트 삭제', detail: name });
     });
     setView('list');
   };
@@ -333,9 +347,22 @@ export default function App() {
       adminPw: restored.adminPw ?? s.adminPw,
       schedules: restored.schedules,
       records: restored.records,
+      collectors: restored.collectors ?? s.collectors,
+      collectorRecords: restored.collectorRecords ?? s.collectorRecords,
+      repairs: restored.repairs ?? s.repairs,
+      repairHistory: restored.repairHistory ?? s.repairHistory,
+      logs: restored.logs ?? s.logs,
     }));
     window.alert(`복원 완료: 벨트 ${Object.values(restored.groups).reduce((a, b) => a + b.length, 0)}대 · 기록 ${restored.records.length}건`);
     setModal(null);
+  };
+
+  // 자동 스냅샷 복원: 선택한 스냅샷의 상태로 되돌림 (비밀번호 확인)
+  const handleRestoreSnapshot = (id, pw) => {
+    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+    const snap = getSnapshot(id);
+    if (!snap) throw new Error('스냅샷을 찾을 수 없습니다.');
+    handleImportBackup(buildBackup(snap.state), pw);
   };
 
   const handleInspect = (belt, date) => {
@@ -383,7 +410,11 @@ export default function App() {
       const cycle = cur?.cycle || 'monthly';
       const next = nextDateFrom(record.date, cycle);
       const schedules = { ...s.schedules, [record.belt]: { nextDate: next, cycle } };
-      return { ...s, records, schedules };
+      const st = aggregateStatus(record);
+      return withAudit({ ...s, records, schedules }, {
+        actor: record.inspector || '(미지정)', action: '벨트 점검',
+        detail: `${record.belt} · ${st === 'ok' ? '정상' : '이상'} (${record.date})`,
+      });
     });
     setView('calendar');
   };
@@ -393,28 +424,61 @@ export default function App() {
   const repairKeyFor = (kind, entry, it) =>
     `${kind}|${entry.name}|${entry.date}|${it.itemKey}|${it.sub || ''}`;
 
-  // 수리 상태/담당자/예상일 갱신 (요청됨·작업중 단계). 완료는 onResolve가 처리.
+  // 수리 상태/담당자/예상일 갱신 (정비의뢰 단계). 수리완료는 onResolve가 처리.
   const handleSetRepair = (kind, entry, it, patch) => {
     const key = repairKeyFor(kind, entry, it);
     setState((s) => {
       const repairs = { ...(s.repairs || {}) };
+      const isNew = !repairs[key];
       const prev = repairs[key] || {
         kind,
         equip: entry.name,
+        group: entry.group || null,
         date: entry.date,
         itemKey: it.itemKey,
         sub: it.sub || null,
         title: it.title,
         status: 'requested',
+        requestedAt: new Date().toISOString(),
       };
       repairs[key] = { ...prev, ...patch, updatedAt: new Date().toISOString() };
-      return { ...s, repairs };
+      // 신규 정비의뢰만 로그 (담당자/예상일 수정은 로그 생략)
+      const next = { ...s, repairs };
+      return isNew
+        ? withAudit(next, { actor: '관리자', action: '정비의뢰', detail: `${entry.name} · ${it.title}${it.sub ? ` (${it.sub})` : ''}` })
+        : next;
+    });
+  };
+
+  // 수리완료: 점검 항목을 양호로 되돌리고, 정비 이력(repairHistory)으로 이관 + 로그
+  const completeRepair = (s, kind, entry, it) => {
+    const key = repairKeyFor(kind, entry, it);
+    const prior = (s.repairs || {})[key] || {};
+    const repairs = { ...(s.repairs || {}) };
+    delete repairs[key];
+    const histEntry = {
+      id: `rh_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      kind,
+      equip: entry.name,
+      group: entry.group || null,
+      date: entry.date,
+      itemKey: it.itemKey,
+      sub: it.sub || null,
+      title: it.title,
+      assignee: prior.assignee || '',
+      dueDate: prior.dueDate || '',
+      requestedAt: prior.requestedAt || null,
+      completedAt: new Date().toISOString(),
+    };
+    const repairHistory = [histEntry, ...(s.repairHistory || [])].slice(0, 1000);
+    return withAudit({ ...s, repairs, repairHistory }, {
+      actor: '관리자', action: '수리완료',
+      detail: `${entry.name} · ${it.title}${it.sub ? ` (${it.sub})` : ''}${prior.assignee ? ` · 담당 ${prior.assignee}` : ''}`,
     });
   };
 
   const handleResolveBeltIssue = (entry, it) => {
-    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경됩니다)`)) return;
-    const key = repairKeyFor('belt', entry, it);
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경되고 정비 이력에 기록됩니다)`)) return;
     setState((s) => {
       const records = s.records.map((r) => {
         if (r.belt !== entry.name || r.date !== entry.date) return r;
@@ -428,15 +492,12 @@ export default function App() {
         items[it.itemKey] = item;
         return { ...r, items };
       });
-      const repairs = { ...(s.repairs || {}) };
-      delete repairs[key];
-      return { ...s, records, repairs };
+      return completeRepair({ ...s, records }, 'belt', entry, it);
     });
   };
 
   const handleResolveCollectorIssue = (entry, it) => {
-    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경됩니다)`)) return;
-    const key = repairKeyFor('collector', entry, it);
+    if (!window.confirm(`"${entry.name}" ${it.title}${it.sub ? ` (${it.sub})` : ''} 수리를 완료 처리할까요?\n(점검 상태가 양호로 변경되고 정비 이력에 기록됩니다)`)) return;
     setState((s) => {
       const collectorRecords = (s.collectorRecords || []).map((r) => {
         if (r.collector !== entry.name || r.date !== entry.date) return r;
@@ -450,9 +511,7 @@ export default function App() {
         items[it.itemKey] = item;
         return { ...r, items };
       });
-      const repairs = { ...(s.repairs || {}) };
-      delete repairs[key];
-      return { ...s, collectorRecords, repairs };
+      return completeRepair({ ...s, collectorRecords }, 'collector', entry, it);
     });
   };
 
@@ -461,12 +520,22 @@ export default function App() {
     setCollectorCtx({ name, date });
     setView('collectorForm');
   };
+  // 관리모드 목록에서 집진기 선택: 최근 점검 결과를 읽기전용으로 표시(없으면 안내)
+  const handleSelectCollectorAdmin = (name) => {
+    const rec = latestCollectorRecord(state.collectorRecords || [], name);
+    if (rec) setResultTarget(rec);
+    else window.alert(`${name}\n점검 이력이 없습니다.`);
+  };
   const handleSaveCollectorRecord = (record, origDate) => {
     setState((s) => {
       const others = (s.collectorRecords || []).filter(
         (r) => !(r.collector === record.collector && (r.date === record.date || (origDate && r.date === origDate)))
       );
-      return { ...s, collectorRecords: [...others, record] };
+      const st = aggregateCollectorStatus(record);
+      return withAudit({ ...s, collectorRecords: [...others, record] }, {
+        actor: record.inspector || '(미지정)', action: '집진기 점검',
+        detail: `${record.collector} · ${st === 'ok' ? '정상' : '이상'} (${record.date})`,
+      });
     });
     setView('calendar');
   };
@@ -736,6 +805,9 @@ export default function App() {
           filters={filters}
           setFilters={setFilters}
           onSelectBelt={handleSelectBelt}
+          collectors={state.collectors || defaultCollectors()}
+          collectorRecords={state.collectorRecords || []}
+          onSelectCollector={handleSelectCollectorAdmin}
           onOpenAdd={() => setModal('add')}
           onOpenInspectors={() => setModal('inspectors')}
           onOpenQuickMemos={() => setModal('quickMemos')}
@@ -744,6 +816,8 @@ export default function App() {
           onOpenLeaderboard={() => setModal('leaderboard')}
           onOpenShiftGroups={() => setModal('shiftGroups')}
           onOpenCollectors={() => setModal('collectorManage')}
+          onOpenRepairHistory={() => setModal('repairHistory')}
+          onOpenAuditLog={() => setModal('auditLog')}
           cloud={isCloudConfigured}
         />
       )}
@@ -909,8 +983,16 @@ export default function App() {
           state={state}
           onExport={handleExportBackup}
           onImport={handleImportBackup}
+          snapshots={snapshots}
+          onRestoreSnapshot={handleRestoreSnapshot}
           onClose={() => setModal(null)}
         />
+      )}
+      {modal === 'repairHistory' && (
+        <RepairHistoryModal history={state.repairHistory || []} onClose={() => setModal(null)} />
+      )}
+      {modal === 'auditLog' && (
+        <AuditLogModal logs={state.logs || []} onClose={() => setModal(null)} />
       )}
       {modal === 'leaderboard' && (
         <LeaderboardModal records={records} collectorRecords={state.collectorRecords || []} onClose={() => setModal(null)} />

@@ -6,6 +6,8 @@ import {
   validateCollectorRecord,
 } from '../lib/collectors.js';
 import MemoInput from './MemoInput.jsx';
+import TrendChart from './TrendChart.jsx';
+import { collectorFieldSeries } from '../lib/trends.js';
 
 // 집진기의 항목 정의 (exterior 구분만 장비별로 덮어쓰기 가능)
 function itemDefsFor(collector) {
@@ -46,6 +48,8 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
   const [error, setError] = useState('');
   const [newRow, setNewRow] = useState('');
   const origDate = date;
+
+  const dpSeries = useMemo(() => collectorFieldSeries(records, collector.name, 'dp', 'dp'), [records, collector.name]);
 
   const prevRecord = useMemo(() => {
     const cur = record.date;
@@ -145,6 +149,13 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
         </div>
 
         <div className="progress"><div style={{ width: progress + '%' }} /></div>
+
+        {dpSeries.length > 1 && (
+          <div className="insp-item">
+            <div className="title">📈 차압 추이 (㎜Aq)</div>
+            <TrendChart series={dpSeries} unit="㎜Aq" color="var(--info)" />
+          </div>
+        )}
 
         {(() => {
           // group 속성이 같은 연속 항목들을 하나의 카드로 묶어 렌더링

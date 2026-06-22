@@ -23,8 +23,10 @@ export function defaultState() {
     collectors: defaultCollectors(), // [{ name, days:[일자] }]
     collectorRecords: [], // 집진기 점검 기록 배열 (record.collector)
     // 수리요청 워크플로: { [repairKey]: { kind, equip, date, itemKey, sub, title, status, assignee, dueDate, updatedAt } }
-    // status: 'requested' | 'working' (완료 시 항목을 양호로 되돌리고 키 삭제)
+    // status: 'requested'(정비의뢰) — 수리완료 시 항목을 양호로 되돌리고 키 삭제 + repairHistory로 이관
     repairs: {},
+    repairHistory: [], // 완료된 정비 이력(대장) — 최신순
+    logs: [], // 점검·설비 변경 감사 로그 — 최신순
     adminPw: DEFAULT_ADMIN_PW,
     // ── 대근(代勤) 관리 ──
     shiftGroups: defaultShiftGroups(), // { A:[...], B:[...], C:[...], D:[...] }
