@@ -46,8 +46,16 @@ import { appendLog } from './lib/auditlog.js';
 import { aggregateStatus } from './lib/belts.js';
 import { getDeviceInspector, setDeviceInspector } from './lib/device.js';
 
-function todayStr() {
+// 점검일은 07시 기준으로 갱신된다(주간 근무 시작 시각).
+// 07시 이전이면 아직 전날 점검일로 취급한다. (예: 23일 06:59 → 22일, 23일 07:00 → 23일)
+function inspectionNow() {
   const d = new Date();
+  if (d.getHours() < 7) d.setDate(d.getDate() - 1);
+  return d;
+}
+
+function todayStr() {
+  const d = inspectionNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -110,7 +118,7 @@ export default function App() {
   const [filters, setFilters] = useState({ group: '전체', status: null, query: '' });
   const today = todayStr();
   const [cal, setCal] = useState(() => {
-    const d = new Date();
+    const d = inspectionNow();
     return { year: d.getFullYear(), month: d.getMonth() + 1 };
   });
   const [selDate, setSelDate] = useState(today);
