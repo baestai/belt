@@ -337,6 +337,22 @@ function ShiftCalendar({ start, end, selected, today, substitutions = [], extraW
               </span>
               <span className="sc-shift day"><b>주</b>{dayG || '-'}</span>
               <span className="sc-shift night"><b>야</b>{nightG || '-'}</span>
+              {(subs.length > 0 || extras.length > 0) && (
+                <span className="sc-names">
+                  {subs.map((sub) => (
+                    <span key={sub.id} className="sc-name sub" title={`대근: ${sub.requester} → ${substituteLabel(sub)}`}>
+                      <span className="sc-nm-req">{sub.requester}</span>
+                      <span className="sc-nm-arrow">→</span>
+                      <span className={'sc-nm-sub' + (sub.substitute ? '' : ' open')}>{substituteLabel(sub)}</span>
+                    </span>
+                  ))}
+                  {extras.map((e) => (
+                    <span key={e.id} className="sc-name extra" title={`추가근무: ${e.reason} ${e.person}`}>
+                      <b>{e.reason}</b>{e.person}
+                    </span>
+                  ))}
+                </span>
+              )}
             </button>
           );
         })}

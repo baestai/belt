@@ -334,6 +334,16 @@ button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 .sc-shift.day b{background:var(--warn)}
 .sc-shift.night{background:var(--info-weak);color:var(--info)}
 .sc-shift.night b{background:var(--info)}
+/* 캘린더 셀 대근/추가근무 이름 표시 */
+.sc-names{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.sc-name{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-size:10px;line-height:1.2}
+.sc-name.sub .sc-nm-req{color:var(--muted);text-decoration:line-through}
+.sc-name.sub .sc-nm-arrow{color:var(--muted)}
+.sc-name.sub .sc-nm-sub{color:var(--ok);font-weight:800}
+.sc-name.sub .sc-nm-sub.open{color:var(--warn);font-weight:700}
+.sc-name.extra{color:var(--info);font-weight:700;gap:3px}
+.sc-name.extra b{font-size:9px;background:var(--info);color:#fff;border-radius:3px;padding:1px 4px;font-weight:800;line-height:1.3}
+
 .sc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:11px;color:var(--muted);margin-top:12px}
 .sc-legend span{display:flex;align-items:center;gap:5px}
 .sc-tag{font-style:normal;font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 5px;line-height:1}
