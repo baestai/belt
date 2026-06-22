@@ -60,6 +60,8 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .addbar{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}
 .add-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer}
 .add-btn.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+.add-btn.danger{background:none;border:1px solid var(--bad);color:var(--bad)}
+.add-btn.danger:hover{background:var(--bad);color:#fff}
 .del-btn{width:100%;padding:13px;background:none;color:var(--bad);border:1px solid var(--bad);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
 
 .group-title{font-size:13px;color:var(--muted);font-weight:700;margin:18px 0 8px;display:flex;align-items:center;gap:6px}

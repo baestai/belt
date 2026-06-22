@@ -8,13 +8,19 @@
 import { openIssues } from './selectors.js';
 import { INSPECTION_ITEMS } from './inspectionItems.js';
 
-export const POINTS = { base: 10, perIssue: 2 };
+export const POINTS = { base: 10, perIssue: 2, cwfBase: 1 };
+
+// 점검 1건의 기본점수: CWF 벨트(28대)는 1점, 그 외는 10점
+function baseFor(record) {
+  const isCwf = record?.group === 'CWF' || /CWF/.test(record?.belt || '');
+  return isCwf ? POINTS.cwfBase : POINTS.base;
+}
 
 // 한 점검 기록의 점수
 export function recordPoints(record, itemDefs = INSPECTION_ITEMS) {
   if (!record) return 0;
   const issues = openIssues(record, itemDefs).length;
-  return POINTS.base + issues * POINTS.perIssue;
+  return baseFor(record) + issues * POINTS.perIssue;
 }
 
 // 점검자별 누적 집계 → 점수 내림차순 정렬
@@ -40,7 +46,7 @@ export function leaderboardCombined(groups, opts = {}) {
       const who = r.inspector || '(미지정)';
       if (!map[who]) map[who] = { inspector: who, points: 0, count: 0, issues: 0 };
       const issues = openIssues(r, defs).length;
-      map[who].points += POINTS.base + issues * POINTS.perIssue;
+      map[who].points += baseFor(r) + issues * POINTS.perIssue;
       map[who].count += 1;
       map[who].issues += issues;
     }

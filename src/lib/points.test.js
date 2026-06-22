@@ -4,7 +4,7 @@ import { emptyRecord } from './inspectionItems.js';
 import { COLLECTOR_ITEMS, emptyCollectorRecord } from './collectors.js';
 
 function rec(belt, inspector, date, mutate) {
-  const r = emptyRecord(belt, 'CWF', date, inspector);
+  const r = emptyRecord(belt, 'SILO', date, inspector);
   if (mutate) mutate(r);
   return r;
 }
@@ -24,6 +24,13 @@ describe('점검 포인트', () => {
 
   it('null 기록은 0점', () => {
     expect(recordPoints(null)).toBe(0);
+  });
+
+  it('CWF 벨트는 기본점수 1점 (이상은 1건당 2점 그대로)', () => {
+    const r = emptyRecord('5A CWF #1', 'CWF', '2026-06-01', '홍길동');
+    expect(recordPoints(r)).toBe(POINTS.cwfBase); // 1점
+    r.items.belt.status = 'bad';
+    expect(recordPoints(r)).toBe(POINTS.cwfBase + POINTS.perIssue); // 1 + 2 = 3점
   });
 
   it('점검자별 누적 + 점수 내림차순', () => {

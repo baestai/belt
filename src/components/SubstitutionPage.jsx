@@ -699,7 +699,7 @@ function ExtraCard({ extra, me, onCancel }) {
 }
 
 // ── 관리자 대근 편성 입력/수정 폼 ──────────────────────
-function AdminSubForm({ shiftGroups, today, edit, onSubmit, onClose }) {
+function AdminSubForm({ shiftGroups, today, edit, onSubmit, onDelete, onClose }) {
   const allNames = SHIFT_GROUPS.flatMap((g) => shiftGroups[g] || []);
   const [date, setDate] = useState(edit?.date || today);
   const [group, setGroup] = useState(edit?.group || SHIFT_GROUPS[0]);
@@ -761,6 +761,9 @@ function AdminSubForm({ shiftGroups, today, edit, onSubmit, onClose }) {
         {err && <p className="sub-err">{err}</p>}
         <div className="modal-actions">
           <button className="add-btn secondary" onClick={onClose}>취소</button>
+          {edit && onDelete && (
+            <button className="add-btn danger" onClick={() => onDelete(edit)}>삭제</button>
+          )}
           <button className="add-btn" disabled={!requester} onClick={submit}>{edit ? '수정 저장' : '편성 추가'}</button>
         </div>
       </div>
@@ -1172,6 +1175,7 @@ export default function SubstitutionPage({
     if (!window.confirm(`${fmtKDate(sub.date)} ${sub.requester}(${sub.group}조)의 대근 편성을 삭제할까요?`)) return;
     try {
       onAdminDeleteSub(sub.id, adminPw);
+      setAdminForm(null);
     } catch (e) {
       window.alert(e.message || String(e));
     }
@@ -1578,6 +1582,7 @@ export default function SubstitutionPage({
           today={today}
           edit={adminForm.edit}
           onSubmit={submitAdminForm}
+          onDelete={deleteAdminSub}
           onClose={() => setAdminForm(null)}
         />
       )}
