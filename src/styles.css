@@ -337,7 +337,7 @@ button.sub-cell-admin:hover{background:var(--panel2);border-radius:6px}
 /* 캘린더 셀 대근/추가근무 이름 표시 */
 .sc-names{display:flex;flex-direction:column;gap:2px;margin-top:3px}
 .sc-name{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-size:10px;line-height:1.2}
-.sc-name.sub .sc-nm-req{color:var(--muted);text-decoration:line-through}
+.sc-name.sub .sc-nm-req{color:var(--muted)}
 .sc-name.sub .sc-nm-arrow{color:var(--muted)}
 .sc-name.sub .sc-nm-sub{color:var(--ok);font-weight:800}
 .sc-name.sub .sc-nm-sub.open{color:var(--warn);font-weight:700}
