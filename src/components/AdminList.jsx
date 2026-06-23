@@ -101,6 +101,11 @@ export default function AdminList({
   const showCollectors = searching || isCollectorCat;
   const showHint = !searching && !statusFiltering && !isGroupCat && !isCollectorCat;
 
+  // 기본 화면(힌트 상태)에서 보여줄 이상 설비
+  const badBelts = showHint ? all.filter((b) => beltMonthStatus(b.name) === 'bad') : [];
+  const badCollectors = showHint ? collectors.filter((c) => collectorMonthStatus(c.name) === 'bad') : [];
+  const hasBadDefault = badBelts.length > 0 || badCollectors.length > 0;
+
   const BeltCard = (b) => {
     const st = beltMonthStatus(b.name); // 금월 기준
     const info = lastInfoOf(b.name);
@@ -195,10 +200,26 @@ export default function AdminList({
           </div>
         </div>
 
-        {showHint && (
+        {showHint && hasBadDefault && (
+          <>
+            {badBelts.length > 0 && (
+              <div>
+                <div className="group-title">⚠ 이상 벨트 <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({badBelts.length})</span></div>
+                <div className="belt-grid">{badBelts.map(BeltCard)}</div>
+              </div>
+            )}
+            {badCollectors.length > 0 && (
+              <div>
+                <div className="group-title">⚠ 이상 집진기 <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({badCollectors.length})</span></div>
+                <div className="belt-grid">{badCollectors.map(ColCard)}</div>
+              </div>
+            )}
+          </>
+        )}
+        {showHint && !hasBadDefault && (
           <div className="note" style={{ padding: '28px 16px' }}>
-            📂 위 카테고리(구역·집진기)를 선택하면 설비 목록이 표시됩니다.<br />
-            또는 검색창에 설비명을 입력하세요.
+            ✅ 이상 설비 없음<br />
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>📂 카테고리(구역·집진기)를 선택하거나 검색창에 설비명을 입력하세요.</span>
           </div>
         )}
 

@@ -372,19 +372,25 @@ export function AuditLogModal({ logs = [], onClose }) {
   );
 }
 
-export function DeviceInspectorModal({ inspectors, current, onSave, onClear, onClose }) {
+export function DeviceInspectorModal({ inspectors, current, required, onSave, onClear, onClose }) {
   const [sel, setSel] = useState(current || inspectors[0] || '');
 
   return (
-    <div className="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal" onClick={(e) => !required && e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
-        <h3>📱 이 기기 점검자 고정</h3>
-        <div className="note" style={{ padding: '0 0 8px', textAlign: 'left' }}>
-          이 기기에서 점검할 때 기본 점검자로 자동 선택됩니다. 직접 바꾸기 전까지 유지돼요.
-          <br />이 설정은 <b>이 기기에만</b> 저장되며 다른 기기·PC와 공유되지 않습니다.
-          여러 사람이 함께 쓰는 PC라면 고정하지 마세요.
-        </div>
-        {current && (
+        <h3>📱 이 기기 점검자 {required ? '선택' : '고정'}</h3>
+        {required ? (
+          <div className="note" style={{ padding: '0 0 8px', textAlign: 'left', color: 'var(--bad)', fontWeight: 700 }}>
+            점검을 시작하기 전에 점검자를 먼저 선택해 주세요.
+          </div>
+        ) : (
+          <div className="note" style={{ padding: '0 0 8px', textAlign: 'left' }}>
+            이 기기에서 점검할 때 기본 점검자로 자동 선택됩니다. 직접 바꾸기 전까지 유지돼요.
+            <br />이 설정은 <b>이 기기에만</b> 저장되며 다른 기기·PC와 공유되지 않습니다.
+            여러 사람이 함께 쓰는 PC라면 고정하지 마세요.
+          </div>
+        )}
+        {current && !required && (
           <div className="kv"><span className="k">현재 고정</span><span>👤 {current}</span></div>
         )}
         <label>점검자 선택</label>
@@ -393,9 +399,16 @@ export function DeviceInspectorModal({ inspectors, current, onSave, onClear, onC
           {inspectors.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
         <div className="modal-actions">
-          <button className="ma-cancel" onClick={onClose}>닫기</button>
-          {current && <button className="ma-cancel" onClick={onClear}>고정 해제</button>}
-          <button className="ma-ok" onClick={() => onSave(sel)} disabled={!sel}>이 기기에 고정</button>
+          {required
+            ? <button className="ma-cancel" onClick={onClose}>취소</button>
+            : <>
+                <button className="ma-cancel" onClick={onClose}>닫기</button>
+                {current && <button className="ma-cancel" onClick={onClear}>고정 해제</button>}
+              </>
+          }
+          <button className="ma-ok" onClick={() => onSave(sel)} disabled={!sel}>
+            {required ? '선택 후 점검 시작' : '이 기기에 고정'}
+          </button>
         </div>
       </div>
     </div>

@@ -127,6 +127,7 @@ export default function App() {
   const [resultTarget, setResultTarget] = useState(null); // 읽기전용 결과보기 대상 기록
   const [fixedInspector, setFixedInspector] = useState(() => getDeviceInspector()); // 기기 고정 점검자
   const [adminAuthed, setAdminAuthed] = useState(false); // 관리모드 인증 여부(세션 단위)
+  const [inspectorGate, setInspectorGate] = useState(null); // 점검자 미고정 시 보류 중인 이동 콜백
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -215,6 +216,14 @@ export default function App() {
 
   // 감사 로그 헬퍼: setState 업데이터 안에서 logs에 누적
   const withAudit = (s, entry) => ({ ...s, logs: appendLog(s.logs || [], entry) });
+
+  // 점검 폼 진입 전 점검자 고정 확인: 미고정이면 선택 팝업 표시 후 cb 실행
+  const requireInspector = (cb) => {
+    const fi = getDeviceInspector();
+    if (fi && inspectors.includes(fi)) { cb(); return; }
+    setInspectorGate(() => cb);
+    setModal('deviceInspector');
+  };
 
   const handleAddBelt = (group, name, pw) => {
     if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
@@ -329,12 +338,21 @@ export default function App() {
   // 기기 고정 점검자: localStorage에만 저장(클라우드 동기화 X)
   const handleFixInspector = (name) => {
     setDeviceInspector(name);
-    setFixedInspector(getDeviceInspector());
+    setFixedInspector(name);
     setModal(null);
+    if (inspectorGate) {
+      const gate = inspectorGate;
+      setInspectorGate(null);
+      gate();
+    }
   };
   const handleClearFixInspector = () => {
     setDeviceInspector('');
     setFixedInspector('');
+    setModal(null);
+  };
+  const handleCloseDeviceInspector = () => {
+    setInspectorGate(null);
     setModal(null);
   };
 
@@ -374,36 +392,51 @@ export default function App() {
   };
 
   const handleInspect = (belt, date) => {
-    setFormCtx({ belt, date });
-    setView('form');
+    requireInspector(() => {
+      setFormCtx({ belt, date });
+      setView('form');
+    });
   };
 
   const handlePickBelt = (name, date) => {
-    setFormCtx({ belt: { name, group: groupOf(name) }, date });
-    setView('form');
+    requireInspector(() => {
+      setFormCtx({ belt: { name, group: groupOf(name) }, date });
+      setView('form');
+    });
   };
 
   // 특정 점검 기록을 그 날짜로 열어 수정 (점검 이력의 ✏ 수정)
   const handleEditRecord = (record) => {
-    setFormCtx({ belt: { name: record.belt, group: record.group || groupOf(record.belt) }, date: record.date });
-    setView('form');
+    requireInspector(() => {
+      setFormCtx({ belt: { name: record.belt, group: record.group || groupOf(record.belt) }, date: record.date });
+      setView('form');
+    });
   };
 
   // 점검모드 검색/상태 목록에서 벨트 선택: 최근 점검결과가 있으면 상세(결과)로,
-  // 없으면 바로 점검 입력 화면으로 이동
+  // 없으면 점검자 확인 후 점검 입력 화면으로 이동
   const handleOpenBeltSmart = (name) => {
     if (latestRecord(records, name)) {
       handleSelectBelt({ name, group: groupOf(name) }, 'calendar');
     } else {
-      handlePickBelt(name, selDate);
+      requireInspector(() => {
+        setFormCtx({ belt: { name, group: groupOf(name) }, date: selDate });
+        setView('form');
+      });
     }
   };
 
-  // 점검모드 목록(정상/주의/이상)에서 바로 점검결과 수정: 최근 기록을 그 날짜로 열어 편집
+  // 점검모드 목록에서 바로 점검결과 수정: 최근 기록을 그 날짜로 열어 편집
   const handleEditBeltLatest = (name) => {
-    const rec = latestRecord(records, name);
-    if (rec) handleEditRecord(rec);
-    else handlePickBelt(name, selDate);
+    requireInspector(() => {
+      const rec = latestRecord(records, name);
+      if (rec) {
+        setFormCtx({ belt: { name: rec.belt, group: rec.group || groupOf(rec.belt) }, date: rec.date });
+      } else {
+        setFormCtx({ belt: { name, group: groupOf(name) }, date: selDate });
+      }
+      setView('form');
+    });
   };
 
   const handleSaveRecord = (record, origDate) => {
@@ -525,8 +558,10 @@ export default function App() {
 
   // ── 집진기 점검 핸들러 ──
   const handlePickCollector = (name, date) => {
-    setCollectorCtx({ name, date });
-    setView('collectorForm');
+    requireInspector(() => {
+      setCollectorCtx({ name, date });
+      setView('collectorForm');
+    });
   };
   // 연결된 정비의뢰(repairs) 정리: 해당 설비+점검일에 걸린 항목 제거
   const pruneRepairs = (repairs, kind, equip, date) => {
@@ -1076,9 +1111,10 @@ export default function App() {
         <DeviceInspectorModal
           inspectors={inspectors}
           current={fixedInspector}
+          required={!!inspectorGate}
           onSave={handleFixInspector}
           onClear={handleClearFixInspector}
-          onClose={() => setModal(null)}
+          onClose={handleCloseDeviceInspector}
         />
       )}
       {modal === 'collectorManage' && (
@@ -1102,6 +1138,15 @@ export default function App() {
       {printTarget && <PrintableRecord record={printTarget} />}
 
       <ThemeToggle />
+
+      {/* 전역 점검자 표시줄 — 모든 화면에서 항상 표시 */}
+      <div className="insp-bar" onClick={() => setModal('deviceInspector')}>
+        <span>👤 점검자: {fixedInspector
+          ? <b>{fixedInspector}</b>
+          : <span className="insp-bar-none">미고정 — 점검 전 선택 필요</span>}
+        </span>
+        <span className="insp-bar-set">{fixedInspector ? '변경 ›' : '선택하기 ›'}</span>
+      </div>
 
       <div className="tabbar">
         <button

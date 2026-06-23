@@ -139,12 +139,6 @@ export default function FieldCalendar({
             <button className={fieldTab === 'collector' ? 'active' : ''} onClick={() => onFieldTab('collector')}>🌀 집진기</button>
           </div>
         )}
-        {onOpenDeviceInspector && (
-          <button className="device-insp" onClick={onOpenDeviceInspector}>
-            <span>👤 점검자: {fixedInspector ? <b>{fixedInspector}</b> : <span className="none">미고정 (이 기기)</span>}</span>
-            <span className="set">{fixedInspector ? '변경' : '고정하기'}</span>
-          </button>
-        )}
 
         {setFilters && (
           <>

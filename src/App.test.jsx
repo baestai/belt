@@ -1,7 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import App from './App.jsx';
 import { clearState } from './data/store.js';
+
+// 테스트 환경에서 기기 점검자를 '강요섭'으로 고정해 requireInspector 게이트를 통과
+vi.mock('./lib/device.js', () => ({
+  getDeviceInspector: () => '강요섭',
+  setDeviceInspector: vi.fn(),
+  clearDeviceInspector: vi.fn(),
+}));
 
 // 기본 화면이 점검모드(캘린더)이므로, 관리목록을 보려면 관리모드 탭을 눌러 진입한다.
 // 관리모드는 비밀번호 게이트가 있어 prompt를 올바른 비밀번호로 응답한다.
@@ -141,7 +148,8 @@ describe('App 통합 렌더', () => {
     render(<App />);
     openAdmin();
     fireEvent.click(screen.getByText('👷 점검자 관리'));
-    expect(screen.getByText('강요섭')).toBeInTheDocument();
+    // 점검자 목록 모달 확인 (인스펙터바와 모달에 동일 이름이 있어 getAllByText 사용)
+    expect(screen.getAllByText('강요섭').length).toBeGreaterThan(0);
   });
 
   it('보고서 모달이 열린다', () => {
