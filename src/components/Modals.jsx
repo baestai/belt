@@ -373,7 +373,8 @@ export function AuditLogModal({ logs = [], onClose }) {
 }
 
 export function DeviceInspectorModal({ inspectors, current, required, onSave, onClear, onClose }) {
-  const [sel, setSel] = useState(current || inspectors[0] || '');
+  // required(점검 게이트) 모드는 미선택 상태로 시작, 일반 모드는 현재 고정자 또는 첫 번째로 시작
+  const [sel, setSel] = useState(required ? '' : (current || inspectors[0] || ''));
 
   return (
     <div className="modal" onClick={(e) => !required && e.target === e.currentTarget && onClose()}>
@@ -395,6 +396,8 @@ export function DeviceInspectorModal({ inspectors, current, required, onSave, on
         )}
         <label>점검자 선택</label>
         <select value={sel} onChange={(e) => setSel(e.target.value)}>
+          {/* required 모드: 선택을 눌러야 목록이 열리는 placeholder 옵션 */}
+          {required && <option value="" disabled style={{ color: 'var(--muted)' }}>— 선택하세요 —</option>}
           {inspectors.length === 0 && <option value="">(등록된 점검자 없음)</option>}
           {inspectors.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
