@@ -83,7 +83,7 @@ function prevSummary(def, prevItem) {
   return null;
 }
 
-export default function InspectionForm({ belt, date, inspectors, beltItems = {}, quickMemos = [], defaultInspector, initialRecord, records = [], onAddItem, onRemoveItem, onCancel, onSave }) {
+export default function InspectionForm({ belt, date, today, inspectors, beltItems = {}, quickMemos = [], defaultInspector, initialRecord, records = [], onAddItem, onRemoveItem, onDelete, onCancel, onSave }) {
   const [record, setRecord] = useState(() =>
     initialRecord
       ? normalizeRecord(initialRecord, beltItems.pulley)
@@ -178,11 +178,19 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
 
   const handleSave = () => {
     const errs = validateRecord(record);
+    // 미래 날짜 방지: 점검일이 오늘(07시 기준)보다 미래면 저장 불가
+    if (today && String(record.date) > String(today)) {
+      errs.push(`점검일은 미래 날짜로 저장할 수 없습니다. (오늘: ${today})`);
+    }
     if (errs.length) {
       setError(errs.join('\n'));
       return;
     }
     onSave(record, origDate);
+  };
+
+  const handleDelete = () => {
+    if (onDelete) onDelete(belt.name, initialRecord.date);
   };
 
   return (
@@ -209,6 +217,7 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
           <input
             type="date"
             value={record.date}
+            max={today || undefined}
             onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))}
             aria-label="점검일"
           />
@@ -415,6 +424,9 @@ export default function InspectionForm({ belt, date, inspectors, beltItems = {},
         {error && <div className="err">{error}</div>}
         <button className="primary-btn" onClick={handleSave}>✅ 점검 완료 저장</button>
         <button className="ghost-btn" onClick={onCancel}>취소</button>
+        {initialRecord && onDelete && (
+          <button className="del-btn" onClick={handleDelete}>🗑 이 점검 기록 삭제</button>
+        )}
         <div className="note">저장 시 기록이 보관되며 관리모드 상태에 반영됩니다.</div>
       </div>
     </>

@@ -528,6 +528,25 @@ export default function App() {
     setCollectorCtx({ name, date });
     setView('collectorForm');
   };
+  // 점검 기록 삭제 (벨트) — 확인 후 제거 + 로그. 삭제했으면 true.
+  const handleDeleteBeltRecord = (beltName, date) => {
+    if (!window.confirm(`${beltName} · ${date} 점검 기록을 삭제할까요?\n되돌릴 수 없습니다.`)) return false;
+    setState((s) => withAudit(
+      { ...s, records: s.records.filter((r) => !(r.belt === beltName && r.date === date)) },
+      { actor: '관리자', action: '점검 삭제', detail: `${beltName} (${date})` }
+    ));
+    return true;
+  };
+  // 점검 기록 삭제 (집진기)
+  const handleDeleteCollectorRecord = (name, date) => {
+    if (!window.confirm(`${name} · ${date} 점검 기록을 삭제할까요?\n되돌릴 수 없습니다.`)) return false;
+    setState((s) => withAudit(
+      { ...s, collectorRecords: (s.collectorRecords || []).filter((r) => !(r.collector === name && r.date === date)) },
+      { actor: '관리자', action: '집진기 점검 삭제', detail: `${name} (${date})` }
+    ));
+    return true;
+  };
+
   // 관리모드 목록에서 집진기 선택: 최근 점검 결과를 읽기전용으로 표시(없으면 안내)
   const handleSelectCollectorAdmin = (name) => {
     const rec = latestCollectorRecord(state.collectorRecords || [], name);
@@ -839,6 +858,7 @@ export default function App() {
           onBack={() => setView(detailFrom)}
           onInspect={handleInspect}
           onDeleteBelt={handleDeleteBelt}
+          onDeleteRecord={handleDeleteBeltRecord}
           onSaveSchedule={handleSaveSchedule}
           onCopyConfig={handleCopyConfigToGroup}
           onPrint={setPrintTarget}
@@ -899,12 +919,14 @@ export default function App() {
         <CollectorForm
           collector={(state.collectors || defaultCollectors()).find((c) => c.name === collectorCtx.name) || { name: collectorCtx.name, days: [] }}
           date={collectorCtx.date}
+          today={today}
           inspectors={inspectors}
           quickMemos={quickMemos}
           defaultInspector={fixedInspector && inspectors.includes(fixedInspector) ? fixedInspector : (inspectors[0] || '')}
           initialRecord={(state.collectorRecords || []).find((r) => r.collector === collectorCtx.name && r.date === collectorCtx.date)}
           records={state.collectorRecords || []}
           onSetExterior={handleSetCollectorExterior}
+          onDelete={(name, date) => { if (handleDeleteCollectorRecord(name, date)) setView('calendar'); }}
           onCancel={() => setView('calendar')}
           onSave={handleSaveCollectorRecord}
           onPrint={setPrintTarget}
@@ -949,6 +971,7 @@ export default function App() {
         <InspectionForm
           belt={formCtx.belt}
           date={formCtx.date}
+          today={today}
           inspectors={inspectors}
           beltItems={{
             pulley: effectiveItemList(state, formCtx.belt.name, 'pulley'),
@@ -962,6 +985,7 @@ export default function App() {
           records={records}
           onAddItem={handleAddBeltItem}
           onRemoveItem={handleRemoveBeltItem}
+          onDelete={(name, date) => { if (handleDeleteBeltRecord(name, date)) setView('calendar'); }}
           onCancel={() => setView('calendar')}
           onSave={handleSaveRecord}
         />

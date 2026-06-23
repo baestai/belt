@@ -4,6 +4,7 @@ import {
   collectorsForDate,
   collectorsInspectedOn,
   statusOfCollector,
+  aggregateCollectorStatus,
 } from '../lib/collectors.js';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -33,6 +34,13 @@ export default function CollectorCalendar({
   const dateStr = (d) => `${year}-${pad(month)}-${pad(d)}`;
 
   const statusOf = (name) => statusOfCollector(collectorRecords, name);
+  // 해당 월(ym) 점검 기록 기준 상태. 그 달 점검 없으면 'none'(미점검).
+  const statusInMonth = (name, ym) => {
+    const recs = (collectorRecords || [])
+      .filter((r) => r.collector === name && String(r.date).slice(0, 7) === ym)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return recs[0] ? aggregateCollectorStatus(recs[0]) : 'none';
+  };
 
   // 개요 통계
   const counts = { ok: 0, warn: 0, bad: 0, none: 0 };
@@ -136,7 +144,7 @@ export default function CollectorCalendar({
             <div className="belt-grid">
               {selDue.length === 0 && <div className="note">이 날짜에 점검 예정인 집진기가 없습니다.</div>}
               {selDue.map((name) => {
-                const s = statusOf(name);
+                const s = statusInMonth(name, selectedDate.slice(0, 7)); // 금월 기준
                 const done = inspectedSet.has(name);
                 return (
                   <button key={name} className="belt" onClick={() => onPickCollector(name, selectedDate)}>
@@ -173,7 +181,7 @@ export default function CollectorCalendar({
                 {due.length > 0 && (
                   <span className="cnt">
                     {due.slice(0, 3).map((name, k) => {
-                      const s = statusOf(name);
+                      const s = statusInMonth(name, ds.slice(0, 7));
                       const cls = s === 'none' ? 'wait' : s === 'bad' ? 'bad' : 'ok';
                       return <i key={k} className={'pp ' + cls} />;
                     })}

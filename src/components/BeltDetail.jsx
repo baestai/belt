@@ -19,7 +19,7 @@ const CYCLES = [
   { v: 'none', t: '반복 없음' },
 ];
 
-export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onSaveSchedule, onCopyConfig, onPrint, onViewResult, onEditRecord, groupCount = 0 }) {
+export default function BeltDetail({ belt, records, schedule, today, onBack, onInspect, onDeleteBelt, onDeleteRecord, onSaveSchedule, onCopyConfig, onPrint, onViewResult, onEditRecord, groupCount = 0 }) {
   const history = recordsForBelt(records, belt.name);
   const tempSeries = beltTempSeries(records, belt.name);
   const latest = latestRecord(records, belt.name);
@@ -145,6 +145,9 @@ export default function BeltDetail({ belt, records, schedule, today, onBack, onI
                   )}
                   {onPrint && (
                     <button className="tl-print" onClick={() => onPrint(r)} aria-label={`${r.date} 점검표 인쇄`}>🖨 점검표</button>
+                  )}
+                  {onDeleteRecord && (
+                    <button className="tl-print tl-del" onClick={() => onDeleteRecord(belt.name, r.date)} aria-label={`${r.date} 삭제`}>🗑 삭제</button>
                   )}
                 </div>
               );

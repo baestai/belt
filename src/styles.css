@@ -194,6 +194,8 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .err{color:var(--bad);font-size:13px;margin-top:8px;white-space:pre-line}
 
 .tl-print{margin-top:6px;margin-right:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer}
+.tl-print.tl-del{border-color:var(--bad);color:var(--bad)}
+.tl-print.tl-del:hover{background:var(--bad);color:#fff}
 
 /* 결과보기 모달 */
 .result-tbl{width:100%;border-collapse:collapse;margin-top:4px;font-size:13px}

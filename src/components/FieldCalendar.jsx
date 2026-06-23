@@ -1,5 +1,5 @@
 import { beltsScheduledOn, beltsForDate, beltsInspectedOn } from '../lib/selectors.js';
-import { GROUP_ORDER, flattenBelts, statusCounts } from '../lib/belts.js';
+import { GROUP_ORDER, flattenBelts, statusCounts, aggregateStatus } from '../lib/belts.js';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -84,6 +84,15 @@ export default function FieldCalendar({
   // 해당일 점검 대상: 예정 ∪ 실제 기록(완료 후 예정일이 넘어가도 다시 열람·수정 가능)
   const selBelts = beltsForDate(schedules, records, selectedDate);
   const inspectedSet = new Set(beltsInspectedOn(records, selectedDate));
+
+  // 해당 월(ym)에 점검된 기록 기준 종합상태. 그 달에 점검 없으면 'none'(미점검).
+  // 전월에 점검됐어도 금월에 점검 안 했으면 '미점검'으로 표시해 혼동을 막는다.
+  const statusInMonth = (belt, ym) => {
+    const recs = records
+      .filter((r) => r.belt === belt && String(r.date).slice(0, 7) === ym)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return recs[0] ? aggregateStatus(recs[0]) : 'none';
+  };
 
   return (
     <>
@@ -208,7 +217,7 @@ export default function FieldCalendar({
             <div className="belt-grid">
               {selBelts.length === 0 && <div className="note">이 날짜에 편성된 점검이 없습니다.</div>}
               {selBelts.map((b) => {
-                const s = statusOf(b);
+                const s = statusInMonth(b, selectedDate.slice(0, 7)); // 금월 기준 상태
                 const done = inspectedSet.has(b);
                 return (
                   <button key={b} className="belt" onClick={() => onPickBelt(b, selectedDate)}>
@@ -245,7 +254,7 @@ export default function FieldCalendar({
                 {belts.length > 0 && (
                   <span className="cnt">
                     {belts.slice(0, 3).map((b, k) => {
-                      const s = statusOf(b);
+                      const s = statusInMonth(b, ds.slice(0, 7)); // 그 달 점검 여부 기준
                       const cls = s === 'none' ? 'wait' : s === 'bad' ? 'bad' : 'ok';
                       return <i key={k} className={'pp ' + cls} />;
                     })}

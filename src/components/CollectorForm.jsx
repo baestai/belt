@@ -37,7 +37,7 @@ function Trend({ cur, prev }) {
   );
 }
 
-export default function CollectorForm({ collector, date, inspectors, quickMemos = [], defaultInspector, initialRecord, records = [], onSetExterior, onCancel, onSave, onPrint, onViewResult }) {
+export default function CollectorForm({ collector, date, today, inspectors, quickMemos = [], defaultInspector, initialRecord, records = [], onSetExterior, onDelete, onCancel, onSave, onPrint, onViewResult }) {
   const defs = itemDefsFor(collector);
   const [record, setRecord] = useState(() =>
     initialRecord
@@ -99,11 +99,18 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
 
   const handleSave = () => {
     const errs = validateCollectorRecord(record, defs);
+    if (today && String(record.date) > String(today)) {
+      errs.push(`점검일은 미래 날짜로 저장할 수 없습니다. (오늘: ${today})`);
+    }
     if (errs.length) {
       setError(errs.join('\n'));
       return;
     }
     onSave(record, origDate);
+  };
+
+  const handleDelete = () => {
+    if (onDelete) onDelete(collector.name, initialRecord.date);
   };
 
   const prevItem = (key) => prevRecord?.items?.[key];
@@ -135,7 +142,7 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
 
         <div className="num-row">
           <label>점검일</label>
-          <input type="date" value={record.date} onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))} aria-label="점검일" />
+          <input type="date" value={record.date} max={today || undefined} onChange={(e) => setRecord((r) => ({ ...r, date: e.target.value }))} aria-label="점검일" />
         </div>
         <p className="prev-cmp" style={{ marginTop: -4, marginBottom: 10 }}>
           🕒 지난 점검 비교 기준: {prevRecord ? `${prevRecord.date} (이 점검일 직전 기록)` : '없음 (이 점검일 이전 기록 없음 — 변화 표시 없음)'}
@@ -301,6 +308,9 @@ export default function CollectorForm({ collector, date, inspectors, quickMemos 
 
         {error && <p className="err">{error}</p>}
         <button className="primary-btn" onClick={handleSave}>✅ 점검 완료 저장</button>
+        {initialRecord && onDelete && (
+          <button className="del-btn" onClick={handleDelete}>🗑 이 점검 기록 삭제</button>
+        )}
         <div style={{ height: 20 }} />
       </div>
     </>
