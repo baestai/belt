@@ -1,6 +1,6 @@
-import { GROUP_ORDER, flattenBelts, statusCounts } from '../lib/belts.js';
+import { GROUP_ORDER, flattenBelts, statusCounts, aggregateStatus } from '../lib/belts.js';
 import { dueInfo } from '../lib/selectors.js';
-import { statusOfCollector, latestCollectorRecord } from '../lib/collectors.js';
+import { statusOfCollector, latestCollectorRecord, aggregateCollectorStatus } from '../lib/collectors.js';
 
 // 관리모드 종합상태: 주의 제외 — 정상/이상/미점검
 const STAT_DEFS = [
@@ -37,7 +37,25 @@ export default function AdminList({
   cloud,
 }) {
   const all = flattenBelts(groups);
-  const counts = statusCounts(all, statusOf); // 주의(warn)는 표시하지 않음
+  const ym = String(today).slice(0, 7); // 금월
+
+  // 금월 기준 벨트 상태 (그 달 점검 없으면 미점검). 주의(warn)는 이상으로 묶음.
+  const beltMonthStatus = (name) => {
+    const recs = (records || [])
+      .filter((r) => r.belt === name && String(r.date).slice(0, 7) === ym)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const s = recs[0] ? aggregateStatus(recs[0]) : 'none';
+    return s === 'warn' ? 'bad' : s;
+  };
+  const collectorMonthStatus = (name) => {
+    const recs = (collectorRecords || [])
+      .filter((r) => r.collector === name && String(r.date).slice(0, 7) === ym)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const s = recs[0] ? aggregateCollectorStatus(recs[0]) : 'none';
+    return s === 'warn' ? 'bad' : s;
+  };
+
+  const counts = statusCounts(all, beltMonthStatus); // 금월 기준 (주의 미표시)
   const groupNames = Object.keys(groups).sort(
     (a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)
   );
@@ -69,7 +87,7 @@ export default function AdminList({
   const beltMatches = searching
     ? all.filter((b) => b.name.toLowerCase().includes(q))
     : statusFiltering
-      ? all.filter((b) => statusOf(b.name) === filters.status)
+      ? all.filter((b) => beltMonthStatus(b.name) === filters.status)
       : isGroupCat
         ? all.filter((b) => b.group === category)
         : [];
@@ -84,7 +102,7 @@ export default function AdminList({
   const showHint = !searching && !statusFiltering && !isGroupCat && !isCollectorCat;
 
   const BeltCard = (b) => {
-    const st = statusOf(b.name);
+    const st = beltMonthStatus(b.name); // 금월 기준
     const info = lastInfoOf(b.name);
     const due = dueInfo(schedules[b.name], today);
     return (
@@ -102,7 +120,7 @@ export default function AdminList({
   };
 
   const ColCard = (c) => {
-    const st = statusOfCol(c.name);
+    const st = collectorMonthStatus(c.name); // 금월 기준
     const info = lastColInfo(c.name);
     return (
       <button key={'c_' + c.name} className="belt" onClick={() => onSelectCollector && onSelectCollector(c.name)}>

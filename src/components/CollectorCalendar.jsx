@@ -42,14 +42,20 @@ export default function CollectorCalendar({
     return recs[0] ? aggregateCollectorStatus(recs[0]) : 'none';
   };
 
-  // 개요 통계
-  const counts = { ok: 0, warn: 0, bad: 0, none: 0 };
-  for (const c of collectors) counts[statusOf(c.name)]++;
+  // 금월(오늘 기준 월) 상태: 통계·필터는 이번 달 기준. 주의(warn)는 이상으로 묶음.
+  const monthStatusOf = (name) => {
+    const s = statusInMonth(name, String(today).slice(0, 7));
+    return s === 'warn' ? 'bad' : s;
+  };
+
+  // 개요 통계 (금월 기준)
+  const counts = { ok: 0, bad: 0, none: 0 };
+  for (const c of collectors) counts[monthStatusOf(c.name)]++;
 
   const q = query.trim().toLowerCase();
   const showResults = !!(q || statusFilter);
   const resultList = collectors
-    .filter((c) => (!q || c.name.toLowerCase().includes(q)) && (!statusFilter || statusOf(c.name) === statusFilter))
+    .filter((c) => (!q || c.name.toLowerCase().includes(q)) && (!statusFilter || monthStatusOf(c.name) === statusFilter))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const selDue = collectorsForDate(collectors, collectorRecords, selectedDate);
@@ -113,7 +119,7 @@ export default function CollectorCalendar({
             <div className="belt-grid">
               {resultList.length === 0 && <div className="note">조건에 맞는 집진기가 없습니다.</div>}
               {resultList.map((c) => {
-                const s = statusOf(c.name);
+                const s = monthStatusOf(c.name); // 금월 기준
                 return (
                   <button key={c.name} className="belt" onClick={() => onPickCollector(c.name, selectedDate)}>
                     <span className={'dot ' + s} />

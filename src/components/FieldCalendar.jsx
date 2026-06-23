@@ -48,16 +48,30 @@ export default function FieldCalendar({
 
   const dateStr = (d) => `${year}-${pad(month)}-${pad(d)}`;
 
-  // 전체 벨트 기준 개요 통계
+  // 해당 월(ym)에 점검된 기록 기준 종합상태. 그 달에 점검 없으면 'none'(미점검).
+  // 전월에 점검됐어도 금월에 점검 안 했으면 '미점검'으로 표시해 혼동을 막는다.
+  const statusInMonth = (belt, ym) => {
+    const recs = records
+      .filter((r) => r.belt === belt && String(r.date).slice(0, 7) === ym)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return recs[0] ? aggregateStatus(recs[0]) : 'none';
+  };
+  // 금월(오늘 기준 월) 점검 상태: 통계·필터는 이번 달 기준으로 본다. 주의(warn)는 이상으로 묶음.
+  const monthStatusOf = (name) => {
+    const s = statusInMonth(name, today.slice(0, 7));
+    return s === 'warn' ? 'bad' : s;
+  };
+
+  // 전체 벨트 기준 개요 통계 (금월 기준)
   const all = groups ? flattenBelts(groups) : [];
-  const counts = statusCounts(all, statusOf);
+  const counts = statusCounts(all, monthStatusOf);
 
   // 검색/상태 필터
   const f = filters || { group: '전체', status: null, query: '' };
   const q = String(f.query || '').trim().toLowerCase();
   const matchFilter = (name) => {
     if (q && !name.toLowerCase().includes(q)) return false;
-    if (f.status && statusOf(name) !== f.status) return false;
+    if (f.status && monthStatusOf(name) !== f.status) return false;
     return true;
   };
   const setF = (patch) => setFilters && setFilters({ ...f, ...patch });
@@ -84,15 +98,6 @@ export default function FieldCalendar({
   // 해당일 점검 대상: 예정 ∪ 실제 기록(완료 후 예정일이 넘어가도 다시 열람·수정 가능)
   const selBelts = beltsForDate(schedules, records, selectedDate);
   const inspectedSet = new Set(beltsInspectedOn(records, selectedDate));
-
-  // 해당 월(ym)에 점검된 기록 기준 종합상태. 그 달에 점검 없으면 'none'(미점검).
-  // 전월에 점검됐어도 금월에 점검 안 했으면 '미점검'으로 표시해 혼동을 막는다.
-  const statusInMonth = (belt, ym) => {
-    const recs = records
-      .filter((r) => r.belt === belt && String(r.date).slice(0, 7) === ym)
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    return recs[0] ? aggregateStatus(recs[0]) : 'none';
-  };
 
   return (
     <>
@@ -175,7 +180,7 @@ export default function FieldCalendar({
             <div className="belt-grid">
               {resultBelts.length === 0 && <div className="note">조건에 맞는 벨트가 없습니다.</div>}
               {resultBelts.map((b) => {
-                const s = statusOf(b.name);
+                const s = monthStatusOf(b.name); // 금월 기준 상태
                 return (
                   <div key={b.name} className="belt">
                     <span className={'dot ' + s} />

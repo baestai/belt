@@ -528,20 +528,45 @@ export default function App() {
     setCollectorCtx({ name, date });
     setView('collectorForm');
   };
-  // 점검 기록 삭제 (벨트) — 확인 후 제거 + 로그. 삭제했으면 true.
+  // 연결된 정비의뢰(repairs) 정리: 해당 설비+점검일에 걸린 항목 제거
+  const pruneRepairs = (repairs, kind, equip, date) => {
+    const next = { ...(repairs || {}) };
+    for (const k of Object.keys(next)) {
+      const rp = next[k];
+      if (rp.kind === kind && rp.equip === equip && rp.date === date) delete next[k];
+    }
+    return next;
+  };
+
+  // 점검 기록 삭제 (벨트) — 확인 후 제거 + 예정일 복원 + 정비의뢰 정리 + 로그. 삭제했으면 true.
   const handleDeleteBeltRecord = (beltName, date) => {
     if (!window.confirm(`${beltName} · ${date} 점검 기록을 삭제할까요?\n되돌릴 수 없습니다.`)) return false;
-    setState((s) => withAudit(
-      { ...s, records: s.records.filter((r) => !(r.belt === beltName && r.date === date)) },
-      { actor: '관리자', action: '점검 삭제', detail: `${beltName} (${date})` }
-    ));
+    setState((s) => {
+      const records = s.records.filter((r) => !(r.belt === beltName && r.date === date));
+      // 예정일 복원: 남은 기록이 있으면 그 최신 기록 기준으로, 없으면 삭제한 날짜로 다시 예정
+      const schedules = { ...s.schedules };
+      const cur = schedules[beltName];
+      if (cur) {
+        const cycle = cur.cycle || 'monthly';
+        const remaining = records.filter((r) => r.belt === beltName).map((r) => r.date).sort();
+        schedules[beltName] = remaining.length
+          ? { nextDate: nextDateFrom(remaining[remaining.length - 1], cycle), cycle }
+          : { nextDate: date, cycle };
+      }
+      const repairs = pruneRepairs(s.repairs, 'belt', beltName, date);
+      return withAudit({ ...s, records, schedules, repairs }, { actor: '관리자', action: '점검 삭제', detail: `${beltName} (${date})` });
+    });
     return true;
   };
-  // 점검 기록 삭제 (집진기)
+  // 점검 기록 삭제 (집진기) — 집진기는 매월 점검일(days) 기반이라 예정일 복원 불필요
   const handleDeleteCollectorRecord = (name, date) => {
     if (!window.confirm(`${name} · ${date} 점검 기록을 삭제할까요?\n되돌릴 수 없습니다.`)) return false;
     setState((s) => withAudit(
-      { ...s, collectorRecords: (s.collectorRecords || []).filter((r) => !(r.collector === name && r.date === date)) },
+      {
+        ...s,
+        collectorRecords: (s.collectorRecords || []).filter((r) => !(r.collector === name && r.date === date)),
+        repairs: pruneRepairs(s.repairs, 'collector', name, date),
+      },
       { actor: '관리자', action: '집진기 점검 삭제', detail: `${name} (${date})` }
     ));
     return true;
