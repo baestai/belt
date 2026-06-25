@@ -240,6 +240,12 @@ export default function Dashboard({
     return { scheduled: due.length, done: done.length, ok, warn, bad };
   }, [collectors, collectorRecords, today]);
 
+  // ── 금일 점검 예정 상세 목록 ─────────────────────────────
+  const todayBeltList = useMemo(() => beltsScheduledOn(schedules, today), [schedules, today]);
+  const todayBeltDoneSet = useMemo(() => new Set(beltsInspectedOn(records, today)), [records, today]);
+  const todayCollectorList = useMemo(() => collectorsDueOn(collectors, today), [collectors, today]);
+  const todayCollectorDoneSet = useMemo(() => new Set(collectorsInspectedOn(collectorRecords, today)), [collectorRecords, today]);
+
   // ── 오늘 대근 현황 ───────────────────────────────────────
   const shiftToday = useMemo(() => shiftsOnDate(today), [today]);
   const subsToday = useMemo(
@@ -392,38 +398,60 @@ export default function Dashboard({
         {/* ── 금일 점검현황 ── */}
         <div className="dash-section-title">금일 점검현황</div>
 
-        <div className="dash-2col">
-          {/* 벨트 */}
-          <button className="dash-stat-card" onClick={onGoField}>
-            <div className="dash-stat-icon">🔧</div>
-            <div className="dash-stat-label">벨트 점검</div>
-            <div className="dash-stat-main">
-              <span className="dash-stat-done">{beltStats.done}</span>
-              <span className="dash-stat-sep"> / </span>
-              <span className="dash-stat-total">{beltStats.scheduled}</span>
-              <span className="dash-stat-unit"> 완료</span>
-            </div>
-            <div className="dash-stat-pills">
+        {/* 벨트 */}
+        <div className="card" style={{ marginBottom: 10 }}>
+          <button className="dash-today-hdr" onClick={onGoField}>
+            <span className="dash-stat-icon">🔧</span>
+            <span className="dash-today-hdr-label">벨트 점검</span>
+            <span className="dash-today-hdr-count">
+              <b>{beltStats.done}</b><span className="dash-today-hdr-sep">/{beltStats.scheduled}</span> 완료
+            </span>
+            <span className="dash-today-hdr-pills">
               {beltStats.bad + beltStats.warn > 0 && <span className="dash-pill bad">{beltStats.bad + beltStats.warn}이상</span>}
               {beltStats.ok > 0 && <span className="dash-pill ok">{beltStats.ok}정상</span>}
-            </div>
+            </span>
           </button>
+          {todayBeltList.length === 0
+            ? <p className="note" style={{ paddingTop: 6 }}>오늘 예정된 벨트 없음</p>
+            : todayBeltList.map((name) => {
+                const done = todayBeltDoneSet.has(name);
+                return (
+                  <div key={name} className="dash-today-row">
+                    <span className={`dot ${done ? 'ok' : 'none'}`} />
+                    <span className="dash-today-name">{name}</span>
+                    <span className={`dash-today-badge ${done ? 'ok' : 'none'}`}>{done ? '완료' : '예정'}</span>
+                  </div>
+                );
+              })
+          }
+        </div>
 
-          {/* 집진기 */}
-          <button className="dash-stat-card" onClick={onGoField}>
-            <div className="dash-stat-icon">💨</div>
-            <div className="dash-stat-label">집진기 점검</div>
-            <div className="dash-stat-main">
-              <span className="dash-stat-done">{collectorStats.done}</span>
-              <span className="dash-stat-sep"> / </span>
-              <span className="dash-stat-total">{collectorStats.scheduled}</span>
-              <span className="dash-stat-unit"> 완료</span>
-            </div>
-            <div className="dash-stat-pills">
+        {/* 집진기 */}
+        <div className="card" style={{ marginBottom: 14 }}>
+          <button className="dash-today-hdr" onClick={onGoField}>
+            <span className="dash-stat-icon">💨</span>
+            <span className="dash-today-hdr-label">집진기 점검</span>
+            <span className="dash-today-hdr-count">
+              <b>{collectorStats.done}</b><span className="dash-today-hdr-sep">/{collectorStats.scheduled}</span> 완료
+            </span>
+            <span className="dash-today-hdr-pills">
               {collectorStats.bad + collectorStats.warn > 0 && <span className="dash-pill bad">{collectorStats.bad + collectorStats.warn}이상</span>}
               {collectorStats.ok > 0 && <span className="dash-pill ok">{collectorStats.ok}정상</span>}
-            </div>
+            </span>
           </button>
+          {todayCollectorList.length === 0
+            ? <p className="note" style={{ paddingTop: 6 }}>오늘 예정된 집진기 없음</p>
+            : todayCollectorList.map((name) => {
+                const done = todayCollectorDoneSet.has(name);
+                return (
+                  <div key={name} className="dash-today-row">
+                    <span className={`dot ${done ? 'ok' : 'none'}`} />
+                    <span className="dash-today-name">{name}</span>
+                    <span className={`dash-today-badge ${done ? 'ok' : 'none'}`}>{done ? '완료' : '예정'}</span>
+                  </div>
+                );
+              })
+          }
         </div>
 
         {/* ── 누적 점검 통계 (도넛 차트) ── */}

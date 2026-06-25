@@ -143,6 +143,17 @@ export default function App() {
         const remote = await fetchCloud();
         if (cancelled) return;
         if (remote) {
+          // 로컬에만 있는 집진기 점검 기록을 유실하지 않도록 병합
+          // (클라우드 동기화 실패 후 재접속 시 로컬 기록을 보호)
+          const localRecs = stateRef.current.collectorRecords || [];
+          const remoteRecs = remote.collectorRecords || [];
+          if (localRecs.length > remoteRecs.length) {
+            const remoteKeys = new Set(remoteRecs.map((r) => `${r.collector}__${r.date}`));
+            const localOnly = localRecs.filter((r) => !remoteKeys.has(`${r.collector}__${r.date}`));
+            if (localOnly.length > 0) {
+              remote.collectorRecords = [...remoteRecs, ...localOnly];
+            }
+          }
           lastSynced.current = remote;
           setState(remote);
         } else {
@@ -164,6 +175,16 @@ export default function App() {
       try {
         const remote = await fetchCloud();
         if (!remote) return;
+        // 로컬에 클라우드로 아직 반영 안 된 변경이 있으면(race condition) 덮어쓰지 않음
+        if (lastSynced.current !== stateRef.current) return;
+        // 원격에 없는 로컬 집진기 기록 보호 (클라우드 동기화 지연/실패 시 유실 방지)
+        const localRecs = stateRef.current.collectorRecords || [];
+        const remoteRecs = remote.collectorRecords || [];
+        if (localRecs.length > remoteRecs.length) {
+          const remoteKeys = new Set(remoteRecs.map((r) => `${r.collector}__${r.date}`));
+          const localOnly = localRecs.filter((r) => !remoteKeys.has(`${r.collector}__${r.date}`));
+          if (localOnly.length > 0) remote.collectorRecords = [...remoteRecs, ...localOnly];
+        }
         lastSynced.current = remote;
         setState(remote);
       } catch (e) {

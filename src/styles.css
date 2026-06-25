@@ -27,7 +27,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg-deep);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .3s var(--ease),color .3s var(--ease)}
-.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:108px;transition:background .3s var(--ease)}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:68px;transition:background .3s var(--ease)}
 @media(min-width:900px){.app{max-width:1000px}}
 
 header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:10px}
@@ -37,8 +37,8 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .mode-admin{background:#1e3a8a;color:#bfdbfe}
 .mode-field{background:#7c2d12;color:#fed7aa}
 
-/* 전역 점검자 표시줄 — tabbar 바로 위, 모든 화면 공통 */
-.insp-bar{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--panel);border-top:1px solid var(--line);z-index:9;cursor:pointer;font-size:13px;gap:8px}
+/* 전역 점검자 표시줄 — 타이틀바(header) 바로 아래, 모든 화면 공통 */
+.insp-bar{position:fixed;top:56px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);z-index:9;cursor:pointer;font-size:13px;gap:8px}
 @media(min-width:900px){.insp-bar{max-width:1000px}}
 .insp-bar b{color:var(--accent)}
 .insp-bar-none{color:var(--bad);font-weight:700}
@@ -50,7 +50,7 @@ header .mode-badge{margin-left:auto;font-size:12px;padding:4px 10px;border-radiu
 .tabbar button.active{color:var(--accent)}
 .tabbar button .ic{font-size:20px}
 
-.body{padding:16px 18px 0}
+.body{padding:52px 18px 0}
 
 .search{width:100%;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:15px;margin-bottom:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
@@ -539,7 +539,7 @@ header{box-shadow:var(--shadow-sm);backdrop-filter:saturate(1.2)}
 header .logo svg{width:22px;height:22px;display:block}
 
 /* 테마 전환 버튼 (전 화면 공통, 우하단 플로팅) */
-.theme-toggle{position:fixed;right:16px;bottom:84px;z-index:40;width:46px;height:46px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--accent);cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .3s var(--ease)}
+.theme-toggle{position:fixed;right:16px;bottom:72px;z-index:40;width:46px;height:46px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--accent);cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .3s var(--ease)}
 .theme-toggle:hover{transform:translateY(-2px) rotate(-8deg);box-shadow:var(--shadow-lg)}
 .theme-toggle svg{width:22px;height:22px}
 @media print{.theme-toggle{display:none}}
@@ -580,6 +580,21 @@ header .logo svg{width:22px;height:22px;display:block}
 .dash-shift-fill{font-weight:700}
 .dash-shift-fill.filled{color:var(--ok)}
 .dash-shift-fill.open{color:var(--warn)}
+
+/* 금일 점검현황 카드 내부 */
+.dash-today-hdr{width:100%;display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:2px;background:none;border:none;border-bottom:1px solid var(--line);cursor:pointer;font:inherit;color:inherit;text-align:left}
+.dash-today-hdr:hover .dash-today-hdr-label{color:var(--accent)}
+.dash-today-hdr-label{font-size:14px;font-weight:700;flex-shrink:0}
+.dash-today-hdr-count{font-size:18px;font-weight:800;margin-left:4px}
+.dash-today-hdr-sep{font-size:14px;font-weight:400;color:var(--muted)}
+.dash-today-hdr-pills{margin-left:auto;display:flex;gap:4px;flex-shrink:0}
+.dash-today-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.dash-today-row:last-child{border-bottom:none}
+.dash-today-row .dot{width:10px;height:10px;flex-shrink:0}
+.dash-today-name{flex:1;font-weight:600}
+.dash-today-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.dash-today-badge.ok{background:var(--okbg);color:var(--ok)}
+.dash-today-badge.none{background:var(--panel2);color:var(--muted)}
 
 /* 누적 이상 아코디언 */
 .dash-issue-entry{border-bottom:1px solid var(--line)}

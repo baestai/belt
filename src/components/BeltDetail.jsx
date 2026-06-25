@@ -13,6 +13,7 @@ const STATUS_TEXT = {
   none: '미점검 — 점검 필요',
 };
 const CYCLES = [
+  { v: 'weekly', t: '주 1회 (매주)' },
   { v: 'monthly', t: '매월 (월 1회)' },
   { v: 'bimonthly', t: '2개월마다' },
   { v: 'quarterly', t: '분기마다' },

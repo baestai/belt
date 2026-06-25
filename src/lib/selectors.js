@@ -66,6 +66,12 @@ export function dueInfo(schedule, today) {
 // 다음 예정일 계산 (점검 완료 시 주기에 따라). 시간대 영향을 피하기 위해 문자열 연산 사용.
 export function nextDateFrom(dateStr, cycle) {
   if (cycle === 'none') return null;
+  if (cycle === 'weekly') {
+    const [y, m, d] = String(dateStr).split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + 7);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  }
   const add = { monthly: 1, bimonthly: 2, quarterly: 3 }[cycle] ?? 1;
   const [y, m, d] = String(dateStr).split('-').map(Number);
   let nm = m + add;
