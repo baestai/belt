@@ -405,6 +405,13 @@ export default function Dashboard({
           )}
         </div>
 
+        {/* ── 누적 점검 통계 (도넛 차트) ── */}
+        <div className="dash-section-title">누적 점검 통계</div>
+        <div className="dash-2col" style={{ marginBottom: 14 }}>
+          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} bad={beltChart.bad} />
+          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} bad={collectorChart.bad} />
+        </div>
+
         {/* ── 금일 점검현황 ── */}
         <div className="dash-section-title">금일 점검현황</div>
 
@@ -476,13 +483,6 @@ export default function Dashboard({
                 })}
               </div>
           }
-        </div>
-
-        {/* ── 누적 점검 통계 (도넛 차트) ── */}
-        <div className="dash-section-title">누적 점검 통계</div>
-        <div className="dash-2col" style={{ marginBottom: 14 }}>
-          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} bad={beltChart.bad} />
-          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} bad={collectorChart.bad} />
         </div>
 
         {/* ── 누적 이상 목록 ── */}
