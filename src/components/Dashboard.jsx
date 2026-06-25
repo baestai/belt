@@ -96,19 +96,24 @@ function IssueItem({ entry, type, repairs, onSetRepair, onResolve }) {
   const [open, setOpen] = useState(false);
   const worst = entry.items.some((i) => i.status === 'bad') ? 'bad' : 'warn';
   const keyOf = (it) => `${type}|${entry.name}|${entry.date}|${it.itemKey}|${it.sub || ''}`;
-  // 헤더 칩: 항목 중 가장 진행된 수리 상태
   const stages = entry.items.map((it) => repairs[keyOf(it)]?.status).filter(Boolean);
   const headStatus = stages.includes('requested') ? 'requested' : null;
+  const subText = type === 'belt'
+    ? `${entry.group} · 이상 ${entry.items.length}건`
+    : `집진기 · 이상 ${entry.items.length}건`;
   return (
-    <div className="dash-issue-entry">
+    <div className="dash-issue-card">
       <button className="dash-issue-head" onClick={() => setOpen((v) => !v)}>
         <span className={`dot ${worst}`} />
-        <span className="dash-issue-name">
-          {type === 'belt' ? `${entry.name} [${entry.group}]` : entry.name}
-        </span>
-        {headStatus && <span className={`dash-repair-chip ${headStatus}`}>{REPAIR_LABEL[headStatus]}</span>}
-        <span className="dash-issue-date">{entry.date}</span>
-        <span className="dash-issue-arrow">{open ? '▲' : '▼'}</span>
+        <div className="dash-issue-info">
+          <div className="dash-issue-name">{entry.name}</div>
+          <div className="dash-issue-name-sub">{subText}</div>
+        </div>
+        <div className="dash-issue-meta">
+          {headStatus && <span className={`dash-repair-chip ${headStatus}`}>{REPAIR_LABEL[headStatus]}</span>}
+          <span className="dash-issue-date">{entry.date}</span>
+          <span className="dash-issue-arrow">{open ? '▲' : '▼'}</span>
+        </div>
       </button>
       {open && (
         <div className="dash-issue-body">
@@ -502,11 +507,8 @@ export default function Dashboard({
         ) : (
           <>
             {beltIssues.length > 0 && (
-              <div className="card" style={{ marginBottom: 12 }}>
-                <h3>
-                  🔧 벨트 이상
-                  <span className="count">{beltIssues.length}건</span>
-                </h3>
+              <div style={{ marginBottom: 12 }}>
+                <div className="dash-issue-group-label">🔧 벨트 이상 <span>{beltIssues.length}건</span></div>
                 {beltIssues.map((entry) => (
                   <IssueItem key={entry.name} entry={entry} type="belt" repairs={repairs} onSetRepair={onSetRepair} onResolve={onResolveBeltIssue} />
                 ))}
@@ -514,11 +516,8 @@ export default function Dashboard({
             )}
 
             {collectorIssues.length > 0 && (
-              <div className="card" style={{ marginBottom: 12 }}>
-                <h3>
-                  💨 집진기 이상
-                  <span className="count">{collectorIssues.length}건</span>
-                </h3>
+              <div style={{ marginBottom: 12 }}>
+                <div className="dash-issue-group-label">💨 집진기 이상 <span>{collectorIssues.length}건</span></div>
                 {collectorIssues.map((entry) => (
                   <IssueItem key={entry.name} entry={entry} type="collector" repairs={repairs} onSetRepair={onSetRepair} onResolve={onResolveCollectorIssue} />
                 ))}

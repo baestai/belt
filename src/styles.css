@@ -598,14 +598,19 @@ header .logo svg{width:22px;height:22px;display:block}
 .dash-today-card-btn.done{border-color:var(--ok);color:var(--ok);background:var(--okbg)}
 
 /* 누적 이상 아코디언 */
-.dash-issue-entry{border-bottom:1px solid var(--line)}
-.dash-issue-entry:last-child{border-bottom:none}
-.dash-issue-head{width:100%;display:flex;align-items:center;gap:8px;padding:11px 0;background:none;border:none;font:inherit;color:inherit;cursor:pointer;text-align:left}
-.dash-issue-head .dot{flex-shrink:0;width:11px;height:11px}
-.dash-issue-name{flex:1;font-size:14px;font-weight:600;min-width:0}
+.dash-issue-group-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;padding-left:2px}
+.dash-issue-group-label span{color:var(--bad);margin-left:4px}
+.dash-issue-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.dash-issue-card:last-child{margin-bottom:0}
+.dash-issue-head{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:none;border:none;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.dash-issue-head .dot{flex-shrink:0;width:11px;height:11px;border-radius:50%}
+.dash-issue-info{flex:1;min-width:0}
+.dash-issue-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-issue-name-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.dash-issue-meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .dash-issue-date{font-size:11px;color:var(--muted);white-space:nowrap}
-.dash-issue-arrow{font-size:11px;color:var(--muted);margin-left:4px}
-.dash-issue-body{padding:0 0 10px 20px;display:flex;flex-direction:column;gap:5px}
+.dash-issue-arrow{font-size:10px;color:var(--muted)}
+.dash-issue-body{padding:8px 12px 10px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line)}
 .dash-sub-issue{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
 .dash-sub-memo{color:var(--muted);font-size:12px}
 .dash-copy-btn{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
