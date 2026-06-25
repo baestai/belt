@@ -241,6 +241,11 @@ export default function Dashboard({
   }, [collectors, collectorRecords, today]);
 
   // ── 금일 점검 예정 상세 목록 ─────────────────────────────
+  const beltGroupMap = useMemo(() => {
+    const map = {};
+    for (const g of Object.keys(groups)) for (const name of groups[g]) map[name] = g;
+    return map;
+  }, [groups]);
   const todayBeltList = useMemo(() => beltsScheduledOn(schedules, today), [schedules, today]);
   const todayBeltDoneSet = useMemo(() => new Set(beltsInspectedOn(records, today)), [records, today]);
   const todayCollectorList = useMemo(() => collectorsDueOn(collectors, today), [collectors, today]);
@@ -413,16 +418,23 @@ export default function Dashboard({
           </button>
           {todayBeltList.length === 0
             ? <p className="note" style={{ paddingTop: 6 }}>오늘 예정된 벨트 없음</p>
-            : todayBeltList.map((name) => {
-                const done = todayBeltDoneSet.has(name);
-                return (
-                  <div key={name} className="dash-today-row">
-                    <span className={`dot ${done ? 'ok' : 'none'}`} />
-                    <span className="dash-today-name">{name}</span>
-                    <span className={`dash-today-badge ${done ? 'ok' : 'none'}`}>{done ? '완료' : '예정'}</span>
-                  </div>
-                );
-              })
+            : <div className="dash-today-grid">
+                {todayBeltList.map((name) => {
+                  const done = todayBeltDoneSet.has(name);
+                  return (
+                    <div key={name} className="dash-today-card">
+                      <span className={`dot ${done ? 'ok' : 'none'}`} />
+                      <div className="dash-today-card-info">
+                        <div className="dash-today-card-name">{name}</div>
+                        <div className="dash-today-card-sub">{beltGroupMap[name] || ''} · {done ? '점검완료' : '미점검'}</div>
+                      </div>
+                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={onGoField}>
+                        {done ? '결과보기·수정' : '입력하기'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
           }
         </div>
 
@@ -441,16 +453,23 @@ export default function Dashboard({
           </button>
           {todayCollectorList.length === 0
             ? <p className="note" style={{ paddingTop: 6 }}>오늘 예정된 집진기 없음</p>
-            : todayCollectorList.map((name) => {
-                const done = todayCollectorDoneSet.has(name);
-                return (
-                  <div key={name} className="dash-today-row">
-                    <span className={`dot ${done ? 'ok' : 'none'}`} />
-                    <span className="dash-today-name">{name}</span>
-                    <span className={`dash-today-badge ${done ? 'ok' : 'none'}`}>{done ? '완료' : '예정'}</span>
-                  </div>
-                );
-              })
+            : <div className="dash-today-grid">
+                {todayCollectorList.map((name) => {
+                  const done = todayCollectorDoneSet.has(name);
+                  return (
+                    <div key={name} className="dash-today-card">
+                      <span className={`dot ${done ? 'ok' : 'none'}`} />
+                      <div className="dash-today-card-info">
+                        <div className="dash-today-card-name">{name}</div>
+                        <div className="dash-today-card-sub">집진기 · {done ? '점검완료' : '미점검'}</div>
+                      </div>
+                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={onGoField}>
+                        {done ? '결과보기·수정' : '입력하기'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
           }
         </div>
 

@@ -588,13 +588,14 @@ header .logo svg{width:22px;height:22px;display:block}
 .dash-today-hdr-count{font-size:18px;font-weight:800;margin-left:4px}
 .dash-today-hdr-sep{font-size:14px;font-weight:400;color:var(--muted)}
 .dash-today-hdr-pills{margin-left:auto;display:flex;gap:4px;flex-shrink:0}
-.dash-today-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
-.dash-today-row:last-child{border-bottom:none}
-.dash-today-row .dot{width:10px;height:10px;flex-shrink:0}
-.dash-today-name{flex:1;font-weight:600}
-.dash-today-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
-.dash-today-badge.ok{background:var(--okbg);color:var(--ok)}
-.dash-today-badge.none{background:var(--panel2);color:var(--muted)}
+.dash-today-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px}
+.dash-today-card{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;min-width:0}
+.dash-today-card .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dash-today-card-info{flex:1;min-width:0}
+.dash-today-card-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-today-card-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap}
+.dash-today-card-btn{font-size:10px;font-weight:700;padding:4px 7px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.dash-today-card-btn.done{border-color:var(--ok);color:var(--ok);background:var(--okbg)}
 
 /* 누적 이상 아코디언 */
 .dash-issue-entry{border-bottom:1px solid var(--line)}
