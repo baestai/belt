@@ -19,28 +19,7 @@ import CollectorCalendar from './components/CollectorCalendar.jsx';
 import CollectorForm from './components/CollectorForm.jsx';
 import { defaultCollectors, updateCollector, addCollector, removeCollector, latestCollectorRecord, aggregateCollectorStatus } from './lib/collectors.js';
 import PrintableRecord from './components/PrintableRecord.jsx';
-import SubstitutionPage from './components/SubstitutionPage.jsx';
-import {
-  defaultShiftGroups,
-  SHIFT_LABEL,
-  setPin as setPinFn,
-  createSubstitution,
-  claimSubstitution,
-  unclaimSubstitution,
-  cancelSubstitution,
-  adminCreateSubstitution,
-  adminUpdateSubstitution,
-  createExtraWork,
-  cancelExtraWork,
-  adminUpdateExtraWork,
-  exceedsWeeklyLimit,
-  appendSubLog,
-  createSwapRequest,
-  acceptSwap,
-  rejectSwap,
-  cancelSwap,
-} from './lib/shift.js';
-import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ShiftGroupModal, ResultModal, CollectorManageModal, RepairHistoryModal, AuditLogModal } from './components/Modals.jsx';
+import { AddBeltModal, InspectorModal, ReportModal, BackupModal, LeaderboardModal, QuickMemoModal, DeviceInspectorModal, ResultModal, CollectorManageModal, RepairHistoryModal, AuditLogModal } from './components/Modals.jsx';
 import { exportBackup, parseBackup, buildBackup, maybeSnapshot, listSnapshots, getSnapshot } from './lib/backup.js';
 import { appendLog } from './lib/auditlog.js';
 import { aggregateStatus } from './lib/belts.js';
@@ -668,180 +647,6 @@ export default function App() {
     setState((s) => ({ ...s, collectors: removeCollector(s.collectors || defaultCollectors(), name) }));
   };
 
-  // ===== 대근(代勤) 핸들러 =====
-  const handleSetPin = (name, pin) => {
-    // setPinFn이 형식(숫자 4자리+) 검증 후 throw → 컴포넌트에서 처리
-    const pins = setPinFn(state.shiftPins || {}, name, pin);
-    setState((s) => ({ ...s, shiftPins: pins }));
-  };
-  // 주 52시간 초과 확인 (대근/추가근무 반영된 예정 상태로 계산)
-  // 차단이 아닌 알림: 초과 시 확인창을 띄우고, 사용자가 계속 진행을 누르면 true
-  const confirmWeekly = (person, date, { substitutions, extraWorks }) => {
-    if (!person) return true;
-    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
-    if (exceedsWeeklyLimit(person, date, {
-      shiftGroups: sg,
-      substitutions: substitutions ?? (stateRef.current.substitutions || []),
-      extraWorks: extraWorks ?? (stateRef.current.extraWorks || []),
-    })) {
-      return window.confirm('주 52시간 초과되었습니다.\n그래도 계속 진행하시겠습니까?');
-    }
-    return true;
-  };
-  // 대근 변경 이력(감사 로그) 헬퍼: setState 업데이터 안에서 subLogs에 누적
-  const withLog = (s, patch, entry) => ({
-    ...s,
-    ...patch,
-    subLogs: appendSubLog(s.subLogs || [], entry),
-  });
-  const fmtSub = (sub) => `${sub.date} ${SHIFT_LABEL[sub.shift] || ''} ${sub.requester}(${sub.group}조)${sub.reason ? ` · ${sub.reason}` : ''}`;
-  // 순수 함수가 throw할 수 있으므로 setState 업데이터 밖에서 먼저 계산(렌더 중 throw로 인한 빈 화면 방지)
-  const handleCreateSub = (payload, opts) => {
-    const next = createSubstitution(stateRef.current.substitutions || [], payload, opts);
-    const sub = next[next.length - 1];
-    setState((s) => withLog(s, { substitutions: next }, { actor: payload.requester, action: '대근 신청', detail: fmtSub(sub) }));
-  };
-  const handleClaimSub = (id, substitute) => {
-    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
-    const next = claimSubstitution(stateRef.current.substitutions || [], id, substitute, sg);
-    const sub = next.find((x) => x.id === id);
-    if (sub && !confirmWeekly(substitute, sub.date, { substitutions: next })) return;
-    setState((s) => withLog(s, { substitutions: next }, { actor: substitute, action: '대근 확정', detail: sub ? `${sub.date} ${sub.requester} → ${substitute}` : '' }));
-  };
-  const handleUnclaimSub = (id) => {
-    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
-    setState((s) => withLog(s, { substitutions: unclaimSubstitution(s.substitutions || [], id) }, { actor: sub?.substitute || '대근자', action: '대근 취소', detail: sub ? `${sub.date} ${sub.requester}` : '' }));
-  };
-  const handleCancelSub = (id) => {
-    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
-    setState((s) => withLog(s, { substitutions: cancelSubstitution(s.substitutions || [], id) }, { actor: sub?.requester || '신청자', action: '신청 삭제', detail: sub ? fmtSub(sub) : '' }));
-  };
-  // 관리자 대근 편성: 비밀번호 확인 후 입력/수정/삭제 (throw 가능 → setState 밖에서 계산)
-  const verifyAdmin = (pw) => checkPassword(pw, stateRef.current.adminPw);
-  const handleAdminCreateSub = (payload, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const next = adminCreateSubstitution(stateRef.current.substitutions || [], payload);
-    if (payload.substitute && !confirmWeekly(payload.substitute, payload.date, { substitutions: next })) return;
-    const sub = next[next.length - 1];
-    setState((s) => withLog(s, { substitutions: next }, { actor: '관리자', action: '편성 추가', detail: `${fmtSub(sub)}${sub.substitute ? ` → ${sub.substitute}` : ''}` }));
-  };
-  const handleAdminUpdateSub = (id, patch, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const next = adminUpdateSubstitution(stateRef.current.substitutions || [], id, patch);
-    const sub = next.find((x) => x.id === id);
-    if (sub && sub.substitute && !confirmWeekly(sub.substitute, sub.date, { substitutions: next })) return;
-    setState((s) => withLog(s, { substitutions: next }, { actor: '관리자', action: '편성 수정', detail: sub ? `${fmtSub(sub)}${sub.substitute ? ` → ${sub.substitute}` : ''}` : '' }));
-  };
-  const handleAdminDeleteSub = (id, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const sub = (stateRef.current.substitutions || []).find((x) => x.id === id);
-    setState((s) => withLog(s, { substitutions: cancelSubstitution(s.substitutions || [], id) }, { actor: '관리자', action: '편성 삭제', detail: sub ? fmtSub(sub) : '' }));
-  };
-  // 관리자 추가 근무 편성: 비밀번호 확인 후 입력/수정/삭제
-  const handleAdminCreateExtra = (payload, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const next = createExtraWork(stateRef.current.extraWorks || [], payload);
-    if (!confirmWeekly(payload.person, payload.date, { extraWorks: next })) return;
-    setState((s) => ({ ...s, extraWorks: next }));
-  };
-  const handleAdminUpdateExtra = (id, patch, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const next = adminUpdateExtraWork(stateRef.current.extraWorks || [], id, patch);
-    const ex = next.find((x) => x.id === id);
-    if (ex && !confirmWeekly(ex.person, ex.date, { extraWorks: next })) return;
-    setState((s) => ({ ...s, extraWorks: next }));
-  };
-  const handleAdminDeleteExtra = (id, pw) => {
-    if (!checkPassword(pw, stateRef.current.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => ({ ...s, extraWorks: cancelExtraWork(s.extraWorks || [], id) }));
-  };
-  // 추가 근무(교육대근/GIB/PSM) — throw 가능하므로 setState 밖에서 계산
-  const handleCreateExtra = (payload) => {
-    const next = createExtraWork(stateRef.current.extraWorks || [], payload);
-    if (!confirmWeekly(payload.person, payload.date, { extraWorks: next })) return;
-    setState((s) => ({ ...s, extraWorks: next }));
-  };
-  const handleCancelExtra = (id) => {
-    setState((s) => ({ ...s, extraWorks: cancelExtraWork(s.extraWorks || [], id) }));
-  };
-
-  // 대근 맞교환(스왑) — throw 가능하므로 setState 밖에서 계산
-  const handleCreateSwap = (payload) => {
-    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
-    const next = createSwapRequest(stateRef.current.swaps || [], payload, sg);
-    setState((s) => withLog(s, { swaps: next }, {
-      actor: payload.requester, action: '맞교환 요청',
-      detail: `${payload.requester}(${payload.requesterDate}) ↔ ${payload.target}(${payload.targetDate})`,
-    }));
-  };
-  const handleAcceptSwap = (id) => {
-    const sg = stateRef.current.shiftGroups || defaultShiftGroups();
-    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
-    const res = acceptSwap(stateRef.current.swaps || [], stateRef.current.substitutions || [], id, sg);
-    if (swap) {
-      if (!confirmWeekly(swap.target, swap.requesterDate, { substitutions: res.substitutions })) return;
-      if (!confirmWeekly(swap.requester, swap.targetDate, { substitutions: res.substitutions })) return;
-    }
-    setState((s) => withLog(s, { swaps: res.swaps, substitutions: res.substitutions }, {
-      actor: swap?.target || '대상자', action: '맞교환 수락',
-      detail: swap ? `${swap.requester}(${swap.requesterDate}) ↔ ${swap.target}(${swap.targetDate})` : '',
-    }));
-  };
-  const handleRejectSwap = (id) => {
-    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
-    setState((s) => withLog(s, { swaps: rejectSwap(s.swaps || [], id) }, {
-      actor: swap?.target || '대상자', action: '맞교환 거절',
-      detail: swap ? `${swap.requester} ↔ ${swap.target}` : '',
-    }));
-  };
-  const handleCancelSwap = (id) => {
-    const swap = (stateRef.current.swaps || []).find((w) => w.id === id);
-    const res = cancelSwap(stateRef.current.swaps || [], stateRef.current.substitutions || [], id);
-    setState((s) => withLog(s, res, {
-      actor: swap?.requester || '신청자', action: '맞교환 철회',
-      detail: swap ? `${swap.requester} ↔ ${swap.target}` : '',
-    }));
-  };
-
-  // PIN 초기화: 사용자가 신청 → 관리모드에서 승인하면 해당 PIN 삭제(재설정 가능)
-  const handleRequestPinReset = (name) => {
-    setState((s) => {
-      const cur = s.pinResets || [];
-      if (cur.includes(name)) return s;
-      return { ...s, pinResets: [...cur, name] };
-    });
-  };
-  const handleApprovePinReset = (name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => {
-      const pins = { ...(s.shiftPins || {}) };
-      delete pins[name];
-      return { ...s, shiftPins: pins, pinResets: (s.pinResets || []).filter((x) => x !== name) };
-    });
-  };
-
-  // 교대조 인원 편성 (관리모드)
-  const handleAddShiftMember = (group, name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    const n = String(name || '').trim();
-    if (!n) throw new Error('이름을 입력하세요.');
-    const cur = state.shiftGroups || defaultShiftGroups();
-    for (const g of Object.keys(cur)) {
-      if ((cur[g] || []).includes(n)) throw new Error(`이미 ${g}조에 편성된 인원입니다.`);
-    }
-    setState((s) => {
-      const sg = s.shiftGroups || defaultShiftGroups();
-      return { ...s, shiftGroups: { ...sg, [group]: [...(sg[group] || []), n] } };
-    });
-  };
-  const handleRemoveShiftMember = (group, name, pw) => {
-    if (!checkPassword(pw, state.adminPw)) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-    setState((s) => {
-      const sg = s.shiftGroups || defaultShiftGroups();
-      return { ...s, shiftGroups: { ...sg, [group]: (sg[group] || []).filter((x) => x !== name) } };
-    });
-  };
-
   // 점검표 인쇄/PDF: 대상 기록을 렌더한 뒤 브라우저 인쇄 대화상자 호출
   useEffect(() => {
     if (!printTarget) return;
@@ -881,6 +686,21 @@ export default function App() {
   // ===== 렌더 =====
   return (
     <div className="app">
+      <aside className="workspace-rail" aria-label="설비관리 안내">
+        <div className="brand-mark">B<span>3</span></div>
+        <strong>3선탄 설비관리</strong><span className="rail-caption">현장 점검 · 정비</span>
+        <div className="rail-foot"><span className="rail-rule" />안전한 현장,<br />빠짐없는 점검.</div>
+      </aside>
+      {!isCloudConfigured && <div className="storage-notice" role="status">미리보기 · 입력한 기록은 이 브라우저에만 저장됩니다. 현장 공동 사용을 위한 데이터 연결은 준비 중입니다.</div>}
+      {/* 전역 점검자 표시줄 — 모든 화면에서 항상 표시 */}
+      <button type="button" className="insp-bar" onClick={() => setModal('deviceInspector')}>
+        <span>👤 점검자: {fixedInspector
+          ? <b>{fixedInspector}</b>
+          : <span className="insp-bar-none">미선택 · 점검 전에 선택해 주세요</span>}
+        </span>
+        <span className="insp-bar-set">{fixedInspector ? '변경 ›' : '선택하기 ›'}</span>
+      </button>
+
       {view === 'dashboard' && (
         <Dashboard
           today={today}
@@ -889,12 +709,11 @@ export default function App() {
           schedules={schedules}
           collectors={state.collectors || defaultCollectors()}
           collectorRecords={state.collectorRecords || []}
-          substitutions={state.substitutions || []}
-          shiftGroups={state.shiftGroups || defaultShiftGroups()}
-          onGoField={() => setView('calendar')}
+          onGoField={(kind = 'belt') => { setFieldTab(kind); setView('calendar'); }}
+          onPickBelt={(name) => handlePickBelt(name, today)}
+          onPickCollector={(name) => handlePickCollector(name, today)}
           onGoAdmin={goAdmin}
           onOpenLeaderboard={() => setModal('leaderboard')}
-          onOpenShift={() => setView('shift')}
           repairs={state.repairs || {}}
           onSetRepair={handleSetRepair}
           onResolveBeltIssue={handleResolveBeltIssue}
@@ -922,7 +741,6 @@ export default function App() {
           onOpenReport={() => setModal('report')}
           onOpenBackup={() => setModal('backup')}
           onOpenLeaderboard={() => setModal('leaderboard')}
-          onOpenShiftGroups={() => setModal('shiftGroups')}
           onOpenCollectors={() => setModal('collectorManage')}
           onOpenRepairHistory={() => setModal('repairHistory')}
           onOpenAuditLog={() => setModal('auditLog')}
@@ -969,7 +787,6 @@ export default function App() {
           filters={filters}
           setFilters={setFilters}
           onOpenLeaderboard={() => setModal('leaderboard')}
-          onOpenShift={() => setView('shift')}
           fixedInspector={fixedInspector}
           onOpenDeviceInspector={() => setModal('deviceInspector')}
           fieldTab={fieldTab}
@@ -992,7 +809,6 @@ export default function App() {
           fieldTab={fieldTab}
           onFieldTab={setFieldTab}
           onOpenLeaderboard={() => setModal('leaderboard')}
-          onOpenShift={() => setView('shift')}
         />
       )}
 
@@ -1015,38 +831,6 @@ export default function App() {
         />
       )}
 
-      {view === 'shift' && (
-        <SubstitutionPage
-          shiftGroups={state.shiftGroups || defaultShiftGroups()}
-          shiftPins={state.shiftPins || {}}
-          pinResets={state.pinResets || []}
-          substitutions={state.substitutions || []}
-          extraWorks={state.extraWorks || []}
-          swaps={state.swaps || []}
-          subLogs={state.subLogs || []}
-          today={today}
-          onSetPin={handleSetPin}
-          onCreateSwap={handleCreateSwap}
-          onAcceptSwap={handleAcceptSwap}
-          onRejectSwap={handleRejectSwap}
-          onCancelSwap={handleCancelSwap}
-          onRequestPinReset={handleRequestPinReset}
-          onCreateSub={handleCreateSub}
-          onClaimSub={handleClaimSub}
-          onUnclaimSub={handleUnclaimSub}
-          onCancelSub={handleCancelSub}
-          onCreateExtra={handleCreateExtra}
-          onCancelExtra={handleCancelExtra}
-          onVerifyAdmin={verifyAdmin}
-          onAdminCreateSub={handleAdminCreateSub}
-          onAdminUpdateSub={handleAdminUpdateSub}
-          onAdminDeleteSub={handleAdminDeleteSub}
-          onAdminCreateExtra={handleAdminCreateExtra}
-          onAdminUpdateExtra={handleAdminUpdateExtra}
-          onAdminDeleteExtra={handleAdminDeleteExtra}
-          onClose={() => setView('calendar')}
-        />
-      )}
 
       {view === 'form' && formCtx && (
         <InspectionForm
@@ -1118,16 +902,6 @@ export default function App() {
           onClose={() => setModal(null)}
         />
       )}
-      {modal === 'shiftGroups' && (
-        <ShiftGroupModal
-          shiftGroups={state.shiftGroups || defaultShiftGroups()}
-          pinResets={state.pinResets || []}
-          onAdd={handleAddShiftMember}
-          onRemove={handleRemoveShiftMember}
-          onApproveReset={handleApprovePinReset}
-          onClose={() => setModal(null)}
-        />
-      )}
       {modal === 'deviceInspector' && (
         <DeviceInspectorModal
           inspectors={inspectors}
@@ -1160,14 +934,6 @@ export default function App() {
 
       <ThemeToggle />
 
-      {/* 전역 점검자 표시줄 — 모든 화면에서 항상 표시 */}
-      <div className="insp-bar" onClick={() => setModal('deviceInspector')}>
-        <span>👤 점검자: {fixedInspector
-          ? <b>{fixedInspector}</b>
-          : <span className="insp-bar-none">미고정 — 점검 전 선택 필요</span>}
-        </span>
-        <span className="insp-bar-set">{fixedInspector ? '변경 ›' : '선택하기 ›'}</span>
-      </div>
 
       <div className="tabbar">
         <button

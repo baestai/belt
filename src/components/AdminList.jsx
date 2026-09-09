@@ -30,7 +30,6 @@ export default function AdminList({
   onOpenReport,
   onOpenBackup,
   onOpenLeaderboard,
-  onOpenShiftGroups,
   onOpenCollectors,
   onOpenRepairHistory,
   onOpenAuditLog,
@@ -188,7 +187,6 @@ export default function AdminList({
             <button className="add-btn secondary" onClick={onOpenInspectors}>👷 점검자 관리</button>
             <button className="add-btn secondary" onClick={onOpenLeaderboard}>🏆 랭킹</button>
             <button className="add-btn secondary" onClick={onOpenQuickMemos}>💬 빠른 메모</button>
-            <button className="add-btn secondary" onClick={onOpenShiftGroups}>🔁 교대조 편성</button>
             <button className="add-btn secondary" onClick={onOpenCollectors}>🌀 집진기 관리</button>
             <button className="add-btn secondary" onClick={onOpenRepairHistory}>🔧 정비 이력</button>
             <button className="add-btn secondary" onClick={onOpenAuditLog}>📋 변경 이력</button>

@@ -1,7 +1,7 @@
 // 3선탄 통합관리 — 서비스워커 (오프라인 지원)
 // 동일 출처(앱 셸/정적 자산)만 캐시한다. Supabase·CDN 등 교차 출처 요청은 건드리지 않는다.
 // 전략: stale-while-revalidate (캐시 즉시 응답 + 백그라운드 갱신)
-const CACHE = 'samseontan-v1';
+const CACHE = 'samseontan-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

@@ -1,13 +1,13 @@
 {
   "name": "3선탄 통합관리",
   "short_name": "3선탄",
-  "description": "벨트·집진기 점검 및 대근 통합관리",
+  "description": "벨트·집진기 현장 점검 및 정비 관리",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0e1116",
-  "theme_color": "#ea580c",
+  "theme_color": "#1457d9",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

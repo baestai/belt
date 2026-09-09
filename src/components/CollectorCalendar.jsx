@@ -20,7 +20,7 @@ function pad(n) { return n < 10 ? '0' + n : '' + n; }
 export default function CollectorCalendar({
   year, month, today, selectedDate, onSelectDate, onPrev, onNext,
   collectors = [], collectorRecords = [], onPickCollector,
-  fieldTab, onFieldTab, onOpenLeaderboard, onOpenShift,
+  fieldTab, onFieldTab, onOpenLeaderboard,
 }) {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
@@ -70,12 +70,6 @@ export default function CollectorCalendar({
           <button className="hdr-btn labeled" onClick={onOpenLeaderboard} aria-label="점검 포인트 랭킹">
             <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
             <span className="hdr-lbl">Top10</span>
-          </button>
-        )}
-        {onOpenShift && (
-          <button className="hdr-btn labeled" onClick={onOpenShift} aria-label="대근 관리">
-            <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v6h6" /><path d="M21 12A9 9 0 0 0 6 5.3L3 8" /><path d="M21 22v-6h-6" /><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7" /></svg>
-            <span className="hdr-lbl">대근</span>
           </button>
         )}
         <a className="hdr-btn labeled" href="/manual.html" target="_blank" rel="noopener" aria-label="사용설명서">

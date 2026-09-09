@@ -9,7 +9,6 @@ import {
   collectorsDueOn,
   collectorsInspectedOn,
 } from '../lib/collectors.js';
-import { shiftsOnDate, SHIFT_LABEL, SHIFT_GROUPS } from '../lib/shift.js';
 
 const STATUS_KO = { ok: '정상', warn: '주의', bad: '이상' };
 const STATUS_COLOR = { ok: 'ok', warn: 'warn', bad: 'bad', none: 'none' };
@@ -190,7 +189,7 @@ function ChartCard({ icon, label, ok, bad }) {
       <DonutChart ok={ok} bad={bad} />
       <div className="dash-chart-legend">
         <span className="dash-legend-item"><i className="dot ok" />정상 {ok}</span>
-        <span className="dash-legend-item"><i className="dot bad" />이상 {bad}</span>
+        <span className="dash-legend-item"><i className="dot bad" />이상·주의 {bad}</span>
       </div>
       <div className="dash-chart-sub">점검 {total}건</div>
     </div>
@@ -204,12 +203,11 @@ export default function Dashboard({
   schedules,
   collectors,
   collectorRecords,
-  substitutions,
-  shiftGroups,
   onGoField,
+  onPickBelt,
+  onPickCollector,
   onGoAdmin,
   onOpenLeaderboard,
-  onOpenShift,
   repairs = {},
   onSetRepair,
   onResolveBeltIssue,
@@ -255,13 +253,6 @@ export default function Dashboard({
   const todayBeltDoneSet = useMemo(() => new Set(beltsInspectedOn(records, today)), [records, today]);
   const todayCollectorList = useMemo(() => collectorsDueOn(collectors, today), [collectors, today]);
   const todayCollectorDoneSet = useMemo(() => new Set(collectorsInspectedOn(collectorRecords, today)), [collectorRecords, today]);
-
-  // ── 오늘 대근 현황 ───────────────────────────────────────
-  const shiftToday = useMemo(() => shiftsOnDate(today), [today]);
-  const subsToday = useMemo(
-    () => (substitutions || []).filter((s) => s.date === today),
-    [substitutions, today]
-  );
 
   // ── 누적 이상 목록 ───────────────────────────────────────
   const beltIssues = useMemo(() => {
@@ -360,14 +351,6 @@ export default function Dashboard({
             <span className="hdr-lbl">Top10</span>
           </button>
         )}
-        {onOpenShift && (
-          <button className="hdr-btn labeled" onClick={onOpenShift} aria-label="대근 관리">
-            <svg className="hdr-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 2v6h6" /><path d="M21 12A9 9 0 0 0 6 5.3L3 8" /><path d="M21 22v-6h-6" /><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7" />
-            </svg>
-            <span className="hdr-lbl">대근</span>
-          </button>
-        )}
         <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8, whiteSpace: 'nowrap' }}>
           {todayFmt} ({todayDow})
         </span>
@@ -375,41 +358,15 @@ export default function Dashboard({
 
       <div className="body">
 
-        {/* ── 금일 근무현황 ── */}
-        <div className="dash-section-title">금일 근무현황</div>
-        <div className="card" style={{ marginBottom: 14 }}>
-          {/* 조별 근무 */}
-          <div className="dash-shift-grid">
-            {SHIFT_GROUPS.map((g) => {
-              const shift = shiftToday[g];
-              const subs = subsToday.filter((s) => s.group === g);
-              return (
-                <div key={g} className={`dash-shift-cell dash-shift-${shift}`}>
-                  <div className="dash-shift-group">{g}조</div>
-                  <div className="dash-shift-type">{SHIFT_LABEL[shift] || shift}</div>
-                  {subs.map((s) => (
-                    <div key={s.id} className="dash-shift-sub">
-                      <span className="dash-shift-req">{s.requester}</span>
-                      <span className="dash-shift-arrow">→</span>
-                      <span className={`dash-shift-fill ${s.substitute ? 'filled' : 'open'}`}>
-                        {s.substitute || '미정'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-          {subsToday.length === 0 && (
-            <p className="note" style={{ paddingTop: 8 }}>오늘 대근 없음</p>
-          )}
-        </div>
-
-        {/* ── 누적 점검 통계 (도넛 차트) ── */}
-        <div className="dash-section-title">누적 점검 통계</div>
-        <div className="dash-2col" style={{ marginBottom: 14 }}>
-          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} bad={beltChart.bad} />
-          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} bad={collectorChart.bad} />
+        <section className="work-heading">
+          <div><span className="eyebrow">설비 점검</span><h2>오늘의 현장</h2><p>{todayFmt} ({todayDow}) · 점검일은 오전 7시에 변경됩니다.</p></div>
+          <button className="primary-action" onClick={() => onGoField('belt')}>점검 시작하기 <span aria-hidden="true">↗</span></button>
+        </section>
+        <div className="overview-metrics">
+          <div><span>오늘 점검 예정</span><strong>{beltStats.scheduled + collectorStats.scheduled}<small>대</small></strong></div>
+          <div><span>오늘 점검 완료</span><strong>{beltStats.done + collectorStats.done}<small>대</small></strong></div>
+          <div className="issue-metric"><span>이상·주의 설비</span><strong>{totalIssues}<small>대</small></strong></div>
+          <div><span>등록 설비</span><strong>{flattenBelts(groups).length + collectors.length}<small>대</small></strong></div>
         </div>
 
         {/* ── 금일 점검현황 ── */}
@@ -417,7 +374,7 @@ export default function Dashboard({
 
         {/* 벨트 */}
         <div className="card" style={{ marginBottom: 10 }}>
-          <button className="dash-today-hdr" onClick={onGoField}>
+          <button className="dash-today-hdr" onClick={() => onGoField('belt')}>
             <span className="dash-stat-icon">🔧</span>
             <span className="dash-today-hdr-label">벨트 점검</span>
             <span className="dash-today-hdr-count">
@@ -440,7 +397,7 @@ export default function Dashboard({
                         <div className="dash-today-card-name">{name}</div>
                         <div className="dash-today-card-sub">{beltGroupMap[name] || ''} · {done ? '점검완료' : '미점검'}</div>
                       </div>
-                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={onGoField}>
+                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={() => onPickBelt(name)}>
                         {done ? '결과보기·수정' : '입력하기'}
                       </button>
                     </div>
@@ -452,7 +409,7 @@ export default function Dashboard({
 
         {/* 집진기 */}
         <div className="card" style={{ marginBottom: 14 }}>
-          <button className="dash-today-hdr" onClick={onGoField}>
+          <button className="dash-today-hdr" onClick={() => onGoField('collector')}>
             <span className="dash-stat-icon">💨</span>
             <span className="dash-today-hdr-label">집진기 점검</span>
             <span className="dash-today-hdr-count">
@@ -475,7 +432,7 @@ export default function Dashboard({
                         <div className="dash-today-card-name">{name}</div>
                         <div className="dash-today-card-sub">집진기 · {done ? '점검완료' : '미점검'}</div>
                       </div>
-                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={onGoField}>
+                      <button className={`dash-today-card-btn${done ? ' done' : ''}`} onClick={() => onPickCollector(name)}>
                         {done ? '결과보기·수정' : '입력하기'}
                       </button>
                     </div>
@@ -483,6 +440,13 @@ export default function Dashboard({
                 })}
               </div>
           }
+        </div>
+
+        {/* ── 누적 점검 통계 (도넛 차트) ── */}
+        <div className="dash-section-title">설비별 최근 점검 현황</div>
+        <div className="dash-2col" style={{ marginBottom: 14 }}>
+          <ChartCard icon="🔧" label="벨트" ok={beltChart.ok} bad={beltChart.bad} />
+          <ChartCard icon="💨" label="집진기" ok={collectorChart.ok} bad={collectorChart.bad} />
         </div>
 
         {/* ── 누적 이상 목록 ── */}
@@ -502,7 +466,7 @@ export default function Dashboard({
 
         {totalIssues === 0 ? (
           <div className="card" style={{ textAlign: 'center', color: 'var(--ok)', fontWeight: 700, padding: '24px 16px' }}>
-            ✅ 이상 장비 없음
+            {records.length + (collectorRecords || []).length === 0 ? '아직 등록된 점검 기록이 없습니다.' : '등록된 점검 기록에서 발견된 이상이 없습니다.'}
           </div>
         ) : (
           <>
