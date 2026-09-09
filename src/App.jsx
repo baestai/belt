@@ -687,7 +687,7 @@ export default function App() {
   return (
     <div className="app">
       <aside className="workspace-rail" aria-label="설비관리 안내">
-        <div className="brand-mark"><img src="/logo.svg" alt="선3탄" /></div>
+        <div className="brand-mark"><img src="/logo.svg?v=3" alt="선3탄" /></div>
         <strong>3선탄 설비관리</strong><span className="rail-caption">현장 점검 · 정비</span>
         <div className="rail-foot"><span className="rail-rule" />안전한 현장,<br />빠짐없는 점검.</div>
       </aside>

@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#10233f"/>
-  <g font-family="Pretendard, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-weight="900">
-    <text x="62" y="323" font-size="100" fill="#80afff">선</text>
-    <text x="186" y="330" font-size="218" fill="#ffffff">3</text>
-    <text x="339" y="323" font-size="100" fill="#80afff">탄</text>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="선3탄"><rect width="512" height="512" rx="104" fill="#10233f"/><g transform="translate(25 150) scale(1.9)"><g fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="miter" stroke-linecap="square">
+<path d="M16 51L29 27L42 51M62 25V57M48 40H62M20 70V86H63"/>
+<path d="M163 27H193M163 27V53H193M164 40H189M214 25V57M214 40H228M166 70V86H215"/>
+</g>
+<path fill="#fff" d="M83 10H126L143 27V44L133 54 143 64V85L126 102H83V84H119L125 78V69L119 63H98V45H119L125 39V34L119 28H83Z"/>
+
+</g></svg>

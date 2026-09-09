@@ -19,5 +19,5 @@ header{min-height:68px;padding:14px 22px;background:var(--panel)}header h1{font-
 .insp-bar{position:sticky;top:0;left:auto;transform:none;width:100%;max-width:none;border:0;border-bottom:1px solid var(--line);text-align:left;color:var(--text);font-family:inherit;z-index:12}
 header{position:relative;top:auto}.body{padding-top:24px}
 .brand-mark img{display:block;width:174px;height:auto}.brand-mark{letter-spacing:normal}
-header .logo{display:block;width:80px;height:40px;flex-shrink:0;font-size:0;background:url('/logo.svg') center/contain no-repeat}
+header .logo{display:block;width:80px;height:40px;flex-shrink:0;font-size:0;background:var(--text);-webkit-mask:url('/logo.svg?v=3') center/contain no-repeat;mask:url('/logo.svg?v=3') center/contain no-repeat}
 @media(max-width:600px){header{gap:8px}header .logo{width:66px;height:34px}header h1{font-size:14px}}
